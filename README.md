@@ -1,1 +1,1 @@
-# LinkEdu-front
+# LinkEdu-fullstack
