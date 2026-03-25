@@ -114,10 +114,19 @@
   color: #2c6ccc;
   font-size: 0.82rem;
   text-decoration: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
 }
 
 .link-small:hover {
   text-decoration: underline;
+}
+
+.link-button {
+  width: fit-content;
 }
 
 .auth-button {
@@ -134,6 +143,21 @@
 
 .auth-button:hover {
   background: #094ea8;
+}
+
+.auth-button-secondary {
+  background: #e8eef9;
+  color: #114383;
+}
+
+.auth-button-secondary:hover {
+  background: #dbe7fb;
+}
+
+.auth-feedback {
+  margin: 0.25rem 0 0;
+  color: #0e4d9d;
+  font-size: 0.82rem;
 }
 
 .auth-footer {
