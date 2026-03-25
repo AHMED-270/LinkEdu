@@ -84,7 +84,7 @@ function LoginCard() {
         </h2>
         <p className="auth-description">
           {isForgotMode
-            ? 'Saisissez votre e-mail pour recevoir un lien de réinitialisation.'
+            ? "Saisissez l'adresse e-mail associée à votre compte pour recevoir un lien de réinitialisation."
             : "Saisissez vos informations afin d'acceder a la plateforme."}
         </p>
 
@@ -132,9 +132,8 @@ function LoginCard() {
 
             {loginFeedback && (
               <p
-                className={`auth-feedback ${
-                  loginFeedbackType === 'error' ? 'auth-feedback-error' : 'auth-feedback-success'
-                }`}
+                className={`auth-feedback ${loginFeedbackType === 'error' ? 'auth-feedback-error' : 'auth-feedback-success'
+                  }`}
               >
                 {loginFeedback}
               </p>
@@ -148,18 +147,18 @@ function LoginCard() {
             <input id="forgot-email" type="email" placeholder="nom@ecole.com" required />
 
             <button type="submit" className="auth-button">
-              Envoyer le lien
+              Réinitialiser le mot de passe &rarr;
             </button>
 
             <button
               type="button"
-              className="auth-button auth-button-secondary"
+              className="back-link"
               onClick={() => {
                 setIsForgotMode(false)
                 setIsResetSent(false)
               }}
             >
-              Retour à la connexion
+              &larr; Retour à la page de connexion
             </button>
 
             {isResetSent && (
