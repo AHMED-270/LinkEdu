@@ -53,7 +53,9 @@ function LoginCard() {
       const status = error?.response?.status
       let message = 'Echec de connexion.'
 
-      if (status === 422 || status === 401) {
+      if (!error?.response) {
+        message = 'Serveur indisponible. Verifiez que le backend Laravel tourne sur http://127.0.0.1:8000.'
+      } else if (status === 422 || status === 401) {
         message = 'Email ou mot de passe incorrect.'
       } else if (status === 419) {
         message = 'Session expiree. Reessayez.'
