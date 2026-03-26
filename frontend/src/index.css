@@ -85,7 +85,7 @@
 }
 
 /* ===== RESET ===== */
-, *::before, *::after {
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -192,20 +192,4 @@ button {
 
 .animate-slide-in {
   animation: slideInLeft 0.3s var(--transition-base) forwards;
-=======
-* {
-  box-sizing: border-box;
-}
-
-html,
-body,
-#root {
-  margin: 0;
-  padding: 0;
-  min-height: 100%;
-}
-
-body {
-  min-width: 320px;
->>>>>>> 3891505ab93941f587666250fd77d9b8e3fe447c
 }
