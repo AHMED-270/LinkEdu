@@ -25,7 +25,7 @@ function LoginCard() {
       })
 
       await axios.post(
-        `${apiBaseUrl}/login`,
+        `${apiBaseUrl}/api/admin/login`,
         {
           email: loginEmail,
           password: loginPassword,
