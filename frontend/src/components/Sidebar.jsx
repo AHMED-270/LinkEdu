@@ -1,5 +1,6 @@
-import { NavLink } from 'react-router-dom';
-import { FiGrid, FiCalendar, FiUsers, FiStar, FiFileText, FiMessageCircle, FiSettings } from 'react-icons/fi';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { FiGrid, FiCalendar, FiUsers, FiStar, FiFileText, FiMessageCircle, FiSettings, FiLogOut } from 'react-icons/fi';
+import { useAuth } from '../context/AuthContext';
 import './Sidebar.css';
 
 const navItems = [
@@ -13,13 +14,21 @@ const navItems = [
 ];
 
 export default function Sidebar() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login', { replace: true });
+  };
+
   return (
     <aside className="sidebar">
       <div className="sidebar-profile">
         <img src="https://i.pravatar.cc/150?u=12" alt="Profil" className="sidebar-avatar" />
         <div className="sidebar-user-info">
-          <span className="sidebar-name">Dr. Space</span>
-          <span className="sidebar-role">Professeur Principal</span>
+          <span className="sidebar-name">{user?.name || 'Utilisateur'}</span>
+          <span className="sidebar-role">{user?.role || 'membre'}</span>
         </div>
       </div>
       
@@ -38,6 +47,13 @@ export default function Sidebar() {
           );
         })}
       </nav>
+
+      <div className="sidebar-footer">
+        <button type="button" className="sidebar-logout" onClick={handleLogout}>
+          <FiLogOut size={18} className="sidebar-icon" />
+          <span>Se déconnecter</span>
+        </button>
+      </div>
     </aside>
   );
 }

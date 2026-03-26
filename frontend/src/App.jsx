@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -12,6 +12,7 @@ import Notes from './pages/Notes';
 import Avancement from './pages/Avancement';
 import Reclamation from './pages/Reclamation';
 import Parametres from './pages/Parametres';
+import Login from './pages/Login';
 import './App.css';
 
 // Root Route - Redirects based on auth status
@@ -34,9 +35,14 @@ const ProtectedRoute = ({ children, title }) => {
 
 // Title updates per route
 const AppRoutes = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) return <div className="loading-screen">Chargement...</div>;
+
   return (
     <Routes>
       <Route path="/" element={<RootRoute />} />
+      <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
       
       {/* Protected Routes inside Layout */}
       <Route path="/dashboard" element={<ProtectedRoute title="Tableau de Bord"><Dashboard /></ProtectedRoute>} />
