@@ -20,6 +20,7 @@ class Professeur extends Model
     protected $fillable = [
         'id_professeur',
         'specialite',
+        'telephone',
     ];
 
     public function user(): BelongsTo

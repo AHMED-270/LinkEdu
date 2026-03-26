@@ -18,6 +18,7 @@ class Directeur extends Model
     protected $fillable = [
         'id_directeur',
         'mandat',
+        'telephone',
     ];
 
     public function user(): BelongsTo

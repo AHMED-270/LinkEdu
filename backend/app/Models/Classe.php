@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -17,7 +18,19 @@ class Classe extends Model
     protected $fillable = [
         'nom',
         'niveau',
+        'id_professeur',
     ];
+
+    public function professeurTitulaire(): BelongsTo
+    {
+        return $this->belongsTo(Professeur::class, 'id_professeur', 'id_professeur');
+    }
+
+    public function professeursAssignes(): BelongsToMany
+    {
+        return $this->belongsToMany(Professeur::class, 'classe_professeur_assignments', 'id_classe', 'id_professeur')
+            ->withTimestamps();
+    }
 
     public function etudiants(): HasMany
     {

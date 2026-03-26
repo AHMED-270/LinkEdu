@@ -1,7 +1,7 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import axios from 'axios'
 
-function LoginCard({ onLoginSuccess }) {
+function LoginCard() {
   const [isForgotMode, setIsForgotMode] = useState(false)
   const [isResetSent, setIsResetSent] = useState(false)
   const [loginEmail, setLoginEmail] = useState('')
@@ -33,18 +33,15 @@ function LoginCard({ onLoginSuccess }) {
     setLoginFeedbackType('')
 
     const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
-    const loginPath = loginRole === 'admin' ? '/api/admin/login' : '/api/directeur/login'
-    const normalizedEmail = loginEmail.trim().toLowerCase()
-    const normalizedPassword = loginPassword.trim()
 
     try {
-      await axios.get(`${apiBaseUrl}/sanctum/csrf-cookie`, {
+      await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', {
         withCredentials: true,
         withXSRFToken: true,
       })
 
-      const loginResponse = await axios.post(
-        `${apiBaseUrl}${loginPath}`,
+      await axios.post(
+        `${apiBaseUrl}/api/admin/login`,
         {
           email: normalizedEmail,
           password: normalizedPassword,
@@ -58,26 +55,20 @@ function LoginCard({ onLoginSuccess }) {
         }
       )
 
-      let authenticatedUser = loginResponse?.data?.user ?? null
-      const accessToken = loginResponse?.data?.token ?? null
+      const userResponse = await axios.get(`${apiBaseUrl}/api/user`, {
+        withCredentials: true,
+        withXSRFToken: true,
+        headers: {
+          Accept: 'application/json',
+        },
+      })
 
-      if (!authenticatedUser) {
-        const userResponse = await axios.get(`${apiBaseUrl}/api/user`, {
-          withCredentials: true,
-          withXSRFToken: true,
-          headers: {
-            Accept: 'application/json',
-            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-          },
-        })
-
-        authenticatedUser = userResponse.data
-      }
-
-      onLoginSuccess?.({ ...authenticatedUser, token: accessToken })
-
-      setLoginFeedback(`Connecte en tant que ${authenticatedUser?.email ?? loginEmail}.`)
+      setLoginFeedback(`Connecte en tant que ${userResponse.data?.email ?? loginEmail}.`)
       setLoginFeedbackType('success')
+      
+      if (onLoginSuccess) {
+        onLoginSuccess(loginRes.data.user);
+      }
     } catch (error) {
       const status = error?.response?.status
       let message = 'Echec de connexion.'
@@ -85,9 +76,9 @@ function LoginCard({ onLoginSuccess }) {
       if (!error?.response) {
         message = 'Serveur indisponible. Verifiez que le backend Laravel tourne sur http://127.0.0.1:8000.'
       } else if (status === 422 || status === 401) {
-        message = error?.response?.data?.errors?.email?.[0] ?? 'Email ou mot de passe incorrect.'
+        message = 'Email ou mot de passe incorrect.'
       } else if (status === 419) {
-        message = 'Session expiree. Reessayez.'
+        message = 'Session expirée. Réessayez.'
       } else if (error?.response?.data?.message) {
         message = error.response.data.message
       } else if (error?.message) {
@@ -116,7 +107,7 @@ function LoginCard({ onLoginSuccess }) {
         <p className="auth-description">
           {isForgotMode
             ? "Saisissez l'adresse e-mail associée à votre compte pour recevoir un lien de réinitialisation."
-            : "Saisissez vos informations afin d'acceder a la plateforme."}
+            : "Saisissez vos informations afin d'acceder a la plateforme."}     
         </p>
 
         {!isForgotMode && (
@@ -194,8 +185,7 @@ function LoginCard({ onLoginSuccess }) {
 
             {loginFeedback && (
               <p
-                className={`auth-feedback ${loginFeedbackType === 'error' ? 'auth-feedback-error' : 'auth-feedback-success'
-                  }`}
+                className={'auth-feedback ' + (loginFeedbackType === 'error' ? 'auth-feedback-error' : 'auth-feedback-success')}
               >
                 {loginFeedback}
               </p>
@@ -225,19 +215,17 @@ function LoginCard({ onLoginSuccess }) {
 
             {isResetSent && (
               <p className="auth-feedback">
-                Si cet e-mail existe, un lien de réinitialisation a été envoyé.
+                Si cet e-mail existe, un lien de réinitialisation a été envoyé.   
               </p>
             )}
           </form>
         )}
 
         <div className="auth-footer">
-          <a href="#">Conditions d&apos;utilisation</a>
+          <a href="#">Conditions d'utilisation</a>
           <a href="#">Politique de confidentialité</a>
         </div>
       </div>
     </section>
   )
 }
-
-export default LoginCard
