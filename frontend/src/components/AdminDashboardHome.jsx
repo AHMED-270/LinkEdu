@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Users, GraduationCap, AlertCircle, FileText, BookOpen } from 'lucide-react';
+import { FiUsers as Users, FiBookOpen as GraduationCap, FiAlertCircle as AlertCircle, FiFileText as FileText, FiBookOpen as BookOpen } from 'react-icons/fi';
 
 export default function AdminDashboardHome() {
   const [stats, setStats] = useState({

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
-import { Plus, Edit, Trash2, Search } from 'lucide-react';
+import { FiPlus as Plus, FiEdit2 as Edit, FiTrash2 as Trash2, FiSearch as Search } from 'react-icons/fi';
 
 export default function AdminMatieres({ userRole = 'admin' }) {
   const [matieres, setMatieres] = useState([]);

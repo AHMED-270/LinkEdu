@@ -1,6 +1,7 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
+import AdminDashboard from './components/AdminDashboard';
 import Dashboard from './pages/Dashboard';
 import Devoirs from './pages/Devoirs';
 import Ressources from './pages/Ressources';
@@ -15,20 +16,51 @@ import Parametres from './pages/Parametres';
 import Login from './pages/Login';
 import './App.css';
 
+const normalizeRole = (role) => String(role || '').toLowerCase();
+const isAdminRole = (role) => ['admin', 'directeur'].includes(normalizeRole(role));
+
 // Root Route - Redirects based on auth status
 const RootRoute = () => {
   const { user, loading } = useAuth();
   
   if (loading) return <div className="loading-screen">Chargement...</div>;
-  return user ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/login" replace />;
+
+  return isAdminRole(user?.role)
+    ? <Navigate to="/admin" replace />
+    : <Navigate to="/dashboard" replace />;
 };
 
-// Protected Layout Wrapper
-const ProtectedRoute = ({ children, title }) => {
+const AdminPage = () => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleAdminLogout = () => {
+    logout();
+    navigate('/login', { replace: true });
+  };
+
+  return <AdminDashboard onLogout={handleAdminLogout} userRole={normalizeRole(user?.role)} />;
+};
+
+// Protected route for admin roles only
+const AdminRoute = ({ children }) => {
   const { user, loading } = useAuth();
   
   if (loading) return <div className="loading-screen">Chargement...</div>;
   if (!user) return <Navigate to="/login" replace />;
+  if (!isAdminRole(user?.role)) return <Navigate to="/dashboard" replace />;
+
+  return children;
+};
+
+// Protected route for professeur view only
+const ProfesseurRoute = ({ children, title }) => {
+  const { user, loading } = useAuth();
+  
+  if (loading) return <div className="loading-screen">Chargement...</div>;
+  if (!user) return <Navigate to="/login" replace />;
+  if (isAdminRole(user?.role)) return <Navigate to="/admin" replace />;
   
   return <Layout title={title}>{children}</Layout>;
 };
@@ -42,20 +74,28 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<RootRoute />} />
-      <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
+      <Route
+        path="/login"
+        element={
+          user
+            ? <Navigate to={isAdminRole(user?.role) ? '/admin' : '/dashboard'} replace />
+            : <Login />
+        }
+      />
+      <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
       
       {/* Protected Routes inside Layout */}
-      <Route path="/dashboard" element={<ProtectedRoute title="Tableau de Bord"><Dashboard /></ProtectedRoute>} />
-      <Route path="/devoirs" element={<ProtectedRoute title="Devoirs & Ressources"><Devoirs /></ProtectedRoute>} />
-      <Route path="/ressources" element={<ProtectedRoute title="Publier une Ressource"><Ressources /></ProtectedRoute>} />
-      <Route path="/emploi-du-temps" element={<ProtectedRoute title="Emploi du Temps"><EmploiDuTemps /></ProtectedRoute>} />
-      <Route path="/annonces" element={<ProtectedRoute title="Annonces"><Annonces /></ProtectedRoute>} />
-      <Route path="/mes-classes" element={<ProtectedRoute title="Mes Classes"><Eleves /></ProtectedRoute>} />
-      <Route path="/appel" element={<ProtectedRoute title="Feuille d'Appel"><Appel /></ProtectedRoute>} />
-      <Route path="/notes-absences" element={<ProtectedRoute title="Notes & Absences"><Notes /></ProtectedRoute>} />
-      <Route path="/avancement" element={<ProtectedRoute title="Avancement"><Avancement /></ProtectedRoute>} />
-      <Route path="/reclamation" element={<ProtectedRoute title="Réclamation"><Reclamation /></ProtectedRoute>} />
-      <Route path="/parametres" element={<ProtectedRoute title="Paramètres"><Parametres /></ProtectedRoute>} />
+      <Route path="/dashboard" element={<ProfesseurRoute title="Tableau de Bord"><Dashboard /></ProfesseurRoute>} />
+      <Route path="/devoirs" element={<ProfesseurRoute title="Devoirs & Ressources"><Devoirs /></ProfesseurRoute>} />
+      <Route path="/ressources" element={<ProfesseurRoute title="Publier une Ressource"><Ressources /></ProfesseurRoute>} />
+      <Route path="/emploi-du-temps" element={<ProfesseurRoute title="Emploi du Temps"><EmploiDuTemps /></ProfesseurRoute>} />
+      <Route path="/annonces" element={<ProfesseurRoute title="Annonces"><Annonces /></ProfesseurRoute>} />
+      <Route path="/mes-classes" element={<ProfesseurRoute title="Mes Classes"><Eleves /></ProfesseurRoute>} />
+      <Route path="/appel" element={<ProfesseurRoute title="Feuille d'Appel"><Appel /></ProfesseurRoute>} />
+      <Route path="/notes-absences" element={<ProfesseurRoute title="Notes & Absences"><Notes /></ProfesseurRoute>} />
+      <Route path="/avancement" element={<ProfesseurRoute title="Avancement"><Avancement /></ProfesseurRoute>} />
+      <Route path="/reclamation" element={<ProfesseurRoute title="Réclamation"><Reclamation /></ProfesseurRoute>} />
+      <Route path="/parametres" element={<ProfesseurRoute title="Paramètres"><Parametres /></ProfesseurRoute>} />
       
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

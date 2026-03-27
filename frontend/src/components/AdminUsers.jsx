@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, Plus, Edit, Trash2 } from 'lucide-react';
+import { FiSearch as Search, FiPlus as Plus, FiEdit2 as Edit, FiTrash2 as Trash2 } from 'react-icons/fi';
 import AdminUserForm from './AdminUserForm';
 
 export default function AdminUsers({ onCreateUser, onEditUser }) {

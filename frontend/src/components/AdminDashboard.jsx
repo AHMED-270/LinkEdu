@@ -1,6 +1,6 @@
 ﻿import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Bell, HelpCircle, LayoutDashboard, Users, GraduationCap, Settings, LogOut, UserCircle, DoorOpen, BookOpen } from 'lucide-react';
+import { FiBell as Bell, FiHelpCircle as HelpCircle, FiGrid as LayoutDashboard, FiUsers as Users, FiBookOpen as GraduationCap, FiSettings as Settings, FiLogOut as LogOut, FiUser as UserCircle, FiLogOut as DoorOpen, FiBookOpen as BookOpen } from 'react-icons/fi';
 import './AdminDashboard.css';
 import AdminDashboardHome from './AdminDashboardHome';
 import AdminUsers from './AdminUsers';

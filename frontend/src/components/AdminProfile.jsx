@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { User, Mail, Lock, Save, Camera, Trash2 } from 'lucide-react';
+import { FiUser as User, FiMail as Mail, FiLock as Lock, FiSave as Save, FiCamera as Camera, FiTrash2 as Trash2 } from 'react-icons/fi';
 
 const ADMIN_AVATAR_STORAGE_KEY = 'linkedu_admin_avatar';
 

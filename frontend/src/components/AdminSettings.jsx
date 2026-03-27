@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Save, RotateCcw } from 'lucide-react';
+import { FiSave as Save, FiRotateCcw as RotateCcw } from 'react-icons/fi';
 
 const STORAGE_KEY = 'linkedu_admin_settings';
 const SUBPROJECT_STORAGE_KEY = 'linkedu_subproject_settings';

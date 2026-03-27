@@ -1,6 +1,6 @@
 ﻿import { useState } from 'react';
 import axios from 'axios';
-import { FileText, Download, CheckCircle } from 'lucide-react';
+import { FiFileText as FileText, FiDownload as Download, FiCheckCircle as CheckCircle } from 'react-icons/fi';
 
 export default function AdminReports() {
   const [reportType, setReportType] = useState('attendance');

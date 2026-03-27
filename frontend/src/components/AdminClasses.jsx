@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, Plus, Edit, Trash2, Eye } from 'lucide-react';
+import { FiSearch as Search, FiPlus as Plus, FiEdit2 as Edit, FiTrash2 as Trash2, FiEye as Eye } from 'react-icons/fi';
 import AdminClassForm from './AdminClassForm';
 
 export default function AdminClasses({ onCreateClass, onEditClass, userRole = 'admin' }) {

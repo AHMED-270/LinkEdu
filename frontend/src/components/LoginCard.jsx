@@ -52,9 +52,11 @@ function LoginCard() {
       })
 
       setAuthenticatedUser(userResponse.data)
+      const normalizedRole = String(userResponse.data?.role || '').toLowerCase()
+      const targetRoute = ['admin', 'directeur'].includes(normalizedRole) ? '/admin' : '/dashboard'
       setLoginFeedback(`Connecte en tant que ${userResponse.data?.email ?? loginEmail}.`)
       setLoginFeedbackType('success')
-      navigate('/dashboard', { replace: true })
+      navigate(targetRoute, { replace: true })
     } catch (error) {
       const status = error?.response?.status
       let message = 'Echec de connexion.'

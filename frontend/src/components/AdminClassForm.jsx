@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { ArrowLeft } from 'lucide-react';
+import { FiArrowLeft as ArrowLeft } from 'react-icons/fi';
 
 export default function AdminClassForm({ mode = 'create', classToEdit = null, onBack, onSuccess, isModal = false }) {
   const isEditing = mode === 'edit' && !!classToEdit;
