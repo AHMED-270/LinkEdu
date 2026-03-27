@@ -225,6 +225,8 @@ class AdminDashboardController extends Controller
 
         try {
             DB::beginTransaction();
+            DB::table('classe_professeur_assignments')->where('id_professeur', $id)->delete();
+            Professeur::where('id_professeur', $id)->delete();
             Etudiant::where('id_etudiant', $id)->delete();
             User::destroy($id);
             DB::commit();
@@ -307,17 +309,20 @@ class AdminDashboardController extends Controller
             ->leftJoin('etudiants', 'classes.id_classe', '=', 'etudiants.id_classe')
             ->leftJoin('users as etudiant_user', 'etudiants.id_etudiant', '=', 'etudiant_user.id')
             ->leftJoin('classe_professeur_assignments as cpa', 'classes.id_classe', '=', 'cpa.id_classe')
-            ->leftJoin('users as professeur_user', 'cpa.id_professeur', '=', 'professeur_user.id')
+            ->leftJoin('users as professeur_user', function ($join) {
+                $join->on('cpa.id_professeur', '=', 'professeur_user.id')
+                    ->where('professeur_user.role', '=', 'professeur');
+            })
             ->leftJoin('professeurs as professeur_data', 'cpa.id_professeur', '=', 'professeur_data.id_professeur')
             ->select(
                 'classes.id_classe',
                 'classes.nom',
                 'classes.niveau',
                 DB::raw('COUNT(DISTINCT etudiants.id_etudiant) as students_count'),
-                DB::raw('COUNT(DISTINCT cpa.id_professeur) as professeurs_count'),
-                DB::raw("GROUP_CONCAT(DISTINCT professeur_user.name ORDER BY professeur_user.name SEPARATOR '||') as professeurs_names"),
-                DB::raw("GROUP_CONCAT(DISTINCT cpa.id_professeur ORDER BY cpa.id_professeur SEPARATOR ',') as professeurs_ids"),
-                DB::raw("GROUP_CONCAT(DISTINCT COALESCE(professeur_data.telephone, '') ORDER BY cpa.id_professeur SEPARATOR '||') as professeurs_telephones"),
+                DB::raw('COUNT(DISTINCT professeur_user.id) as professeurs_count'),
+                DB::raw("GROUP_CONCAT(DISTINCT professeur_user.name ORDER BY professeur_user.id SEPARATOR '||') as professeurs_names"),
+                DB::raw("GROUP_CONCAT(DISTINCT professeur_user.id ORDER BY professeur_user.id SEPARATOR ',') as professeurs_ids"),
+                DB::raw("GROUP_CONCAT(DISTINCT COALESCE(professeur_data.telephone, '') ORDER BY professeur_user.id SEPARATOR '||') as professeurs_telephones"),
                 DB::raw("GROUP_CONCAT(DISTINCT etudiant_user.id ORDER BY etudiant_user.id SEPARATOR ',') as etudiants_ids"),
                 DB::raw("GROUP_CONCAT(DISTINCT etudiant_user.name ORDER BY etudiant_user.id SEPARATOR '||') as etudiants_names"),
                 DB::raw("GROUP_CONCAT(DISTINCT COALESCE(etudiants.matricule, '') ORDER BY etudiant_user.id SEPARATOR '||') as etudiants_matricules")

@@ -18,13 +18,13 @@ export default function LoginCard({ onLoginSuccess }) {
 
     const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'  
 
-    try {
+    const performLogin = async () => {
       await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', {
         withCredentials: true,
         withXSRFToken: true,
       })
 
-      const loginRes = await axios.post(
+      return axios.post(
         apiBaseUrl + '/api/admin/login',
         {
           email: loginEmail,
@@ -38,6 +38,20 @@ export default function LoginCard({ onLoginSuccess }) {
           },
         }
       )
+    }
+
+    try {
+      let loginRes
+
+      try {
+        loginRes = await performLogin()
+      } catch (firstError) {
+        if (firstError?.response?.status === 419) {
+          loginRes = await performLogin()
+        } else {
+          throw firstError
+        }
+      }
 
       setLoginFeedback('Connecté en tant que ' + (loginRes.data.user?.email ?? loginEmail) + '.')
       setLoginFeedbackType('success')
