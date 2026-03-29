@@ -3,27 +3,41 @@ import axios from 'axios';
 import { 
   School,
   Search,
-  Filter
+  Filter,
+  Eye,
+  X,
+  Users
 } from 'lucide-react';
 
 export default function SecretaireClasses() {
   const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000';
   const [classes, setClasses] = useState([]);
+  const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [levelFilter, setLevelFilter] = useState('all');
+  const [selectedClass, setSelectedClass] = useState(null);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(apiBaseUrl + '/api/secretaire/classes', {
-        withCredentials: true,
-        withXSRFToken: true,
-      });
-      setClasses(res.data?.classes || []);
+      const [classesRes, studentsRes] = await Promise.all([
+        axios.get(apiBaseUrl + '/api/secretaire/classes', {
+          withCredentials: true,
+          withXSRFToken: true,
+        }),
+        axios.get(apiBaseUrl + '/api/secretaire/students', {
+          withCredentials: true,
+          withXSRFToken: true,
+        }),
+      ]);
+
+      setClasses(classesRes.data?.classes || []);
+      setStudents(studentsRes.data?.students || []);
     } catch (err) {
       console.error("Erreur lors du chargement des classes", err);
       setClasses([]);
+      setStudents([]);
     } finally {
       setLoading(false);
     }
@@ -41,6 +55,11 @@ export default function SecretaireClasses() {
       return matchesSearch && matchesLevel;
     });
   }, [classes, searchTerm, levelFilter]);
+
+  const selectedClassStudents = useMemo(() => {
+    if (!selectedClass) return [];
+    return students.filter((s) => String(s.id_classe || '') === String(selectedClass.id_classe));
+  }, [students, selectedClass]);
 
   useEffect(() => {
     loadData();
@@ -104,6 +123,9 @@ export default function SecretaireClasses() {
                   <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">
                     Statut
                   </th>
+                  <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -114,6 +136,7 @@ export default function SecretaireClasses() {
                       <td className="py-4 px-6"><div className="h-4 bg-gray-200 rounded w-32"></div></td>
                       <td className="py-4 px-6"><div className="h-4 bg-gray-200 rounded w-12 ml-auto"></div></td>
                       <td className="py-4 px-6"><div className="h-6 bg-gray-200 rounded-full w-20 mx-auto"></div></td>
+                      <td className="py-4 px-6"><div className="h-8 bg-gray-200 rounded-xl w-16 ml-auto"></div></td>
                     </tr>
                   ))
                 ) : filteredClasses.length > 0 ? (
@@ -141,11 +164,21 @@ export default function SecretaireClasses() {
                           Active
                         </span>
                       </td>
+                      <td className="py-4 px-6 text-right">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedClass(c)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors text-xs font-semibold"
+                        >
+                          <Eye className="w-4 h-4" />
+                          Voir
+                        </button>
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="4" className="py-12 text-center">
+                    <td colSpan="5" className="py-12 text-center">
                       <div className="flex flex-col items-center justify-center text-gray-400">
                         <School className="w-12 h-12 mb-3 text-gray-200" />
                         <p className="text-base font-medium text-gray-500">Aucune classe trouvée</p>
@@ -159,6 +192,58 @@ export default function SecretaireClasses() {
           </div>
         </div>
       </div>
+
+      {selectedClass && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-3xl bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+            <div className="flex items-start justify-between px-6 py-4 border-b border-gray-100">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Etudiants de la classe {selectedClass.nom}</h2>
+                <p className="text-xs text-gray-500 mt-1">Niveau: {selectedClass.niveau}</p>
+              </div>
+              <button
+                onClick={() => setSelectedClass(null)}
+                className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700"
+                type="button"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-4 text-sm font-semibold text-gray-700">
+                <Users className="w-4 h-4 text-blue-600" />
+                Total etudiants: {selectedClassStudents.length}
+              </div>
+
+              {selectedClassStudents.length === 0 ? (
+                <p className="text-sm text-gray-500">Aucun etudiant trouve dans cette classe.</p>
+              ) : (
+                <div className="max-h-[380px] overflow-y-auto border border-gray-100 rounded-xl">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50 border-b border-gray-100">
+                        <th className="py-3 px-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Nom</th>
+                        <th className="py-3 px-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Prenom</th>
+                        <th className="py-3 px-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Email</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {selectedClassStudents.map((student) => (
+                        <tr key={student.id_etudiant} className="hover:bg-gray-50/70">
+                          <td className="py-3 px-4 text-sm font-medium text-gray-800">{student.nom || '-'}</td>
+                          <td className="py-3 px-4 text-sm text-gray-700">{student.prenom || '-'}</td>
+                          <td className="py-3 px-4 text-sm text-gray-600">{student.email || '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

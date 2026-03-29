@@ -23,7 +23,7 @@ export default function SecretaireAnnonces() {
   const [form, setForm] = useState(emptyForm);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterCible, setFilterCible] = useState('all');
+  const [filterCible, setFilterCible] = useState('');
 
   const loadData = async () => {
     setLoading(true);
@@ -101,7 +101,7 @@ export default function SecretaireAnnonces() {
     return annonces.filter(a => {
       const searchMatch = (a.titre?.toLowerCase() || '').includes(searchTerm.toLowerCase()) || 
                           (a.contenu?.toLowerCase() || '').includes(searchTerm.toLowerCase());
-      const cibleMatch = filterCible === 'all' || a.cible === filterCible;
+      const cibleMatch = !filterCible || a.cible === filterCible;
       return searchMatch && cibleMatch;
     });
   }, [annonces, searchTerm, filterCible]);
@@ -182,7 +182,7 @@ export default function SecretaireAnnonces() {
                 onChange={(e) => setFilterCible(e.target.value)}
                 className="w-full sm:w-40 px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-medium text-gray-700"
               >
-                <option value="all">Toutes les cibles</option>
+                <option value="">Filtrer par cible</option>
                 <option value="Etudiants">Étudiants</option>
                 <option value="Professeurs">Professeurs</option>
               </select>
