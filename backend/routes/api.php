@@ -2,15 +2,14 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ProfessorController;
 use App\Http\Controllers\AdminLoginController;
 use App\Http\Controllers\AdminDashboardController;
-<<<<<<< HEAD
 use App\Http\Controllers\DirecteurLoginController;
 use App\Http\Controllers\DirecteurController;
 use App\Http\Controllers\AnnonceController;
 use App\Http\Controllers\EmploiDuTempsController;
-=======
 use App\Http\Controllers\StudentParentController;
 
 /*
@@ -23,7 +22,6 @@ use App\Http\Controllers\StudentParentController;
 | be assigned to the "api" middleware group.
 |
 */
->>>>>>> 4389ff52fc7c5d9e3c2a0d8cf7f3e2af58278124
 
 Route::any('/health', function (Request $request) {
     return response()->json([
@@ -31,20 +29,17 @@ Route::any('/health', function (Request $request) {
     ]);
 });
 
-<<<<<<< HEAD
-Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {        
-=======
 // Auth Check (Frontend check)
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
->>>>>>> 4389ff52fc7c5d9e3c2a0d8cf7f3e2af58278124
     return $request->user();
 });
+
+Route::post('/login', [AuthController::class, 'login']);
 
 // Admin routes
 Route::post('/admin/login', [AdminLoginController::class, 'login']);
 Route::post('/admin/logout', [AdminLoginController::class, 'logout'])->middleware('auth:sanctum');
 
-<<<<<<< HEAD
 Route::post('/directeur/login', [DirecteurLoginController::class, 'login']);    
 Route::post('/directeur/logout', [DirecteurLoginController::class, 'logout'])->middleware('auth:sanctum', 'role:directeur');
 
@@ -66,10 +61,7 @@ Route::middleware(['auth:sanctum', 'role:directeur'])->group(function () {
     Route::delete('/emplois/{id}', [EmploiDuTempsController::class, 'destroy']);     
 });
 
-Route::middleware(['auth:sanctum'])->group(function () {
-=======
 Route::middleware(['auth:sanctum', 'role:admin,directeur'])->group(function () {
->>>>>>> 4389ff52fc7c5d9e3c2a0d8cf7f3e2af58278124
     Route::get('/admin/dashboard-stats', [AdminDashboardController::class, 'getStats']);
     Route::get('/admin/classes', [AdminDashboardController::class, 'getClasses']);
 });
@@ -103,7 +95,7 @@ Route::middleware(['auth:sanctum', 'role:professeur'])->prefix('professeur')->gr
     Route::post('/devoirs', [ProfessorController::class, 'publishDevoir']);
     Route::post('/ressources', [ProfessorController::class, 'publishRessource']);
 
-    // Élèves, Appel et Notes
+    // Ã‰lÃ¨ves, Appel et Notes
     Route::get('/classes/{class_id}/eleves', [ProfessorController::class, 'getStudents']);
     Route::get('/eleves', [ProfessorController::class, 'getStudents']); // All classes
 
@@ -123,7 +115,7 @@ Route::middleware(['auth:sanctum', 'role:professeur'])->prefix('professeur')->gr
     Route::get('/avancement', [ProfessorController::class, 'getProgress']);
     Route::post('/avancement', [ProfessorController::class, 'updateProgress']);
 
-    // Réclamations
+    // RÃ©clamations
     Route::get('/reclamations', [ProfessorController::class, 'getComplaints']);
     Route::post('/reclamations', [ProfessorController::class, 'submitComplaint']);
 });

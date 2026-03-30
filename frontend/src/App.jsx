@@ -1,16 +1,3 @@
-<<<<<<< HEAD
-import { useState } from 'react'
-import './App.css'
-import AuthHero from './components/AuthHero'
-import LoginCard from './components/LoginCard'
-import DirecteurDashboard from './components/DirecteurDashboard'
-
-function App() {
-  const [user, setUser] = useState(null)
-
-  if (user) {
-    return <DirecteurDashboard user={user} onLogout={() => setUser(null)} />
-=======
 ﻿import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -18,6 +5,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 // Layout & Admin
 import Layout from './components/Layout';
 import AdminDashboard from './components/AdminDashboard';
+import AuthHero from './components/AuthHero';
+import LoginCard from './components/LoginCard';
 
 // Pages
 import Dashboard from './pages/Dashboard';
@@ -31,7 +20,7 @@ import Notes from './pages/Notes';
 import Avancement from './pages/Avancement';
 import Reclamation from './pages/Reclamation';
 import Parametres from './pages/Parametres';
-import Login from './pages/Login';
+// import Login from './pages/Login';
 import StudentPortal from './pages/StudentPortal';
 import ParentPortal from './pages/ParentPortal';
 
@@ -58,7 +47,10 @@ const RootRoute = () => {
   const { user, loading } = useAuth();
   
   if (loading) return <FullScreenLoader />;
-  return user ? <Navigate to={getHomeRouteByRole(user?.role)} replace /> : <Navigate to="/login" replace />;
+  if (user) {
+    return <Navigate to={getHomeRouteByRole(user?.role)} replace />;
+  }
+  return <Navigate to="/login" replace />;
 };
 
 // Protected Layout Wrapper
@@ -70,7 +62,6 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
     return <Navigate to={getHomeRouteByRole(user.role)} replace />;
->>>>>>> 4389ff52fc7c5d9e3c2a0d8cf7f3e2af58278124
   }
   
   return children;
@@ -91,18 +82,12 @@ const PageTransition = ({ children }) => (
 
 // Animated Routes Component
 const AppRoutes = () => {
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, login } = useAuth();
   const location = useLocation();
 
   if (loading) return <FullScreenLoader />;
 
   return (
-<<<<<<< HEAD
-    <main className="auth-page">
-      <AuthHero />
-      <LoginCard onLoginSuccess={setUser} />
-    </main>
-=======
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<PageTransition><RootRoute /></PageTransition>} />
@@ -110,7 +95,14 @@ const AppRoutes = () => {
         {/* Authentication */}
         <Route 
           path="/login" 
-          element={user ? <Navigate to={getHomeRouteByRole(user?.role)} replace /> : <PageTransition><Login /></PageTransition>} 
+          element={user ? <Navigate to={getHomeRouteByRole(user?.role)} replace /> : (
+            <PageTransition>
+              <main className="auth-page">
+                <AuthHero />
+                <LoginCard onLoginSuccess={login} />
+              </main>
+            </PageTransition>
+          )} 
         />
         
         {/* Administrator Routes */}
@@ -139,9 +131,9 @@ const AppRoutes = () => {
         <Route path="/appel" element={<ProtectedRoute allowedRoles={['professeur']}><PageTransition><Layout title="Feuille d'Appel"><Appel /></Layout></PageTransition></ProtectedRoute>} />
         <Route path="/notes-absences" element={<ProtectedRoute allowedRoles={['professeur']}><PageTransition><Layout title="Notes & Absences"><Notes /></Layout></PageTransition></ProtectedRoute>} />
         <Route path="/avancement" element={<ProtectedRoute allowedRoles={['professeur']}><PageTransition><Layout title="Avancement"><Avancement /></Layout></PageTransition></ProtectedRoute>} />
-        <Route path="/reclamation" element={<ProtectedRoute allowedRoles={['professeur']}><PageTransition><Layout title="RÃ©clamation"><Reclamation /></Layout></PageTransition></ProtectedRoute>} />
+        <Route path="/reclamation" element={<ProtectedRoute allowedRoles={['professeur']}><PageTransition><Layout title="Réclamation"><Reclamation /></Layout></PageTransition></ProtectedRoute>} />
         <Route path="/profil" element={<ProtectedRoute allowedRoles={['professeur']}><PageTransition><Layout title="Profil"><Parametres /></Layout></PageTransition></ProtectedRoute>} />
-        <Route path="/parametres" element={<ProtectedRoute allowedRoles={['professeur']}><PageTransition><Layout title="ParamÃ¨tres"><Parametres /></Layout></PageTransition></ProtectedRoute>} />
+        <Route path="/parametres" element={<ProtectedRoute allowedRoles={['professeur']}><PageTransition><Layout title="Paramètres"><Parametres /></Layout></PageTransition></ProtectedRoute>} />
         
         {/* Fallback */}
         <Route path="*" element={<Navigate to={user ? getHomeRouteByRole(user?.role) : '/login'} replace />} />
@@ -150,15 +142,12 @@ const AppRoutes = () => {
   );
 };
 
-function App() {
+export default function App() {
   return (
     <AuthProvider>
       <Router>
         <AppRoutes />
       </Router>
     </AuthProvider>
->>>>>>> 4389ff52fc7c5d9e3c2a0d8cf7f3e2af58278124
   );
 }
-
-export default App;

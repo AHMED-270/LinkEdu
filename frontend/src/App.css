@@ -53,7 +53,7 @@
   background-color: var(--bg-main);
 }
 
-<<<<<<< HEAD
+
 .hero-overlay {
   position: absolute;
   inset: 0;
@@ -266,18 +266,16 @@
   text-decoration: underline;
 }
 
-@media (max-width: 900px) {
-=======
 /* On large screens, split 50/50 */
 @media (min-width: 1024px) {
->>>>>>> 4389ff52fc7c5d9e3c2a0d8cf7f3e2af58278124
+
   .auth-page {
     display: grid;
     grid-template-columns: 1fr 1fr;
   }
 }
 
-<<<<<<< HEAD
+
 .director-shell {
   min-height: 100vh;
   display: grid;
@@ -2206,7 +2204,7 @@
   font-size: 0.95rem;
   max-width: 600px;
 }
-=======
+
 /* On medium screens, give the login card slightly more room */
 @media (min-width: 768px) and (max-width: 1023px) {
   .auth-page {
@@ -2227,4 +2225,4 @@
     display: none !important;
   }
 }
->>>>>>> 4389ff52fc7c5d9e3c2a0d8cf7f3e2af58278124
+

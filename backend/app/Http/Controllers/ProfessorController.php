@@ -358,22 +358,22 @@ class ProfessorController extends Controller
     public function getAnnouncements(Request $request): JsonResponse
     {
         $annonces = DB::table('annonces')
-            ->join('users', 'annonces.id_professeur', '=', 'users.id')
             ->orderByDesc('date_publication')
             ->get([
-                'annonces.id_annonce as id',
-                'annonces.titre as title',
-                'annonces.contenu as content',
-                'annonces.date_publication as date',
-                'users.nom',
-                'users.prenom',
+                'id_annonce as id',
+                'titre as title',
+                'contenu as content',
+                'date_publication as date',
+                'type',
+                'auteur'
             ])
             ->map(function ($row) {
                 return [
                     'id' => (int) $row->id,
                     'title' => $row->title,
                     'content' => $row->content,
-                    'author' => trim(($row->prenom ?? '') . ' ' . ($row->nom ?? '')),
+                    'author' => $row->auteur,
+                    'type' => $row->type,
                     'date' => $row->date,
                     'read' => false,
                 ];
@@ -396,7 +396,8 @@ class ProfessorController extends Controller
             'titre' => $validated['title'],
             'contenu' => $validated['content'],
             'date_publication' => now(),
-            'id_professeur' => $user->id,
+            'type' => 'Professeur',
+            'auteur' => trim(($user->prenom ?? '') . ' ' . ($user->nom ?? 'Professeur')),
             'created_at' => now(),
             'updated_at' => now(),
         ], 'id_annonce');

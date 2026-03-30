@@ -627,13 +627,7 @@ class StudentParentController extends Controller
 
     private function studentAnnouncementsQuery(?int $classId)
     {
-        $professorIds = DB::table('enseigner')
-            ->where('id_classe', $classId)
-            ->pluck('id_professeur')
-            ->unique();
-
-        return Annonce::query()
-            ->whereIn('id_professeur', $professorIds)
-            ->select('id_annonce', 'titre', 'contenu', 'date_publication', 'id_professeur');
+        return \App\Models\Annonce::query()
+            ->select('id_annonce', 'titre', 'contenu', 'date_publication', 'type', 'auteur');
     }
 }
