@@ -17,9 +17,18 @@ return Application::configure(basePath: dirname(__DIR__))
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         ]);
 
+        $middleware->validateCsrfTokens(except: [
+            'api/admin/login',
+            'api/admin/logout',
+        ]);
+
         $middleware->alias([
             'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
+<<<<<<< HEAD
             'role' => \App\Http\Middleware\CheckRole::class,
+=======
+            'role' => \App\Http\Middleware\RoleMiddleware::class,
+>>>>>>> 4389ff52fc7c5d9e3c2a0d8cf7f3e2af58278124
         ]);
 
         //

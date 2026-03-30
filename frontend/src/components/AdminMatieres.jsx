@@ -1,26 +1,27 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
-import { Plus, Edit, Trash2, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, BookOpen, AlertCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AdminMatieres({ userRole = 'admin' }) {
   const [matieres, setMatieres] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [formError, setFormError] = useState('');
+  
   const [showForm, setShowForm] = useState(false);
+  const [formData, setFormData] = useState({ nom: '', coefficient: 1 });
+  const [formError, setFormError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
   const [editTarget, setEditTarget] = useState(null);
   const [editFormData, setEditFormData] = useState({ nom: '', coefficient: 1 });
   const [editFormError, setEditFormError] = useState('');
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const [formData, setFormData] = useState({
-    nom: '',
-    coefficient: 1,
-  });
-
-  const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+  const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000';
 
   const ensureCsrfCookie = async () => {
     await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', {
@@ -38,7 +39,7 @@ export default function AdminMatieres({ userRole = 'admin' }) {
       });
       setMatieres(response.data || []);
     } catch (error) {
-      console.error('Erreur chargement matieres:', error);
+      console.error('Erreur chargement matiÃ¨res:', error);
     } finally {
       setLoading(false);
     }
@@ -48,6 +49,7 @@ export default function AdminMatieres({ userRole = 'admin' }) {
     fetchMatieres();
   }, []);
 
+  // --- Modal Handlers ---
   const openCreateForm = () => {
     setFormData({ nom: '', coefficient: 1 });
     setFormError('');
@@ -68,9 +70,11 @@ export default function AdminMatieres({ userRole = 'admin' }) {
     setEditFormError('');
   };
 
+  // --- Submit Handlers ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError('');
+    setIsSaving(true);
 
     const payload = {
       nom: formData.nom.trim(),
@@ -79,7 +83,6 @@ export default function AdminMatieres({ userRole = 'admin' }) {
 
     try {
       await ensureCsrfCookie();
-
       await axios.post(apiBaseUrl + '/api/admin/matieres', payload, {
         withCredentials: true,
         withXSRFToken: true,
@@ -89,7 +92,9 @@ export default function AdminMatieres({ userRole = 'admin' }) {
       setShowForm(false);
       fetchMatieres();
     } catch (error) {
-      setFormError(error.response?.data?.message || "Erreur lors de l'enregistrement de la matiere.");
+      setFormError(error.response?.data?.message || "Erreur lors de l'enregistrement de la matiÃ¨re.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -107,7 +112,6 @@ export default function AdminMatieres({ userRole = 'admin' }) {
 
     try {
       await ensureCsrfCookie();
-
       await axios.put(`${apiBaseUrl}/api/admin/matieres/${editTarget.id_matiere}`, payload, {
         withCredentials: true,
         withXSRFToken: true,
@@ -117,24 +121,18 @@ export default function AdminMatieres({ userRole = 'admin' }) {
       setEditTarget(null);
       fetchMatieres();
     } catch (error) {
-      setEditFormError(error.response?.data?.message || "Erreur lors de la modification de la matiere.");
+      setEditFormError(error.response?.data?.message || "Erreur lors de la modification de la matiÃ¨re.");
     } finally {
       setIsSavingEdit(false);
     }
   };
 
-  const requestDelete = (matiere) => {
-    setDeleteTarget(matiere);
-  };
-
   const handleDelete = async () => {
     if (!deleteTarget) return;
-
     setIsDeleting(true);
 
     try {
       await ensureCsrfCookie();
-
       await axios.delete(`${apiBaseUrl}/api/admin/matieres/${deleteTarget.id_matiere}`, {
         withCredentials: true,
         withXSRFToken: true,
@@ -144,220 +142,191 @@ export default function AdminMatieres({ userRole = 'admin' }) {
       setDeleteTarget(null);
       fetchMatieres();
     } catch (error) {
-      alert(error.response?.data?.message || 'Erreur lors de la suppression de la matiere.');
+      alert(error.response?.data?.message || 'Erreur lors de la suppression de la matiÃ¨re.');
     } finally {
       setIsDeleting(false);
     }
   };
 
+  // --- Filtering & Animations ---
   const normalizedSearch = searchTerm.trim().toLowerCase();
   const filteredMatieres = useMemo(() => {
     return matieres.filter((matiere) => {
       if (!normalizedSearch) return true;
-
       return [matiere.nom, matiere.coefficient]
         .filter((value) => value !== null && value !== undefined)
         .some((value) => String(value).toLowerCase().includes(normalizedSearch));
     });
   }, [matieres, normalizedSearch]);
 
+  const tableRowVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: (i) => ({
+      opacity: 1,
+      y: 0,
+      transition: { delay: i * 0.05, type: 'spring', stiffness: 100 }
+    })
+  };
+
   if (userRole !== 'admin') {
     return (
-      <div className="dashboard-content">
-        <p>Acces reserve a l'administrateur.</p>
+      <div className="layout-content flex items-center justify-center">
+        <div className="text-center p-8 bg-red-50 text-red-600 rounded-xl border border-red-100">
+          <AlertCircle size={48} className="mx-auto mb-4 opacity-50" />
+          <h2 className="text-xl font-bold mb-2">AccÃ¨s RefusÃ©</h2>
+          <p>Cette page est strictement rÃ©servÃ©e Ã  l'administrateur.</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="dashboard-content">
-      <header className="content-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div className="layout-content">
+      {/* Header Section */}
+      <header className="flex justify-between items-center mb-8">
         <div>
-          <h1>Gestion des Matieres</h1>
-          <p>Creer, modifier et supprimer les matieres de l'etablissement.</p>
+          <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Gestion des MatiÃ¨res</h1>
+          <p className="text-slate-500 text-sm mt-1">CrÃ©er, modifier et supprimer les matiÃ¨res de l'Ã©tablissement.</p>
         </div>
-        <button
-          type="button"
+        <motion.button
+          whileHover={{ scale: 1.02, y: -2 }}
+          whileTap={{ scale: 0.98 }}
+          className="btn btn-primary shadow-[0_4px_14px_rgba(59,130,246,0.25)]"
           onClick={openCreateForm}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#0f172a', color: 'white', padding: '10px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '500' }}
         >
           <Plus size={18} />
-          Ajouter une Matiere
-        </button>
+          Ajouter une MatiÃ¨re
+        </motion.button>
       </header>
 
-      <div className="card-panel">
-        <div className="card-panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h2 style={{ fontSize: '1.1rem', fontWeight: '600' }}>Toutes les matieres ({filteredMatieres.length})</h2>
-          <div className="search-bar" style={{ padding: '8px 12px', background: '#f8fafc', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Search size={16} color="#64748b" />
+      {/* Main Card Panel */}
+      <div className="card">
+        <div className="card-header border-b border-slate-100 pb-4 mb-4">
+          <h3 className="flex items-center gap-2">
+            Toutes les matiÃ¨res <span className="badge badge-blue">{filteredMatieres.length}</span>
+          </h3>
+          
+          <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 transition-all focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-400">
+            <Search size={16} className="text-slate-400 mr-2" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Rechercher nom ou coefficient..."
-              style={{ border: 'none', background: 'transparent', outline: 'none', minWidth: '240px' }}
+              placeholder="Rechercher une matiÃ¨re..."
+              className="bg-transparent border-none outline-none text-sm text-slate-700 w-64 placeholder-slate-400"
             />
           </div>
         </div>
 
-        {loading ? (
-          <p>Chargement...</p>
-        ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid #e2e8f0', textAlign: 'left', color: '#64748b' }}>
-                <th style={{ padding: '12px 0' }}>Nom</th>
-                <th style={{ padding: '12px 0' }}>Coefficient</th>
-                <th style={{ padding: '12px 0', textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredMatieres.length === 0 && (
-                <tr>
-                  <td colSpan="3" style={{ padding: '20px 0', textAlign: 'center', color: '#64748b' }}>
-                    Aucune matiere trouvee.
-                  </td>
-                </tr>
-              )}
-              {filteredMatieres.map((matiere) => (
-                <tr key={matiere.id_matiere} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: '12px 0', fontWeight: '500' }}>{matiere.nom}</td>
-                  <td style={{ padding: '12px 0' }}>
-                    <span style={{ background: '#f1f5f9', padding: '4px 12px', borderRadius: '16px', color: '#334155' }}>
-                      {matiere.coefficient}
-                    </span>
-                  </td>
-                  <td style={{ padding: '12px 0', textAlign: 'right' }}>
-                    <button
-                      type="button"
-                      onClick={() => openEditForm(matiere)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#3b82f6', marginRight: '10px' }}
-                    >
-                      <Edit size={18} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => requestDelete(matiere)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <div className="card-body p-0">
+          {loading ? (
+            <div className="p-12 flex justify-center items-center">
+              <span className="loading-spinner border-blue-500"></span>
+            </div>
+          ) : (
+            <div className="table-wrapper">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Nom de la matiÃ¨re</th>
+                    <th>Coefficient</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredMatieres.length === 0 ? (
+                    <tr>
+                      <td colSpan="3" className="text-center py-12 text-slate-500">
+                        <BookOpen size={32} className="mx-auto mb-3 opacity-20" />
+                        Aucune matiÃ¨re trouvÃ©e.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredMatieres.map((matiere, i) => (
+                      <motion.tr 
+                        key={matiere.id_matiere}
+                        custom={i}
+                        initial="hidden"
+                        animate="visible"
+                        variants={tableRowVariants}
+                      >
+                        <td className="font-semibold text-slate-800">{matiere.nom}</td>
+                        <td>
+                          <span className="badge badge-blue bg-blue-50 text-blue-600 border border-blue-100">
+                            x {matiere.coefficient}
+                          </span>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <div className="flex justify-end gap-2">
+                            <motion.button 
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() => openEditForm(matiere)} 
+                              className="p-2 text-blue-500 hover:bg-blue-50 rounded-md transition-colors"
+                              title="Modifier"
+                            >
+                              <Edit size={16} />
+                            </motion.button>
+                            <motion.button 
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() => setDeleteTarget(matiere)} 
+                              className="p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                              title="Supprimer"
+                            >
+                              <Trash2 size={16} />
+                            </motion.button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
 
-      {deleteTarget && (
-        <div className="logout-modal-backdrop">
-          <div className="logout-modal-card">
-            <div className="logout-modal-icon">
-              <Trash2 size={46} color="#f43f5e" />
-            </div>
-            <h3>Confirmer la suppression</h3>
-            <p>
-              Voulez-vous vraiment supprimer la matiere <strong>{deleteTarget.nom}</strong> ?
-            </p>
-
-            <div className="logout-modal-actions">
-              <button
-                type="button"
-                onClick={() => setDeleteTarget(null)}
-                disabled={isDeleting}
-                className="btn-cancel"
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="btn-confirm-logout"
-              >
-                {isDeleting ? 'Suppression...' : 'Supprimer'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {editTarget && (
-        <div className="logout-modal-backdrop">
-          <div className="logout-modal-card" style={{ maxWidth: '720px', width: '90vw' }}>
-            <h3 style={{ marginTop: 0 }}>Modifier Matiere</h3>
-            {editFormError && <p style={{ color: 'red', marginBottom: '10px' }}>{editFormError}</p>}
-
-            <form onSubmit={handleEditSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '15px' }}>
-              <div style={{ display: 'flex', gap: '15px' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Nom de la matiere</label>
-                  <input
-                    type="text"
-                    value={editFormData.nom}
-                    onChange={(e) => setEditFormData((prev) => ({ ...prev, nom: e.target.value }))}
-                    required
-                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                  />
+      {/* Modal: Create Matiere */}
+      <AnimatePresence>
+        {showForm && (
+          <motion.div 
+            initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+            animate={{ opacity: 1, backdropFilter: "blur(4px)" }}
+            exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
+            className="logout-modal-backdrop"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              transition={{ type: "spring", bounce: 0.3 }}
+              className="card w-full max-w-lg p-6"
+            >
+              <h3 className="text-xl font-bold text-slate-800 mb-4 border-b border-slate-100 pb-3">Nouvelle MatiÃ¨re</h3>
+              
+              {formError && (
+                <div className="p-3 mb-4 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg flex items-center gap-2">
+                  <AlertCircle size={16} /> {formError}
                 </div>
-                <div style={{ width: '220px' }}>
-                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Coefficient</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={editFormData.coefficient}
-                    onChange={(e) => setEditFormData((prev) => ({ ...prev, coefficient: e.target.value }))}
-                    required
-                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                  />
-                </div>
-              </div>
+              )}
 
-              <div className="logout-modal-actions" style={{ justifyContent: 'flex-end' }}>
-                <button
-                  type="button"
-                  onClick={() => setEditTarget(null)}
-                  disabled={isSavingEdit}
-                  className="btn-cancel"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSavingEdit}
-                  className="btn-confirm-logout"
-                >
-                  {isSavingEdit ? 'Enregistrement...' : 'Enregistrer'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {showForm && (
-        <div className="logout-modal-backdrop">
-          <div className="logout-modal-card" style={{ maxWidth: '720px', width: '90vw' }}>
-            <h3 style={{ marginTop: 0 }}>Nouvelle Matiere</h3>
-            {formError && <p style={{ color: 'red', marginBottom: '10px' }}>{formError}</p>}
-
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '15px' }}>
-              <div style={{ display: 'flex', gap: '15px' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Nom de la matiere</label>
+              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                <div className="form-group">
+                  <label className="form-label">Nom de la matiÃ¨re</label>
                   <input
                     type="text"
                     value={formData.nom}
                     onChange={(e) => setFormData((prev) => ({ ...prev, nom: e.target.value }))}
                     required
-                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                    placeholder="Ex: MathÃ©matiques"
+                    className="form-input"
                   />
                 </div>
-                <div style={{ width: '220px' }}>
-                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Coefficient</label>
+                
+                <div className="form-group">
+                  <label className="form-label">Coefficient</label>
                   <input
                     type="number"
                     min="1"
@@ -365,30 +334,133 @@ export default function AdminMatieres({ userRole = 'admin' }) {
                     value={formData.coefficient}
                     onChange={(e) => setFormData((prev) => ({ ...prev, coefficient: e.target.value }))}
                     required
-                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                    className="form-input"
                   />
                 </div>
-              </div>
 
-              <div className="logout-modal-actions" style={{ justifyContent: 'flex-end' }}>
+                <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
+                  <button type="button" onClick={closeCreateForm} className="btn btn-outline" disabled={isSaving}>
+                    Annuler
+                  </button>
+                  <button type="submit" className="btn btn-primary" disabled={isSaving}>
+                    {isSaving ? 'CrÃ©ation...' : 'CrÃ©er la matiÃ¨re'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal: Edit Matiere */}
+      <AnimatePresence>
+        {editTarget && (
+          <motion.div 
+            initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+            animate={{ opacity: 1, backdropFilter: "blur(4px)" }}
+            exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
+            className="logout-modal-backdrop"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              transition={{ type: "spring", bounce: 0.3 }}
+              className="card w-full max-w-lg p-6"
+            >
+              <h3 className="text-xl font-bold text-slate-800 mb-4 border-b border-slate-100 pb-3">Modifier MatiÃ¨re</h3>
+              
+              {editFormError && (
+                <div className="p-3 mb-4 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg flex items-center gap-2">
+                  <AlertCircle size={16} /> {editFormError}
+                </div>
+              )}
+
+              <form onSubmit={handleEditSubmit} className="flex flex-col gap-4">
+                <div className="form-group">
+                  <label className="form-label">Nom de la matiÃ¨re</label>
+                  <input
+                    type="text"
+                    value={editFormData.nom}
+                    onChange={(e) => setEditFormData((prev) => ({ ...prev, nom: e.target.value }))}
+                    required
+                    className="form-input"
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">Coefficient</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={editFormData.coefficient}
+                    onChange={(e) => setEditFormData((prev) => ({ ...prev, coefficient: e.target.value }))}
+                    required
+                    className="form-input"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
+                  <button type="button" onClick={() => setEditTarget(null)} className="btn btn-outline" disabled={isSavingEdit}>
+                    Annuler
+                  </button>
+                  <button type="submit" className="btn btn-primary" disabled={isSavingEdit}>
+                    {isSavingEdit ? 'Enregistrement...' : 'Enregistrer'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal: Delete Confirmation */}
+      <AnimatePresence>
+        {deleteTarget && (
+          <motion.div 
+            initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+            animate={{ opacity: 1, backdropFilter: "blur(4px)" }}
+            exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
+            className="logout-modal-backdrop"
+          >
+            <motion.div 
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ type: "spring", bounce: 0.4 }}
+              className="logout-modal-card card"
+            >
+              <div className="logout-modal-icon">
+                <Trash2 size={36} color="#ef4444" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Confirmer la suppression</h3>
+              <p className="text-slate-500 mb-6">
+                Voulez-vous vraiment supprimer la matiÃ¨re <strong className="text-slate-800">{deleteTarget.nom}</strong> ? Cette action est irrÃ©versible.
+              </p>
+
+              <div className="flex gap-3 w-full">
                 <button
                   type="button"
-                  onClick={closeCreateForm}
-                  className="btn-cancel"
+                  onClick={() => setDeleteTarget(null)}
+                  disabled={isDeleting}
+                  className="btn btn-outline flex-1"
                 >
                   Annuler
                 </button>
                 <button
-                  type="submit"
-                  className="btn-confirm-logout"
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="btn btn-danger flex-1"
                 >
-                  Enregistrer
+                  {isDeleting ? 'Suppression...' : 'Supprimer'}
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

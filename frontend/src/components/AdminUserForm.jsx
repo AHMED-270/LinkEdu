@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Save, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AdminUserForm({ mode = 'create', userToEdit = null, onBack, onSuccess, isModal = false }) {
   const isEditing = mode === 'edit' && !!userToEdit;
@@ -22,7 +23,7 @@ export default function AdminUserForm({ mode = 'create', userToEdit = null, onBa
     telephone: ''
   });
 
-  const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+  const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000';
 
   const parentUsers = useMemo(() => users.filter((u) => u.role === 'parent'), [users]);
   const selectedParent = parentUsers.find((p) => String(p.id) === String(formData.id_parent));
@@ -51,7 +52,7 @@ export default function AdminUserForm({ mode = 'create', userToEdit = null, onBa
         setClasses(classesData);
 
         if (usersResult.status === 'rejected' || classesResult.status === 'rejected') {
-          setLoadWarning('Certaines donnees du formulaire n\'ont pas pu etre chargees. Vous pouvez quand meme continuer.');
+          setLoadWarning("Certaines donnÃ©es du formulaire n'ont pas pu Ãªtre chargÃ©es.");
         }
 
         if (isEditing) {
@@ -73,8 +74,7 @@ export default function AdminUserForm({ mode = 'create', userToEdit = null, onBa
           }));
         }
       } catch (error) {
-        console.error('Erreur fetch:', error);
-        setLoadWarning('Certaines donnees du formulaire n\'ont pas pu etre chargees. Vous pouvez quand meme continuer.');
+        setLoadWarning("Erreur lors du chargement des dÃ©pendances.");
       } finally {
         setLoading(false);
       }
@@ -125,78 +125,115 @@ export default function AdminUserForm({ mode = 'create', userToEdit = null, onBa
   };
 
   const roles = [
-    { value: 'etudiant', label: 'Etudiant' },
+    { value: 'etudiant', label: 'Ã‰tudiant' },
     { value: 'professeur', label: 'Professeur' },
     { value: 'parent', label: 'Parent' },
-    { value: 'secretaire', label: 'Secretariat' },
+    { value: 'secretaire', label: 'SecrÃ©tariat' },
     { value: 'admin', label: 'Administrateur' },
     { value: 'directeur', label: 'Directeur' }
   ];
 
+  // Animation variant for expanding/collapsing conditional form sections
+  const expandCollapse = {
+    hidden: { opacity: 0, height: 0, marginTop: 0, overflow: 'hidden' },
+    visible: { 
+      opacity: 1, 
+      height: 'auto', 
+      marginTop: '1.5rem',
+      transition: { type: "spring", bounce: 0.3, duration: 0.5 } 
+    },
+    exit: { opacity: 0, height: 0, marginTop: 0, overflow: 'hidden', transition: { duration: 0.3 } }
+  };
+
   if (loading) {
     return (
-      <div className={isModal ? '' : 'dashboard-content'}>
-        <p>Chargement du formulaire...</p>
+      <div className={isModal ? 'p-8' : 'layout-content'}>
+        <div className="flex flex-col items-center justify-center py-12">
+          <span className="loading-spinner border-blue-500 mb-4"></span>
+          <p className="text-slate-500 font-medium">Chargement du formulaire...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={isModal ? '' : 'dashboard-content'}>
-      {!isModal && (
-        <header className="content-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div className={isModal ? 'bg-white rounded-xl' : 'layout-content'}>
+      {/* Header - Renders differently if in a modal vs a standalone page */}
+      {!isModal ? (
+        <header className="flex justify-between items-center mb-8">
           <div>
-            <h1>{isEditing ? 'Modifier Utilisateur' : 'Nouvel Utilisateur'}</h1>
-            <p>Formulaire dedie pour ajouter ou modifier un utilisateur.</p>
+            <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">
+              {isEditing ? 'Modifier Utilisateur' : 'Nouvel Utilisateur'}
+            </h1>
+            <p className="text-slate-500 text-sm mt-1">Formulaire dÃ©diÃ© pour ajouter ou modifier un utilisateur.</p>
           </div>
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             type="button"
             onClick={onBack}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#0f172a', color: 'white', padding: '10px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '500' }}
+            className="btn btn-outline"
           >
             <ArrowLeft size={16} />
-            Retour a la gestion
-          </button>
+            Retour Ã  la gestion
+          </motion.button>
         </header>
+      ) : (
+        <div className="flex justify-between items-center p-6 border-b border-slate-100">
+          <h2 className="text-xl font-bold text-slate-800">
+            {isEditing ? 'Modifier Utilisateur' : 'Nouvel Utilisateur'}
+          </h2>
+          <button onClick={onBack} className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors">
+            <X size={20} />
+          </button>
+        </div>
       )}
 
-      <div className="card-panel" style={{ marginBottom: '20px' }}>
-        {isModal && <h2 style={{ marginTop: 0 }}>{isEditing ? 'Modifier Utilisateur' : 'Nouvel Utilisateur'}</h2>}
+      <div className={isModal ? 'p-6' : 'card p-8'}>
         {loadWarning && (
-          <p style={{ color: '#b45309', marginBottom: '10px' }}>{loadWarning}</p>
+          <div className="bg-orange-50 text-orange-700 border border-orange-200 p-4 rounded-lg mb-6 text-sm font-medium">
+            {loadWarning}
+          </div>
         )}
-        {formError && <p style={{ color: 'red', marginBottom: '10px' }}>{formError}</p>}
+        
+        {formError && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="auth-feedback auth-feedback-error mb-6">
+            {formError}
+          </motion.div>
+        )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '15px' }}>
-          <div style={{ display: 'flex', gap: '15px' }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Nom complet</label>
+        <form onSubmit={handleSubmit} className="flex flex-col">
+          {/* Main Info Grid */}
+          <div className="grid-2">
+            <div className="form-group">
+              <label className="form-label">Nom complet</label>
               <input
                 type="text"
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
                 required
-                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                className="form-input"
+                placeholder="Ex: Jean Dupont"
               />
             </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Email</label>
+            
+            <div className="form-group">
+              <label className="form-label">Email</label>
               <input
                 type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
                 required
-                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                className="form-input"
+                placeholder="nom@ecole.com"
               />
             </div>
-          </div>
 
-          <div style={{ display: 'flex', gap: '15px' }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
-                Mot de passe {isEditing && '(Laisser vide pour ne pas modifier)'}
+            <div className="form-group">
+              <label className="form-label">
+                Mot de passe {isEditing && <span className="text-slate-400 font-normal text-xs ml-1">(Laisser vide pour ne pas modifier)</span>}
               </label>
               <input
                 type="password"
@@ -204,16 +241,18 @@ export default function AdminUserForm({ mode = 'create', userToEdit = null, onBa
                 value={formData.password}
                 onChange={handleInputChange}
                 required={!isEditing}
-                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                className="form-input"
+                placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
               />
             </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Role</label>
+            
+            <div className="form-group">
+              <label className="form-label">RÃ´le</label>
               <select
                 name="role"
                 value={formData.role}
                 onChange={handleInputChange}
-                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                className="form-select"
               >
                 {roles.map((r) => (
                   <option key={r.value} value={r.value}>{r.label}</option>
@@ -222,84 +261,110 @@ export default function AdminUserForm({ mode = 'create', userToEdit = null, onBa
             </div>
           </div>
 
-          {formData.role === 'etudiant' && (
-            <div style={{ display: 'flex', gap: '15px' }}>
-              <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Classe de l'etudiant</label>
-                <select
-                  name="id_classe"
-                  value={formData.id_classe}
-                  onChange={handleInputChange}
-                  required
-                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                >
-                  <option value="">-- Selectionner une classe --</option>
-                  {classes.map((c) => (
-                    <option key={c.id_classe} value={c.id_classe}>{c.nom} ({c.niveau})</option>
-                  ))}
-                </select>
-              </div>
+          {/* Conditional Fields using AnimatePresence for smooth transitions */}
+          <AnimatePresence>
+            {formData.role === 'etudiant' && (
+              <motion.div 
+                variants={expandCollapse}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                className="grid-2 p-5 bg-slate-50 border border-slate-100 rounded-xl"
+              >
+                <div className="form-group">
+                  <label className="form-label">Classe de l'Ã©tudiant</label>
+                  <select
+                    name="id_classe"
+                    value={formData.id_classe}
+                    onChange={handleInputChange}
+                    required
+                    className="form-select"
+                  >
+                    <option value="">-- SÃ©lectionner une classe --</option>
+                    {classes.map((c) => (
+                      <option key={c.id_classe} value={c.id_classe}>{c.nom} ({c.niveau})</option>
+                    ))}
+                  </select>
+                </div>
 
-              <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Parent de l'etudiant</label>
-                <select
-                  name="id_parent"
-                  value={formData.id_parent}
-                  onChange={handleInputChange}
-                  required
-                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                >
-                  <option value="">-- Selectionner un parent --</option>
-                  {parentUsers.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} {p.telephone ? `(${p.telephone})` : ''}
-                    </option>
-                  ))}
-                </select>
-                <small style={{ display: 'block', marginTop: '6px', color: '#64748b' }}>
-                  Telephone du parent: {selectedParent?.telephone || 'Non renseigne'}
-                </small>
-              </div>
-            </div>
-          )}
+                <div className="form-group">
+                  <label className="form-label">Parent de l'Ã©tudiant</label>
+                  <select
+                    name="id_parent"
+                    value={formData.id_parent}
+                    onChange={handleInputChange}
+                    required
+                    className="form-select"
+                  >
+                    <option value="">-- SÃ©lectionner un parent --</option>
+                    {parentUsers.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} {p.telephone ? `(${p.telephone})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedParent?.telephone && (
+                    <motion.small initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="block mt-1 text-xs text-slate-500 font-medium">
+                      ðŸ“ž TÃ©lÃ©phone du parent: {selectedParent.telephone}
+                    </motion.small>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          {(formData.role === 'parent' || formData.role === 'directeur' || formData.role === 'professeur') && (
-            <div>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
-                {formData.role === 'directeur'
-                  ? 'Telephone du directeur'
-                  : formData.role === 'professeur'
-                    ? 'Telephone du professeur'
-                    : 'Telephone du parent'}
-              </label>
-              <input
-                type="tel"
-                name="telephone"
-                value={formData.telephone}
-                onChange={handleInputChange}
-                required
-                placeholder="Ex: 0612345678"
-                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-              />
-            </div>
-          )}
+          <AnimatePresence>
+            {(formData.role === 'parent' || formData.role === 'directeur' || formData.role === 'professeur') && (
+              <motion.div 
+                variants={expandCollapse}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+              >
+                <div className="form-group md:w-1/2">
+                  <label className="form-label">
+                    {formData.role === 'directeur' ? 'TÃ©lÃ©phone du directeur' : 
+                     formData.role === 'professeur' ? 'TÃ©lÃ©phone du professeur' : 'TÃ©lÃ©phone du parent'}
+                  </label>
+                  <input
+                    type="tel"
+                    name="telephone"
+                    value={formData.telephone}
+                    onChange={handleInputChange}
+                    required
+                    className="form-input"
+                    placeholder="Ex: 06 12 34 56 78"
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '10px' }}>
-            <button
+          {/* Form Actions */}
+          <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-slate-100">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               type="button"
               onClick={onBack}
               disabled={saving}
-              style={{ padding: '10px 20px', background: '#f1f5f9', color: '#475569', borderRadius: '8px', border: 'none', cursor: 'pointer' }}
+              className="btn btn-outline"
             >
               Annuler
-            </button>
-            <button
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={saving}
-              style={{ padding: '10px 20px', background: '#3b82f6', color: 'white', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '500' }}
+              className="btn btn-primary"
             >
-              {saving ? 'Enregistrement...' : 'Enregistrer'}
-            </button>
+              {saving ? (
+                <><span className="loading-spinner w-4 h-4 border-white mr-2"></span> Enregistrement...</>
+              ) : (
+                <><Save size={18} /> {isEditing ? 'Enregistrer les modifications' : 'CrÃ©er l\'utilisateur'}</>
+              )}
+            </motion.button>
           </div>
         </form>
       </div>

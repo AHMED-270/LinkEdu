@@ -1,0 +1,86 @@
+/* ===== AVANCEMENT PAGE ===== */
+.avancement-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.avancement-header h2 { font-size: var(--font-2xl); font-weight: 800; }
+.avancement-header p { color: var(--text-secondary); font-size: var(--font-sm); margin-top: var(--space-1); }
+
+.avancement-content {
+  display: flex;
+  gap: var(--space-6);
+}
+
+.avancement-form-card { flex: 1; height: fit-content; }
+.avancement-list-card { flex: 1; }
+
+.avancement-form { display: flex; flex-direction: column; gap: var(--space-4); }
+
+.avancement-slider-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.avancement-slider {
+  flex: 1;
+  accent-color: var(--primary-500);
+}
+
+.avancement-slider-val {
+  font-size: var(--font-lg);
+  font-weight: 800;
+  color: var(--primary-600);
+  min-width: 60px;
+  text-align: right;
+}
+
+/* Progress list */
+.progress-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.progress-item {
+  padding: var(--space-4);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--gray-50);
+}
+
+.progress-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+
+.progress-class-name { font-size: var(--font-sm); font-weight: 700; color: var(--text-primary); display: block; }
+.progress-matiere { font-size: var(--font-xs); color: var(--text-secondary); }
+.progress-pct { font-size: var(--font-xl); font-weight: 800; color: var(--primary-600); }
+
+.mb-2 { margin-bottom: var(--space-3); }
+
+.progress-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+}
+
+.progress-current {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60%;
+  text-align: right;
+  color: var(--primary-700);
+  font-weight: 500;
+}
+
+@media (max-width: 900px) {
+  .avancement-content { flex-direction: column; }
+}

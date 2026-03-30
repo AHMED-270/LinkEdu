@@ -102,21 +102,28 @@ body, html {
 }
 
 .logout-btn {
+  width: 100%;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   background: none;
   border: none;
-  color: var(--admin-text-light);
-  font-weight: 500;
-  font-size: 0.95rem;
+  color: #dc2626;
+  font-weight: 600;
+  font-size: 0.875rem;
   cursor: pointer;
-  padding: 0;
+  padding: 12px 16px;
+  border-radius: 8px;
   font-family: inherit;
+  transition: all 0.2s;
 }
 
 .logout-btn:hover {
-  color: var(--admin-text);
+  background: #fef2f2;
+}
+
+.logout-btn svg {
+  color: #dc2626;
 }
 
 /* Main Content area */

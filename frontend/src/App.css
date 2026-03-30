@@ -1,20 +1,59 @@
-.auth-page {
+/* ===== GLOBAL APP STYLES & LAYOUTS ===== */
+
+.page-transition-wrapper {
+  width: 100%;
   min-height: 100vh;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  background: #edf0f4;
+  display: flex;
+  flex-direction: column;
 }
 
-.auth-hero {
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(170deg, #0c4ea2 0%, #0a3f86 100%);
+/* ===== GLOBAL LOADING SCREEN ===== */
+.loading-screen {
+  min-height: 100vh;
+  width: 100vw;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 3rem;
+  background-color: var(--bg-main);
+  gap: var(--space-4);
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
 }
 
+.loading-screen p {
+  color: var(--primary-600);
+  font-weight: 600;
+  font-size: var(--font-md);
+  letter-spacing: 0.05em;
+  animation: pulse 2s infinite;
+}
+
+.loader-core {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--primary-100);
+  border-top-color: var(--primary-600);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ===== AUTHENTICATION PAGE (SPLIT SCREEN) ===== */
+/* This assumes your Login.jsx renders <div className="auth-page"><AuthHero /><LoginCard /></div> */
+
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  background-color: var(--bg-main);
+}
+
+<<<<<<< HEAD
 .hero-overlay {
   position: absolute;
   inset: 0;
@@ -228,20 +267,17 @@
 }
 
 @media (max-width: 900px) {
+=======
+/* On large screens, split 50/50 */
+@media (min-width: 1024px) {
+>>>>>>> 4389ff52fc7c5d9e3c2a0d8cf7f3e2af58278124
   .auth-page {
-    grid-template-columns: 1fr;
-  }
-
-  .auth-hero {
-    min-height: 34vh;
-    justify-content: flex-start;
-  }
-
-  .hero-title {
-    font-size: 2rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
   }
 }
 
+<<<<<<< HEAD
 .director-shell {
   min-height: 100vh;
   display: grid;
@@ -2170,3 +2206,25 @@
   font-size: 0.95rem;
   max-width: 600px;
 }
+=======
+/* On medium screens, give the login card slightly more room */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .auth-page {
+    display: grid;
+    grid-template-columns: 45% 55%;
+  }
+}
+
+/* On mobile screens, stack them and hide the hero section completely for a cleaner mobile login */
+@media (max-width: 767px) {
+  .auth-page {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Hides the hero component on mobile so the user just sees the login form */
+  .auth-hero {
+    display: none !important;
+  }
+}
+>>>>>>> 4389ff52fc7c5d9e3c2a0d8cf7f3e2af58278124

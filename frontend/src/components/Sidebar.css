@@ -1,0 +1,276 @@
+/* ===== SIDEBAR CONTAINER ===== */
+.sidebar {
+  position: fixed;
+  top: var(--header-height, 64px); 
+  left: 0;
+  bottom: 0;
+  width: var(--sidebar-width, 260px);
+  background: white;
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  z-index: 90;
+  overflow-y: auto;
+  /* Add a subtle shadow to separate it from the main content */
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.02);
+}
+
+/* ===== USER PROFILE ===== */
+.sidebar-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 24px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(0,0,0,0.03);
+}
+
+.sidebar-avatar-wrapper {
+  position: relative;
+}
+
+.sidebar-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px; /* Slightly squarer, more modern radius */
+  object-fit: cover;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.sidebar-avatar-fallback {
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+.online-indicator {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 12px;
+  height: 12px;
+  background-color: var(--accent-green);
+  border: 2px solid white;
+  border-radius: 50%;
+  animation: pulseGlow 2s infinite; /* Uses the animation from Layout.css */
+}
+
+.sidebar-user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.sidebar-role {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+}
+
+/* ===== NAVIGATION ===== */
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  padding: 0 16px;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all var(--transition-bounce); /* Springy transition */
+  position: relative;
+  overflow: hidden; /* Important for the hover effect */
+}
+
+.sidebar-icon {
+  color: #94A3B8;
+  transition: transform var(--transition-bounce), color var(--transition-fast);
+}
+
+/* Hover State */
+.sidebar-link:hover {
+  background: var(--gray-50);
+  color: var(--text-primary);
+  transform: translateX(4px); /* Slight nudge on hover */
+}
+
+.sidebar-link:hover .sidebar-icon {
+  color: var(--primary-500);
+  transform: scale(1.1) rotate(-5deg);
+}
+
+/* Active State - Refining your pseudo-element approach */
+.sidebar-link.active {
+  background: transparent;
+  color: var(--primary-600);
+  font-weight: 700;
+}
+
+.sidebar-link.active::before {
+  content: '';
+  position: absolute;
+  left: 0; /* Align with the inner padding edge */
+  top: 50%;
+  transform: translateY(-50%);
+  height: 60%;
+  width: 4px;
+  background: var(--primary-600);
+  border-radius: 0 4px 4px 0;
+  box-shadow: 2px 0 8px rgba(37, 99, 235, 0.4);
+}
+
+.sidebar-link.active::after {
+  content: '';
+  position: absolute;
+  left: 0; 
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, var(--primary-50) 0%, rgba(239, 246, 255, 0) 100%);
+  border-radius: 8px;
+  z-index: -1;
+}
+
+.sidebar-link.active .sidebar-icon {
+  color: var(--primary-600);
+}
+
+/* ===== FOOTER / LOGOUT ===== */
+.sidebar-footer {
+  margin-top: auto;
+  padding: 16px;
+  border-top: 1px solid rgba(0,0,0,0.03);
+}
+
+.sidebar-logout {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  color: var(--accent-red);
+  background: transparent;
+  border: 1px solid transparent;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all var(--transition-bounce);
+  cursor: pointer;
+}
+
+.sidebar-logout:hover {
+  background: #FEF2F2;
+  border-color: #FECACA;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1);
+}
+
+.sidebar-logout .sidebar-icon {
+  color: var(--accent-red);
+  transition: transform var(--transition-bounce);
+}
+
+.sidebar-logout:hover .sidebar-icon {
+  transform: translateX(4px);
+}
+
+/* ===== LOGOUT MODAL ===== */
+/* Note: The Framer Motion implementation in Sidebar.jsx handles the 
+   fade-in and slide-up animations, so the CSS keyframes here are removed 
+   to prevent conflicts, focusing just on styling. */
+
+.logout-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(15, 23, 42, 0.4);
+  /* Framer motion handles the dynamic backdrop-filter blur */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.logout-modal-card {
+  background-color: white;
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 420px;
+  padding: 40px 32px;
+  text-align: center;
+  /* Premium shadow */
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0,0,0,0.05);
+}
+
+.logout-modal-icon {
+  margin: 0 auto 24px auto;
+  width: 80px;
+  height: 80px;
+  background: #FEF2F2;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* Add a pulse effect to the logout icon wrapper */
+  box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  animation: pulseRed 2s infinite;
+}
+
+@keyframes pulseRed {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.logout-modal-card h3 {
+  color: var(--text-primary);
+  font-size: 1.35rem;
+  margin-bottom: 12px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.logout-modal-card p {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  margin-bottom: 32px;
+  line-height: 1.6;
+}
+
+.logout-modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+.logout-modal-actions .btn {
+  flex: 1;
+  padding: 12px 0; /* Slightly taller buttons for the modal */
+  font-size: 1rem;
+}

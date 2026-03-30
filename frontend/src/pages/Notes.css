@@ -1,0 +1,39 @@
+/* ===== NOTES PAGE ===== */
+.notes-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.notes-header { display: flex; align-items: center; justify-content: space-between; }
+.notes-header h2 { font-size: var(--font-2xl); font-weight: 800; }
+.notes-header p { color: var(--text-secondary); font-size: var(--font-sm); margin-top: var(--space-1); }
+
+.notes-actions { display: flex; gap: var(--space-3); }
+.notes-toolbar { display: flex; flex-wrap: wrap; gap: var(--space-4); background: var(--gray-50); }
+.notes-filters { display: flex; gap: var(--space-3); flex: 1; }
+.notes-select { background: white; min-width: 150px; }
+
+.notes-table th { background: white; white-space: nowrap; font-size: var(--font-sm); }
+.notes-table td { padding: var(--space-3) var(--space-4); vertical-align: middle; }
+
+.notes-num { font-size: var(--font-sm); color: var(--text-secondary); font-weight: 600; }
+.notes-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+.notes-name { font-size: var(--font-sm); font-weight: 700; color: var(--text-primary); }
+
+.notes-input-wrapper { display: flex; align-items: center; gap: var(--space-2); }
+.notes-input { width: 90px; text-align: center; font-weight: 700; font-size: var(--font-lg) !important; padding: 8px !important; }
+
+.notes-input.text-green { color: var(--accent-green); border-color: rgba(39, 174, 96, 0.4); }
+.notes-input.text-orange { color: var(--accent-orange); border-color: rgba(242, 153, 74, 0.4); }
+.notes-input.text-red { color: var(--accent-red); border-color: rgba(235, 87, 87, 0.4); }
+
+.notes-appr { width: 100%; min-width: 250px; color: var(--text-secondary); font-size: var(--font-xs) !important; }
+.notes-footer { background: var(--gray-50); }
+
+@media (max-width: 900px) {
+  .notes-toolbar { flex-direction: column; align-items: stretch; }
+  .notes-filters { flex-direction: column; }
+  .notes-change-btn { width: 100%; justify-content: center; }
+  .notes-header { flex-direction: column; align-items: flex-start; }
+}

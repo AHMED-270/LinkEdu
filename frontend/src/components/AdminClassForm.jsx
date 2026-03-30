@@ -1,24 +1,27 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Save, X, AlertCircle, Check, Users, GraduationCap } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AdminClassForm({ mode = 'create', classToEdit = null, onBack, onSuccess, isModal = false }) {
   const isEditing = mode === 'edit' && !!classToEdit;
   const [professeurs, setProfesseurs] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [formData, setFormData] = useState({
     nom: '',
     niveau: '',
     professeur_ids: []
   });
-  const [formMsg, setFormMsg] = useState('');
+  const [formMsg, setFormMsg] = useState({ type: '', text: '' });
   const [saving, setSaving] = useState(false);
 
-  const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+  const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000';
 
   useEffect(() => {
     const fetchProfesseurs = async () => {
       try {
+        setLoading(true);
         const response = await axios.get(apiBaseUrl + '/api/admin/users', {
           withCredentials: true,
           headers: { Accept: 'application/json' }
@@ -36,14 +39,12 @@ export default function AdminClassForm({ mode = 'create', classToEdit = null, on
               : []
           });
         } else {
-          setFormData({
-            nom: '',
-            niveau: '',
-            professeur_ids: []
-          });
+          setFormData({ nom: '', niveau: '', professeur_ids: [] });
         }
       } catch (error) {
-        setFormMsg('Impossible de charger la liste des professeurs.');
+        setFormMsg({ type: 'error', text: 'Impossible de charger la liste des professeurs.' });
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -59,11 +60,11 @@ export default function AdminClassForm({ mode = 'create', classToEdit = null, on
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setFormMsg('');
+    setFormMsg({ type: '', text: '' });
     setSaving(true);
 
     if (!formData.professeur_ids || formData.professeur_ids.length === 0) {
-      setFormMsg('Veuillez selectionner au moins un professeur.');
+      setFormMsg({ type: 'error', text: 'Veuillez sÃ©lectionner au moins un professeur pour cette classe.' });
       setSaving(false);
       return;
     }
@@ -93,114 +94,209 @@ export default function AdminClassForm({ mode = 'create', classToEdit = null, on
 
       if (onSuccess) onSuccess();
     } catch (error) {
-      setFormMsg(error.response?.data?.message || "Erreur lors de l'enregistrement.");
+      setFormMsg({ 
+        type: 'error', 
+        text: error.response?.data?.message || "Erreur lors de l'enregistrement de la classe." 
+      });
     } finally {
       setSaving(false);
     }
   };
 
+  // Toggle Professor Selection
+  const toggleProfessor = (profId) => {
+    const idStr = String(profId);
+    setFormData((prev) => {
+      const isSelected = prev.professeur_ids.includes(idStr);
+      if (isSelected) {
+        return { ...prev, professeur_ids: prev.professeur_ids.filter((id) => id !== idStr) };
+      } else {
+        return { ...prev, professeur_ids: [...prev.professeur_ids, idStr] };
+      }
+    });
+  };
+
+  // Framer Motion Variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 15 },
+    visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100 } }
+  };
+
+  if (loading) {
+    return (
+      <div className={isModal ? 'p-8' : 'layout-content'}>
+        <div className="flex flex-col items-center justify-center py-12">
+          <span className="loading-spinner border-blue-500 mb-4"></span>
+          <p className="text-slate-500 font-medium">Chargement du formulaire...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className={isModal ? '' : 'dashboard-content'}>
-      {!isModal && (
-        <header className="content-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div className={isModal ? 'bg-white rounded-xl' : 'layout-content'}>
+      {/* Header */}
+      {!isModal ? (
+        <header className="flex justify-between items-center mb-8">
           <div>
-            <h1>{isEditing ? 'Modifier Classe' : 'Nouvelle Classe'}</h1>
-            <p>Page dediee pour l'ajout et la modification des classes.</p>
+            <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">
+              {isEditing ? 'Modifier Classe' : 'Nouvelle Classe'}
+            </h1>
+            <p className="text-slate-500 text-sm mt-1">GÃ©rez les informations et le corps professoral de cette classe.</p>
           </div>
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             type="button"
             onClick={onBack}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#0f172a', color: 'white', padding: '10px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '500' }}
+            className="btn btn-outline"
           >
             <ArrowLeft size={16} />
-            Retour a la gestion
-          </button>
+            Retour Ã  la gestion
+          </motion.button>
         </header>
+      ) : (
+        <div className="flex justify-between items-center p-6 border-b border-slate-100">
+          <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+            <GraduationCap size={24} className="text-blue-600" />
+            {isEditing ? 'Modifier Classe' : 'Nouvelle Classe'}
+          </h2>
+          <button onClick={onBack} className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors">
+            <X size={20} />
+          </button>
+        </div>
       )}
 
-      <div className="card-panel" style={{ marginBottom: '20px' }}>
-        {isModal && <h2 style={{ marginTop: 0 }}>{isEditing ? 'Modifier Classe' : 'Nouvelle Classe'}</h2>}
-        {formMsg && <p style={{ color: 'red', marginBottom: '10px' }}>{formMsg}</p>}
+      {/* Form Card */}
+      <div className={isModal ? 'p-6' : 'card p-8'}>
+        <AnimatePresence>
+          {formMsg.text && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              exit={{ opacity: 0, y: -10 }}
+              className={`p-4 rounded-xl flex items-center gap-3 font-medium text-sm mb-6 ${
+                formMsg.type === 'error' ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+              }`}
+            >
+              <AlertCircle size={20} /> {formMsg.text}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '15px' }}>
-          <div style={{ display: 'flex', gap: '15px' }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Nom de la classe</label>
+        <motion.form 
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          onSubmit={handleSubmit} 
+          className="flex flex-col gap-6"
+        >
+          {/* Inputs Row */}
+          <div className="grid-2">
+            <motion.div variants={itemVariants} className="form-group">
+              <label className="form-label">Nom de la classe</label>
               <input
                 type="text"
                 value={formData.nom}
                 onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
                 required
-                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                className="form-input"
+                placeholder="Ex: 1Ã¨re AnnÃ©e Dev"
               />
-            </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Niveau</label>
+            </motion.div>
+            <motion.div variants={itemVariants} className="form-group">
+              <label className="form-label">Niveau</label>
               <input
                 type="text"
                 value={formData.niveau}
                 onChange={(e) => setFormData({ ...formData, niveau: e.target.value })}
                 required
-                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                className="form-input"
+                placeholder="Ex: Bac+2"
               />
-            </div>
+            </motion.div>
           </div>
 
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
-              Nombre professeurs: {formData.professeur_ids.length}
-            </label>
-            <div style={{ border: '1px solid #cbd5e1', borderRadius: '8px', padding: '12px', maxHeight: '220px', overflowY: 'auto' }}>
-              {professeurs.length === 0 && (
-                <p style={{ margin: 0, color: '#64748b' }}>Aucun professeur disponible.</p>
+          {/* Professor Multi-Select Section */}
+          <motion.div variants={itemVariants} className="form-group mt-2">
+            <div className="flex justify-between items-end mb-2">
+              <label className="form-label mb-0 flex items-center gap-2">
+                <Users size={16} className="text-slate-400" /> Professeurs AssignÃ©s
+              </label>
+              <span className="badge badge-blue bg-blue-50 text-blue-600 border border-blue-100">
+                {formData.professeur_ids.length} sÃ©lectionnÃ©(s)
+              </span>
+            </div>
+            
+            <div className="border border-slate-200 rounded-xl max-h-[260px] overflow-y-auto p-2 bg-slate-50/50 shadow-inner">
+              {professeurs.length === 0 ? (
+                <div className="p-8 text-center text-slate-500">
+                  <Users size={32} className="mx-auto mb-2 opacity-20" />
+                  <p>Aucun professeur disponible dans la base de donnÃ©es.</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-1">
+                  {professeurs.map((p) => {
+                    const isChecked = formData.professeur_ids.includes(String(p.id));
+                    return (
+                      <div
+                        key={p.id}
+                        onClick={() => toggleProfessor(p.id)}
+                        className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border ${
+                          isChecked 
+                            ? 'bg-blue-50 border-blue-200 shadow-[0_2px_8px_rgba(59,130,246,0.1)]' 
+                            : 'bg-white border-transparent hover:border-slate-200 hover:shadow-sm'
+                        }`}
+                      >
+                        <div className={`w-5 h-5 rounded flex items-center justify-center transition-colors border ${
+                          isChecked ? 'bg-blue-600 border-blue-600' : 'bg-white border-slate-300'
+                        }`}>
+                          {isChecked && <Check size={14} className="text-white" strokeWidth={3} />}
+                        </div>
+                        <span className={`text-sm ${isChecked ? 'font-bold text-blue-800' : 'font-medium text-slate-700'}`}>
+                          {p.name}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
-              {professeurs.map((p) => {
-                const checked = formData.professeur_ids.includes(String(p.id));
-
-                return (
-                  <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setFormData((prev) => ({
-                            ...prev,
-                            professeur_ids: [...prev.professeur_ids, String(p.id)]
-                          }));
-                        } else {
-                          setFormData((prev) => ({
-                            ...prev,
-                            professeur_ids: prev.professeur_ids.filter((id) => id !== String(p.id))
-                          }));
-                        }
-                      }}
-                    />
-                    <span>{p.name}</span>
-                  </label>
-                );
-              })}
             </div>
-          </div>
+          </motion.div>
 
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '10px' }}>
-            <button
+          {/* Form Actions */}
+          <motion.div variants={itemVariants} className="flex justify-end gap-3 mt-4 pt-6 border-t border-slate-100">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               type="button"
               onClick={onBack}
               disabled={saving}
-              style={{ padding: '10px 20px', background: '#f1f5f9', color: '#475569', borderRadius: '8px', border: 'none', cursor: 'pointer' }}
+              className="btn btn-outline"
             >
               Annuler
-            </button>
-            <button
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={saving}
-              style={{ padding: '10px 20px', background: '#3b82f6', color: 'white', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '500' }}
+              className="btn btn-primary shadow-[0_4px_14px_rgba(59,130,246,0.25)]"
             >
-              {saving ? 'Enregistrement...' : 'Enregistrer'}
-            </button>
-          </div>
-        </form>
+              {saving ? (
+                <><span className="loading-spinner w-4 h-4 border-white mr-2"></span> Enregistrement...</>
+              ) : (
+                <><Save size={18} /> {isEditing ? 'Enregistrer les modifications' : 'CrÃ©er la classe'}</>
+              )}
+            </motion.button>
+          </motion.div>
+
+        </motion.form>
       </div>
     </div>
   );

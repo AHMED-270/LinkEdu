@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Search, Plus, Edit, Trash2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import AdminUserForm from './AdminUserForm';
 
-export default function AdminUsers({ onCreateUser, onEditUser }) {
+export default function AdminUsers({ onCreateUser }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -11,7 +12,7 @@ export default function AdminUsers({ onCreateUser, onEditUser }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
 
-  const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+  const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000';
 
   const fetchData = async () => {
     try {
@@ -39,18 +40,13 @@ export default function AdminUsers({ onCreateUser, onEditUser }) {
     });
   };
 
-  const requestDelete = (user) => {
-    setDeleteTarget(user);
-  };
-
+  const requestDelete = (user) => setDeleteTarget(user);
+  const handleEditUser = (user) => setEditTarget(user);
+  
   const handleCreateUser = () => {
     if (typeof onCreateUser === 'function') {
       onCreateUser();
     }
-  };
-
-  const handleEditUser = (user) => {
-    setEditTarget(user);
   };
 
   const handleDelete = async () => {
@@ -59,7 +55,6 @@ export default function AdminUsers({ onCreateUser, onEditUser }) {
     setIsDeleting(true);
     try {
       await ensureCsrfCookie();
-
       await axios.delete(`${apiBaseUrl}/api/admin/users/${deleteTarget.id}`, {
         withCredentials: true,
         withXSRFToken: true,
@@ -78,148 +73,211 @@ export default function AdminUsers({ onCreateUser, onEditUser }) {
   const normalizedSearch = searchTerm.trim().toLowerCase();
   const filteredUsers = users.filter((user) => {
     if (!normalizedSearch) return true;
-
-    return [
-      user.name,
-      user.email,
-      user.role,
-      user.telephone,
-    ]
+    return [user.name, user.email, user.role, user.telephone]
       .filter(Boolean)
       .some((value) => String(value).toLowerCase().includes(normalizedSearch));
   });
 
+  // Animation variants for the table rows (waterfall effect)
+  const tableRowVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: (i) => ({
+      opacity: 1,
+      y: 0,
+      transition: { delay: i * 0.05, type: 'spring', stiffness: 100 }
+    })
+  };
+
   return (
-    <div className="dashboard-content">
-      <header className="content-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div className="layout-content">
+      {/* Header Section */}
+      <header className="flex justify-between items-center mb-8">
         <div>
-          <h1>Gestion des Utilisateurs</h1>
-          <p>Créer, modifier ou supprimer des utilisateurs.</p>
+          <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Gestion des Utilisateurs</h1>
+          <p className="text-slate-500 text-sm mt-1">CrÃ©er, modifier ou supprimer des utilisateurs.</p>
         </div>
-        <button
-          className="create-class-btn"
+        <motion.button
+          whileHover={{ scale: 1.02, y: -2 }}
+          whileTap={{ scale: 0.98 }}
+          className="btn btn-primary"
           onClick={handleCreateUser}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#0f172a', color: 'white', padding: '10px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '500' }}
         >
           <Plus size={18} />
           Ajouter un Utilisateur
-        </button>
+        </motion.button>
       </header>
 
-      <div className="card-panel">
-        <div className="card-panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h2 style={{ fontSize: '1.1rem', fontWeight: '600' }}>Tous les utilisateurs ({filteredUsers.length})</h2>
-          <div className="search-bar" style={{ padding: '8px 12px', background: '#f8fafc', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Search size={16} color="#64748b" />
+      {/* Main Card Panel */}
+      <div className="card">
+        <div className="card-header border-b border-slate-100 pb-4 mb-4">
+          <h3>Tous les utilisateurs <span className="badge badge-blue ml-2">{filteredUsers.length}</span></h3>
+          
+          <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 transition-all focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-400">
+            <Search size={16} className="text-slate-400 mr-2" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Rechercher nom, email, role, telephone..."
-              style={{ border: 'none', background: 'transparent', outline: 'none', minWidth: '260px' }}
+              placeholder="Rechercher..."
+              className="bg-transparent border-none outline-none text-sm text-slate-700 w-64 placeholder-slate-400"
             />
           </div>
         </div>
 
-        {loading ? (
-          <p>Chargement...</p>
-        ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid #e2e8f0', textAlign: 'left', color: '#64748b' }}>
-                <th style={{ padding: '12px 0' }}>Nom</th>
-                <th style={{ padding: '12px 0' }}>Email</th>
-                <th style={{ padding: '12px 0' }}>Rôle</th>
-                <th style={{ padding: '12px 0' }}>Téléphone</th>
-                <th style={{ padding: '12px 0', textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredUsers.length === 0 && (
-                <tr>
-                  <td colSpan="5" style={{ padding: '20px 0', textAlign: 'center', color: '#64748b' }}>
-                    Aucun utilisateur ne correspond a votre recherche.
-                  </td>
-                </tr>
-              )}
-              {filteredUsers.map(user => (
-                <tr key={user.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: '12px 0', fontWeight: '500' }}>{user.name}</td>
-                  <td style={{ padding: '12px 0', color: '#475569' }}>{user.email}</td>
-                  <td style={{ padding: '12px 0' }}>
-                    <span style={{
-                      padding: '4px 8px', borderRadius: '4px', fontSize: '0.85rem', fontWeight: '500',
-                      background: user.role === 'admin' ? '#fee2e2' : user.role === 'etudiant' ? '#dcfce7' : '#e0e7ff',
-                      color: user.role === 'admin' ? '#9f1239' : user.role === 'etudiant' ? '#166534' : '#3730a3'
-                    }}>
-                      {user.role}
-                    </span>
-                  </td>
-                  <td style={{ padding: '12px 0', color: '#475569' }}>{user.telephone || '-'}</td>
-                  <td style={{ padding: '12px 0', textAlign: 'right' }}>
-                     <button onClick={() => handleEditUser(user)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#3b82f6', marginRight: '10px' }}>
-                         <Edit size={18} />
-                     </button>
-                     <button onClick={() => requestDelete(user)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}>
-                         <Trash2 size={18} />
-                     </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <div className="card-body p-0">
+          {loading ? (
+            <div className="p-12 flex justify-center items-center">
+              <span className="loading-spinner border-blue-500"></span>
+            </div>
+          ) : (
+            <div className="table-wrapper">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Nom</th>
+                    <th>Email</th>
+                    <th>RÃ´le</th>
+                    <th>TÃ©lÃ©phone</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredUsers.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" className="text-center py-8 text-slate-500">
+                        Aucun utilisateur ne correspond Ã  votre recherche.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredUsers.map((user, i) => (
+                      <motion.tr 
+                        key={user.id}
+                        custom={i}
+                        initial="hidden"
+                        animate="visible"
+                        variants={tableRowVariants}
+                      >
+                        <td className="font-semibold text-slate-800">{user.name}</td>
+                        <td className="text-slate-500 text-sm">{user.email}</td>
+                        <td>
+                          {/* Dynamic Badge Colors using your layout logic */}
+                          <span className={`badge ${
+                            user.role === 'admin' ? 'badge-red' : 
+                            user.role === 'etudiant' ? 'badge-green' : 'badge-blue'
+                          }`}>
+                            {user.role}
+                          </span>
+                        </td>
+                        <td className="text-slate-500 text-sm">{user.telephone || '-'}</td>
+                        <td style={{ textAlign: 'right' }}>
+                          <div className="flex justify-end gap-2">
+                            <motion.button 
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() => handleEditUser(user)} 
+                              className="p-2 text-blue-500 hover:bg-blue-50 rounded-md transition-colors"
+                              title="Modifier"
+                            >
+                              <Edit size={16} />
+                            </motion.button>
+                            <motion.button 
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() => requestDelete(user)} 
+                              className="p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                              title="Supprimer"
+                            >
+                              <Trash2 size={16} />
+                            </motion.button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
 
-      {deleteTarget && (
-        <div className="logout-modal-backdrop">
-          <div className="logout-modal-card">
-            <div className="logout-modal-icon">
-              <Trash2 size={46} color="#f43f5e" />
-            </div>
-            <h3>Confirmer la suppression</h3>
-            <p>
-              Voulez-vous vraiment supprimer l&apos;utilisateur <strong>{deleteTarget.name}</strong> ?
-            </p>
+      {/* Delete Confirmation Modal (Using AnimatePresence) */}
+      <AnimatePresence>
+        {deleteTarget && (
+          <motion.div 
+            initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+            animate={{ opacity: 1, backdropFilter: "blur(4px)" }}
+            exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
+            className="logout-modal-backdrop"
+          >
+            <motion.div 
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ type: "spring", bounce: 0.4 }}
+              className="logout-modal-card"
+            >
+              <div className="logout-modal-icon">
+                <Trash2 size={36} color="#ef4444" />
+              </div>
+              <h3>Confirmer la suppression</h3>
+              <p>
+                Voulez-vous vraiment supprimer l'utilisateur <strong>{deleteTarget.name}</strong> ? Cette action est irrÃ©versible.
+              </p>
 
-            <div className="logout-modal-actions">
-              <button
-                type="button"
-                onClick={() => setDeleteTarget(null)}
-                disabled={isDeleting}
-                className="btn-cancel"
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="btn-confirm-logout"
-              >
-                {isDeleting ? 'Suppression...' : 'Supprimer'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              <div className="logout-modal-actions">
+                <button
+                  type="button"
+                  onClick={() => setDeleteTarget(null)}
+                  disabled={isDeleting}
+                  className="btn btn-outline"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="btn btn-danger"
+                >
+                  {isDeleting ? 'Suppression...' : 'Supprimer'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {editTarget && (
-        <div className="logout-modal-backdrop">
-          <div className="logout-modal-card" style={{ maxWidth: '900px', width: '90vw', maxHeight: '90vh', overflowY: 'auto', padding: '16px' }}>
-            <AdminUserForm
-              mode="edit"
-              userToEdit={editTarget}
-              isModal={true}
-              onBack={() => setEditTarget(null)}
-              onSuccess={() => {
-                setEditTarget(null);
-                fetchData();
-              }}
-            />
-          </div>
-        </div>
-      )}
+      {/* Edit Modal */}
+      <AnimatePresence>
+        {editTarget && (
+          <motion.div 
+            initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+            animate={{ opacity: 1, backdropFilter: "blur(4px)" }}
+            exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
+            className="logout-modal-backdrop"
+          >
+            <motion.div 
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 50, opacity: 0 }}
+              transition={{ type: "spring", bounce: 0.3 }}
+              className="card w-full max-w-4xl max-h-[90vh] overflow-y-auto p-0"
+            >
+              <AdminUserForm
+                mode="edit"
+                userToEdit={editTarget}
+                isModal={true}
+                onBack={() => setEditTarget(null)}
+                onSuccess={() => {
+                  setEditTarget(null);
+                  fetchData();
+                }}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

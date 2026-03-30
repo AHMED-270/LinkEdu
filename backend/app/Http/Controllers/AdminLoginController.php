@@ -26,13 +26,6 @@ class AdminLoginController extends Controller
             ]);
         }
 
-        // Vérification du rôle admin (basé sur le modèle User qui a "role" et relations)
-        if ($user->role !== "admin") {
-            return response()->json([
-                "message" => "Accès refusé. Compte administrateur requis."
-            ], 403);
-        }
-
         // Au lieu de tokens, on connecte toujours l'utilisateur pour l'application SPA (React via Sanctum)
         Auth::login($user);
 
@@ -42,11 +35,11 @@ class AdminLoginController extends Controller
         }
 
         // Créer un token au cas où une app mobile en aurait besoin
-        $token = $user->createToken("admin-token")->plainTextToken;
+        $token = $user->createToken("web-token")->plainTextToken;
 
         return response()->json([
-            "message" => "Connexion admin réussie",
-            "user" => $user->load("adminEcole"),
+            "message" => "Connexion réussie",
+            "user" => $user,
             "token" => $token
         ], 200);
     }
