@@ -1,0 +1,1 @@
+<?php require 'vendor/autoload.php'; require_once 'bootstrap/app.php'; app()->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $u = App\Models\User::where('email','directeur@linkedu.com')->first(); if($u) { echo 'User found. Password verify: ' . (password_verify('Directeur@2026', $u->password) ? 'YES' : 'NO') . ' Role: ' . $u->role; } else { echo 'USER NOT FOUND'; }

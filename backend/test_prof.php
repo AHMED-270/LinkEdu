@@ -1,0 +1,1 @@
+<?php require 'vendor/autoload.php'; require_once 'bootstrap/app.php'; app()->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $u = App\Models\User::where('email','professeur@linkedu.com')->first(); if($u) { echo 'User found.'; } else { echo 'USER NOT FOUND'; }

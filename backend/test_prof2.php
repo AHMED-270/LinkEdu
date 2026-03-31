@@ -1,0 +1,1 @@
+<?php require 'vendor/autoload.php'; require_once 'bootstrap/app.php'; app()->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $u = App\Models\User::where('email','professeur@linkedu.com')->first(); echo password_verify('Prof@2026', $u->password) ? 'YES1 ' : 'NO1 '; echo password_verify('password', $u->password) ? 'YES2 ' : 'NO2 ';

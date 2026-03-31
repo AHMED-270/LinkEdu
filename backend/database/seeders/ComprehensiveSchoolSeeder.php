@@ -121,14 +121,14 @@ class ComprehensiveSchoolSeeder extends Seeder
         }
 
         for ($i = 0; $i < 3; $i++) {
-            $prenom = $faker->firstName();
-            $nom = $faker->lastName();
+            $prenom = $i === 0 ? 'LinkEdu' : $faker->firstName();
+            $nom = $i === 0 ? 'Directeur' : $faker->lastName();
             $id = $createUser([
                 'name' => $prenom . ' ' . $nom,
                 'nom' => $nom,
                 'prenom' => $prenom,
-                'email' => 'directeur' . ($i + 1) . '@linkedu.com',
-                'password' => $passwords['default'],
+                'email' => $i === 0 ? 'directeur@linkedu.com' : 'directeur' . ($i + 1) . '@linkedu.com',
+                'password' => $i === 0 ? Hash::make('Directeur@2026') : $passwords['default'],
                 'role' => 'directeur',
             ]);
 
