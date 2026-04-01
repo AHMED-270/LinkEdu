@@ -2,7 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 import jsPDF from 'jspdf';
 import { jsPDF as jsPDFType } from 'jspdf';
+import { useNavigate } from 'react-router-dom';
 import { FiUser, FiCalendar, FiMail, FiPhone, FiMapPin, FiArrowLeft, FiCheckCircle, FiSearch, FiEdit2, FiTrash2, FiPlus, FiUsers, FiDownload, FiEye, FiX, FiUpload } from 'react-icons/fi';
+import { useAuth } from '../context/AuthContext';
 
 const emptyForm = {
   nom: '',
@@ -23,6 +25,8 @@ const emptyForm = {
 
 export default function SecretaireEtudiants() {
   const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000';
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
   const [absences, setAbsences] = useState([]);
@@ -31,6 +35,7 @@ export default function SecretaireEtudiants() {
   const [classFilter, setClassFilter] = useState('all');
   const [isFormPage, setIsFormPage] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [loadErrorMessage, setLoadErrorMessage] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [selectedStudentInsight, setSelectedStudentInsight] = useState(null);
@@ -38,35 +43,54 @@ export default function SecretaireEtudiants() {
 
   const loadData = async () => {
     setLoading(true);
-    const [studentsRes, classesRes, absencesRes] = await Promise.all([
-      axios.get(apiBaseUrl + '/api/secretaire/students', {
-        withCredentials: true,
-        withXSRFToken: true,
-      }),
-      axios.get(apiBaseUrl + '/api/secretaire/classes', {
-        withCredentials: true,
-        withXSRFToken: true,
-      }),
-      axios.get(apiBaseUrl + '/api/secretaire/absences', {
-        withCredentials: true,
-        withXSRFToken: true,
-      }),
-    ]);
+    setLoadErrorMessage('');
 
-    setStudents(studentsRes.data?.students || []);
-    setClasses(classesRes.data?.classes || []);
-    setAbsences(absencesRes.data?.absences || []);
-    setLoading(false);
-  };
+    try {
+      const requestConfig = {
+        withCredentials: true,
+        withXSRFToken: true,
+        headers: {
+          Accept: 'application/json',
+        },
+      };
 
-  useEffect(() => {
-    loadData().catch(() => {
+      const [studentsRes, classesRes, absencesRes] = await Promise.all([
+        axios.get(apiBaseUrl + '/api/secretaire/students', requestConfig),
+        axios.get(apiBaseUrl + '/api/secretaire/classes', requestConfig),
+        axios.get(apiBaseUrl + '/api/secretaire/absences', requestConfig),
+      ]);
+
+      setStudents(studentsRes.data?.students || []);
+      setClasses(classesRes.data?.classes || []);
+      setAbsences(absencesRes.data?.absences || []);
+    } catch (error) {
+      const status = error?.response?.status;
+      const backendMessage = error?.response?.data?.message;
+
+      if (status === 401 || status === 419) {
+        setLoadErrorMessage('Session expirée. Veuillez vous reconnecter.');
+        logout();
+        navigate('/login', { replace: true });
+        return;
+      }
+
+      if (status === 403) {
+        setLoadErrorMessage(backendMessage || 'Acces refuse. Votre compte doit etre active par un admin.');
+      } else {
+        setLoadErrorMessage(backendMessage || 'Impossible de charger les donnees. Verifiez l API backend.');
+      }
+
       setStudents([]);
       setClasses([]);
       setAbsences([]);
+    } finally {
       setLoading(false);
-    });
-  }, []);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [logout, navigate]);
 
   const visibleStudents = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -519,6 +543,11 @@ export default function SecretaireEtudiants() {
             </div>
 
             <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+              {loadErrorMessage && (
+                <div className="mx-4 mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                  {loadErrorMessage}
+                </div>
+              )}
               <div className="overflow-x-auto">
                 <table className="table w-full text-left border-collapse">
                   <thead>

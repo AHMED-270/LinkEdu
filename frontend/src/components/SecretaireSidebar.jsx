@@ -1,10 +1,11 @@
 ﻿import { NavLink } from 'react-router-dom';
-import { FiGrid, FiUsers, FiBookOpen, FiCalendar, FiMessageCircle, FiAlertCircle } from 'react-icons/fi';
+import { FiGrid, FiUsers, FiCreditCard, FiBookOpen, FiCalendar, FiMessageCircle, FiAlertCircle } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 
 const navItems = [
   { path: '/secretaire/dashboard', label: 'Tableau de bord', icon: FiGrid },
   { path: '/secretaire/etudiants', label: 'Etudiants', icon: FiUsers },
+  { path: '/secretaire/paiements', label: 'Paiements', icon: FiCreditCard },
   { path: '/secretaire/classes', label: 'Classes', icon: FiBookOpen },
   { path: '/secretaire/absences', label: 'Absences', icon: FiCalendar },
   { path: '/secretaire/annonces', label: 'Annonces', icon: FiMessageCircle },   

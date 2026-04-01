@@ -700,15 +700,17 @@ class SecretaireController extends Controller
         ]);
 
         $idParent = $validated['id_parent'] ?? null;
+        $idEtudiant = $validated['id_etudiant'] ?? null;
 
-        if (! $idParent && ! empty($validated['id_etudiant'])) {
-            $etudiant = Etudiant::find($validated['id_etudiant']);
+        if (! $idParent && ! empty($idEtudiant)) {
+            $etudiant = Etudiant::find($idEtudiant);
             if (! $etudiant || ! $etudiant->id_parent) {
                 return response()->json([
                     'message' => 'Aucun parent lie a cet etudiant.',
                 ], 422);
             }
             $idParent = $etudiant->id_parent;
+            $idEtudiant = $etudiant->id_etudiant;
         }
 
         if (! $idParent) {
@@ -719,10 +721,12 @@ class SecretaireController extends Controller
 
         $reclamation = Reclamation::create([
             'id_parent' => $idParent,
+            'id_etudiant' => $idEtudiant,
             'sujet' => $validated['sujet'],
             'message' => $validated['message'],
             'statut' => 'en_attente',
             'date_soumission' => now(),
+            'date_envoi' => now(),
         ]);
 
         return response()->json([

@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfessorController;
 use App\Http\Controllers\AdminLoginController;
 use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\PaiementController;
 use App\Http\Controllers\ProfileController;
 
 use App\Http\Controllers\SecretaireController;
@@ -101,6 +102,13 @@ Route::middleware(['auth:sanctum', 'role:secretaire,admin,directeur'])->prefix('
     Route::post('/students', [SecretaireController::class, 'createStudent']);
     Route::put('/students/{id}', [SecretaireController::class, 'updateStudent']);
     Route::delete('/students/{id}', [SecretaireController::class, 'deleteStudent']);
+
+    // Paiements
+    Route::get('/paiements', [PaiementController::class, 'index']);
+    Route::post('/paiements', [PaiementController::class, 'store']);
+    Route::put('/paiements/{id}', [PaiementController::class, 'update']);
+    Route::delete('/paiements/{id}', [PaiementController::class, 'destroy']);
+    Route::put('/paiements/{id}/toggle', [PaiementController::class, 'togglePaid']);
 
     // Classes
     Route::get('/classes', [SecretaireController::class, 'listClasses']);
