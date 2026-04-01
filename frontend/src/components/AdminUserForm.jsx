@@ -2,6 +2,7 @@
 import axios from 'axios';
 import { ArrowLeft, Save, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ROLE, getRoleLabel } from '../constants/roles';
 
 export default function AdminUserForm({ mode = 'create', userToEdit = null, onBack, onSuccess, isModal = false }) {
   const isEditing = mode === 'edit' && !!userToEdit;
@@ -17,7 +18,7 @@ export default function AdminUserForm({ mode = 'create', userToEdit = null, onBa
     name: '',
     email: '',
     password: '',
-    role: 'etudiant',
+    role: ROLE.ETUDIANT,
     id_classe: '',
     id_parent: '',
     telephone: ''
@@ -25,7 +26,7 @@ export default function AdminUserForm({ mode = 'create', userToEdit = null, onBa
 
   const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000';
 
-  const parentUsers = useMemo(() => users.filter((u) => u.role === 'parent'), [users]);
+  const parentUsers = useMemo(() => users.filter((u) => u.role === ROLE.PARENT), [users]);
   const selectedParent = parentUsers.find((p) => String(p.id) === String(formData.id_parent));
 
   useEffect(() => {
@@ -60,13 +61,13 @@ export default function AdminUserForm({ mode = 'create', userToEdit = null, onBa
             name: userToEdit.name || '',
             email: userToEdit.email || '',
             password: '',
-            role: userToEdit.role || 'etudiant',
+            role: userToEdit.role || ROLE.ETUDIANT,
             id_classe: userToEdit.id_classe || (classesData[0]?.id_classe ?? ''),
             id_parent: userToEdit.id_parent || '',
             telephone: userToEdit.telephone || ''
           });
         } else {
-          const firstParent = usersData.find((u) => u.role === 'parent');
+          const firstParent = usersData.find((u) => u.role === ROLE.PARENT);
           setFormData((prev) => ({
             ...prev,
             id_classe: classesData[0]?.id_classe ?? '',
@@ -125,12 +126,12 @@ export default function AdminUserForm({ mode = 'create', userToEdit = null, onBa
   };
 
   const roles = [
-    { value: 'etudiant', label: 'Ã‰tudiant' },
-    { value: 'professeur', label: 'Professeur' },
-    { value: 'parent', label: 'Parent' },
-    { value: 'secretaire', label: 'SecrÃ©tariat' },
-    { value: 'admin', label: 'Administrateur' },
-    { value: 'directeur', label: 'Directeur' }
+    { value: ROLE.ETUDIANT, label: getRoleLabel(ROLE.ETUDIANT) },
+    { value: ROLE.PROFESSEUR, label: getRoleLabel(ROLE.PROFESSEUR) },
+    { value: ROLE.PARENT, label: getRoleLabel(ROLE.PARENT) },
+    { value: ROLE.SECRETAIRE, label: getRoleLabel(ROLE.SECRETAIRE) },
+    { value: ROLE.ADMIN, label: getRoleLabel(ROLE.ADMIN) },
+    { value: ROLE.DIRECTEUR, label: getRoleLabel(ROLE.DIRECTEUR) }
   ];
 
   // Animation variant for expanding/collapsing conditional form sections
@@ -263,7 +264,7 @@ export default function AdminUserForm({ mode = 'create', userToEdit = null, onBa
 
           {/* Conditional Fields using AnimatePresence for smooth transitions */}
           <AnimatePresence>
-            {formData.role === 'etudiant' && (
+            {formData.role === ROLE.ETUDIANT && (
               <motion.div 
                 variants={expandCollapse}
                 initial="hidden"
@@ -314,7 +315,7 @@ export default function AdminUserForm({ mode = 'create', userToEdit = null, onBa
           </AnimatePresence>
 
           <AnimatePresence>
-            {(formData.role === 'parent' || formData.role === 'directeur' || formData.role === 'professeur') && (
+            {(formData.role === ROLE.PARENT || formData.role === ROLE.DIRECTEUR || formData.role === ROLE.PROFESSEUR) && (
               <motion.div 
                 variants={expandCollapse}
                 initial="hidden"
@@ -323,8 +324,8 @@ export default function AdminUserForm({ mode = 'create', userToEdit = null, onBa
               >
                 <div className="form-group md:w-1/2">
                   <label className="form-label">
-                    {formData.role === 'directeur' ? 'TÃ©lÃ©phone du directeur' : 
-                     formData.role === 'professeur' ? 'TÃ©lÃ©phone du professeur' : 'TÃ©lÃ©phone du parent'}
+                    {formData.role === ROLE.DIRECTEUR ? 'Telephone du directeur' :
+                     formData.role === ROLE.PROFESSEUR ? 'Telephone du professeur' : 'Telephone du parent'}
                   </label>
                   <input
                     type="tel"

@@ -1,9 +1,9 @@
 import React from 'react';
 import DirectoryFallback from './DirectoryFallback';
 
-function DirectoryClasses() {
+function DirectoryClasses({ userRole }) {
   return (
-    <DirectoryFallback activeMenu="Liste des Classes" />
+    <DirectoryFallback activeMenu="Liste des Classes" userRole={userRole} />
   );
 }
 

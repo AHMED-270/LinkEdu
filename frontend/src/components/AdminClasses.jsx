@@ -3,8 +3,9 @@ import axios from 'axios';
 import { Search, Plus, Edit, Trash2, Eye, GraduationCap, Users, User, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminClassForm from './AdminClassForm';
+import { ROLE } from '../constants/roles';
 
-export default function AdminClasses({ onCreateClass, userRole = 'admin' }) {
+export default function AdminClasses({ onCreateClass, userRole = ROLE.ADMIN }) {
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -97,7 +98,7 @@ export default function AdminClasses({ onCreateClass, userRole = 'admin' }) {
           <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Gestion des Classes</h1>
           <p className="text-slate-500 text-sm mt-1">Gérez les classes, les effectifs et les professeurs assignés.</p>
         </div>
-        {userRole === 'admin' && (
+        {userRole === ROLE.ADMIN && (
           <motion.button
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
@@ -143,13 +144,13 @@ export default function AdminClasses({ onCreateClass, userRole = 'admin' }) {
                     <th>Professeurs</th>
                     <th>Effectif</th>
                     <th>Détails</th>
-                    {userRole === 'admin' && <th style={{ textAlign: 'right' }}>Actions</th>}
+                    {userRole === ROLE.ADMIN && <th style={{ textAlign: 'right' }}>Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {filteredClasses.length === 0 ? (
                     <tr>
-                      <td colSpan={userRole === 'admin' ? 6 : 5} className="text-center py-12 text-slate-500">
+                      <td colSpan={userRole === ROLE.ADMIN ? 6 : 5} className="text-center py-12 text-slate-500">
                         <GraduationCap size={32} className="mx-auto mb-3 opacity-20" />
                         Aucune classe trouvée.
                       </td>
@@ -186,7 +187,7 @@ export default function AdminClasses({ onCreateClass, userRole = 'admin' }) {
                             <Eye size={18} />
                           </motion.button>
                         </td>
-                        {userRole === 'admin' && (
+                        {userRole === ROLE.ADMIN && (
                           <td style={{ textAlign: 'right' }}>
                             <div className="flex justify-end gap-2">
                               <motion.button 
@@ -224,7 +225,7 @@ export default function AdminClasses({ onCreateClass, userRole = 'admin' }) {
 
       {/* 1. Delete Confirmation Modal */}
       <AnimatePresence>
-        {deleteTarget && userRole === 'admin' && (
+        {deleteTarget && userRole === ROLE.ADMIN && (
           <motion.div 
             initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
             animate={{ opacity: 1, backdropFilter: "blur(4px)" }}

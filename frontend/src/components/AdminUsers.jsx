@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Search, Plus, Edit, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminUserForm from './AdminUserForm';
+import { getRoleBadgeClass, getRoleLabel } from '../constants/roles';
 
 export default function AdminUsers({ onCreateUser }) {
   const [users, setUsers] = useState([]);
@@ -161,11 +162,8 @@ export default function AdminUsers({ onCreateUser }) {
                         <td className="text-slate-500 text-sm">{user.email}</td>
                         <td>
                           {/* Dynamic Badge Colors using your layout logic */}
-                          <span className={`badge ${
-                            user.role === 'admin' ? 'badge-red' : 
-                            user.role === 'etudiant' ? 'badge-green' : 'badge-blue'
-                          }`}>
-                            {user.role}
+                          <span className={`badge ${getRoleBadgeClass(user.role)}`}>
+                            {getRoleLabel(user.role)}
                           </span>
                         </td>
                         <td className="text-slate-500 text-sm">{user.telephone || '-'}</td>

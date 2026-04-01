@@ -11,6 +11,7 @@ import AdminUserForm from './AdminUserForm';
 import AdminClassForm from './AdminClassForm';
 import AdminMatieres from './AdminMatieres';
 import AdminSettings from './AdminSettings';
+import { ROLE, getRoleDisplayLabel } from '../constants/roles';
 
 const ADMIN_AVATAR_STORAGE_KEY = 'linkedu_admin_avatar';
 const SUBPROJECT_STORAGE_KEY = 'linkedu_subproject_settings';
@@ -22,7 +23,7 @@ const defaultSubproject = {
   coordinator: '',
 };
 
-export default function AdminDashboard({ onLogout, userRole = 'admin', user = null }) {
+export default function AdminDashboard({ onLogout, userRole = ROLE.ADMIN, user = null }) {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [currentView, setCurrentView] = useState('home');
@@ -33,7 +34,7 @@ export default function AdminDashboard({ onLogout, userRole = 'admin', user = nu
   
   const headerAvatar = user?.profilePhoto || avatarUrl;
   const displayName = user?.name || 'Utilisateur';
-  const displayRole = userRole === 'directeur' ? 'DIRECTION' : 'SUPER ADMIN';
+  const displayRole = getRoleDisplayLabel(userRole);
 
   useEffect(() => {
     const loadAvatar = () => setAvatarUrl(localStorage.getItem(ADMIN_AVATAR_STORAGE_KEY) || '');
@@ -98,11 +99,11 @@ export default function AdminDashboard({ onLogout, userRole = 'admin', user = nu
 
   // Define navigation items for easy filtering and staggered animation
   const navItems = [
-    { id: 'home', label: 'Tableau de bord', icon: LayoutDashboard, roles: ['admin', 'directeur'] },
-    { id: 'users', label: 'Utilisateurs', icon: Users, roles: ['admin'] },
-    { id: 'classes', label: 'Classes', icon: GraduationCap, roles: ['admin', 'directeur'] },
-    { id: 'matieres', label: 'Matières', icon: BookOpen, roles: ['admin'] },
-    { id: 'settings', label: 'Paramètres', icon: Settings, roles: ['admin', 'directeur'] },
+    { id: 'home', label: 'Tableau de bord', icon: LayoutDashboard, roles: [ROLE.ADMIN, ROLE.DIRECTEUR] },
+    { id: 'users', label: 'Utilisateurs', icon: Users, roles: [ROLE.ADMIN] },
+    { id: 'classes', label: 'Classes', icon: GraduationCap, roles: [ROLE.ADMIN, ROLE.DIRECTEUR] },
+    { id: 'matieres', label: 'Matières', icon: BookOpen, roles: [ROLE.ADMIN] },
+    { id: 'settings', label: 'Paramètres', icon: Settings, roles: [ROLE.ADMIN, ROLE.DIRECTEUR] },
   ].filter(item => item.roles.includes(userRole));
 
   // Framer Motion Variants
@@ -121,7 +122,7 @@ export default function AdminDashboard({ onLogout, userRole = 'admin', user = nu
     <div className="layout">
       {/* ===== GLOBAL MODALS ===== */}
       <AnimatePresence>
-        {showCreateUserModal && userRole === 'admin' && (
+        {showCreateUserModal && userRole === ROLE.ADMIN && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="logout-modal-backdrop">
             <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="logout-modal-card p-0 overflow-hidden max-w-4xl w-[90vw] max-h-[90vh] overflow-y-auto">
               <AdminUserForm
@@ -134,7 +135,7 @@ export default function AdminDashboard({ onLogout, userRole = 'admin', user = nu
           </motion.div>
         )}
 
-        {showCreateClassModal && userRole === 'admin' && (
+        {showCreateClassModal && userRole === ROLE.ADMIN && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="logout-modal-backdrop">
             <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="logout-modal-card p-0 overflow-hidden max-w-4xl w-[90vw] max-h-[90vh] overflow-y-auto">
               <AdminClassForm
@@ -264,9 +265,9 @@ export default function AdminDashboard({ onLogout, userRole = 'admin', user = nu
               className="w-full h-full"
             >
               {currentView === 'home' && <AdminDashboardHome />}
-              {currentView === 'users' && userRole === 'admin' && <AdminUsers onCreateUser={() => setShowCreateUserModal(true)} />}
+              {currentView === 'users' && userRole === ROLE.ADMIN && <AdminUsers onCreateUser={() => setShowCreateUserModal(true)} />}
               {currentView === 'classes' && <AdminClasses userRole={userRole} onCreateClass={() => setShowCreateClassModal(true)} />}
-              {currentView === 'matieres' && userRole === 'admin' && <AdminMatieres userRole={userRole} />}
+              {currentView === 'matieres' && userRole === ROLE.ADMIN && <AdminMatieres userRole={userRole} />}
               {currentView === 'settings' && <AdminSettings />}
               {currentView === 'profile' && <AdminProfile />}
             </motion.div>

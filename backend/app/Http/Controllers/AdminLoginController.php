@@ -55,11 +55,14 @@ class AdminLoginController extends Controller
         }
 
         // Toujours invalider le token si trouvé
-        if (method_exists($request->user(), "currentAccessToken")) {
-            $request->user()?->currentAccessToken()?->delete();
+        $user = $request->user();
+        if ($user && method_exists($user, "currentAccessToken")) {
+            $token = $user->currentAccessToken();
+            if ($token && method_exists($token, 'delete')) {
+                $token->delete();
+            }
         }
 
         return response()->json(["message" => "Déconnexion réussie"]);
     }
 }
-

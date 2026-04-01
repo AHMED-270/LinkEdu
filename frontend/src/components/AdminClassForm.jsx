@@ -2,6 +2,7 @@
 import axios from 'axios';
 import { ArrowLeft, Save, X, AlertCircle, Check, Users, GraduationCap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ROLE } from '../constants/roles';
 
 export default function AdminClassForm({ mode = 'create', classToEdit = null, onBack, onSuccess, isModal = false }) {
   const isEditing = mode === 'edit' && !!classToEdit;
@@ -27,7 +28,7 @@ export default function AdminClassForm({ mode = 'create', classToEdit = null, on
           headers: { Accept: 'application/json' }
         });
 
-        const profs = (response.data || []).filter((u) => u.role === 'professeur');
+        const profs = (response.data || []).filter((u) => u.role === ROLE.PROFESSEUR);
         setProfesseurs(profs);
 
         if (isEditing) {

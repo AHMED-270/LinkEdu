@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import './DirectorySettings.css';
 import axios from 'axios';
+import { ROLE, getRoleLabel } from '../constants/roles';
 
-const DirectorySettings = () => {
+const DirectorySettings = ({ userRole = ROLE.DIRECTEUR }) => {
   const [activeTab, setActiveTab] = useState('profil');
   const [profileData, setProfileData] = useState({
     nom: '',
@@ -20,6 +21,7 @@ const DirectorySettings = () => {
     nouveau: '',
     confirmation: ''
   });
+  const currentRoleLabel = getRoleLabel(userRole);
 
   useEffect(() => {
     fetchProfile();
@@ -129,7 +131,7 @@ const DirectorySettings = () => {
                   <div className="avatar-placeholder">{profileData.nom ? profileData.nom.substring(0,2).toUpperCase() : 'DP'}</div>
                   <button className="change-avatar-btn"><i className="fa-solid fa-camera"></i></button>
                 </div>
-                <div className="profile-role-badge">Directeur</div>
+                <div className="profile-role-badge">{currentRoleLabel}</div>
               </div>
 
               {isLoading ? (

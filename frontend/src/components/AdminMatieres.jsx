@@ -2,8 +2,9 @@
 import axios from 'axios';
 import { Plus, Edit, Trash2, Search, BookOpen, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ROLE } from '../constants/roles';
 
-export default function AdminMatieres({ userRole = 'admin' }) {
+export default function AdminMatieres({ userRole = ROLE.ADMIN }) {
   const [matieres, setMatieres] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -168,7 +169,7 @@ export default function AdminMatieres({ userRole = 'admin' }) {
     })
   };
 
-  if (userRole !== 'admin') {
+  if (userRole !== ROLE.ADMIN) {
     return (
       <div className="layout-content flex items-center justify-center">
         <div className="text-center p-8 bg-red-50 text-red-600 rounded-xl border border-red-100">

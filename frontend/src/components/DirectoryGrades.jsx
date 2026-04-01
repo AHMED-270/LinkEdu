@@ -1,9 +1,9 @@
 import React from 'react';
 import DirectoryFallback from './DirectoryFallback';
 
-function DirectoryGrades() {
+function DirectoryGrades({ userRole }) {
   return (
-    <DirectoryFallback activeMenu="Notes & Examens" />
+    <DirectoryFallback activeMenu="Notes & Examens" userRole={userRole} />
   );
 }
 

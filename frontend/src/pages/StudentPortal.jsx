@@ -2,16 +2,17 @@
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { LayoutDashboard, GraduationCap, FileText, Calendar, BookOpen, FolderOpen, Bell, LogOut } from 'lucide-react';
 import './RolePortal.css';
 
 const tabs = [
-  { key: 'dashboard', label: 'Tableau de bord' },
-  { key: 'notes', label: 'Notes' },
-  { key: 'devoirs', label: 'Devoirs' },
-  { key: 'emploi', label: 'Emploi du temps' },
-  { key: 'lecons', label: 'Lecons' },
-  { key: 'ressources', label: 'Ressources' },
-  { key: 'annonces', label: 'Annonces' },
+  { key: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
+  { key: 'notes', label: 'Notes', icon: GraduationCap },
+  { key: 'devoirs', label: 'Devoirs', icon: FileText },
+  { key: 'emploi', label: 'Emploi du temps', icon: Calendar },
+  { key: 'lecons', label: 'Lecons', icon: BookOpen },
+  { key: 'ressources', label: 'Ressources', icon: FolderOpen },
+  { key: 'annonces', label: 'Annonces', icon: Bell },
 ];
 
 const browserHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
@@ -185,22 +186,46 @@ export default function StudentPortal() {
         <button className="portal-logout" onClick={handleLogout}>Se deconnecter</button>
       </header>
 
-      <nav className="portal-tabs">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            className={activeTab === tab.key ? 'portal-tab active' : 'portal-tab'}
-            onClick={() => setActiveTab(tab.key)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </nav>
+      <div className="portal-body">
+        <aside className="portal-sidebar">
+          <div className="portal-sidebar-brand">
+            <h2>LinkEdu Etudiant</h2>
+          </div>
 
-      {loading && <p className="portal-state">Chargement...</p>}
-      {error && <p className="portal-state portal-error">{error}</p>}
+          <div className="portal-profile-card">
+            <strong>{studentName}</strong>
+            <p>Espace etudiant</p>
+          </div>
 
-      {!loading && !error && activeTab === 'dashboard' && dashboard && (
+          <nav className="portal-sidebar-nav">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.key}
+                  className={activeTab === tab.key ? 'portal-side-link active' : 'portal-side-link'}
+                  onClick={() => setActiveTab(tab.key)}
+                >
+                  <Icon size={16} />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+
+          <div className="portal-sidebar-footer">
+            <button className="portal-sidebar-logout" onClick={handleLogout}>
+              <LogOut size={16} />
+              <span>Se deconnecter</span>
+            </button>
+          </div>
+        </aside>
+
+        <main className="portal-content">
+          {loading && <p className="portal-state">Chargement...</p>}
+          {error && <p className="portal-state portal-error">{error}</p>}
+
+          {!loading && !error && activeTab === 'dashboard' && dashboard && (
         <section className="portal-grid portal-grid-4">
           <article className="portal-card"><h3>Moyenne generale</h3><p>{dashboard.stats?.moyenne_generale ?? '-'}</p></article>
           <article className="portal-card"><h3>Absences</h3><p>{dashboard.stats?.nombre_absences ?? 0}</p></article>
@@ -303,6 +328,8 @@ export default function StudentPortal() {
           {annonces.length === 0 && <p className="portal-state">Aucune annonce disponible.</p>}
         </section>
       )}
+        </main>
+      </div>
     </div>
   );
 }

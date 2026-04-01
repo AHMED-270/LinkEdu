@@ -205,7 +205,7 @@ export default function ParentPortal() {
   );
 
   return (
-    <div className="min-h-screen bg-[#F4F7FE] flex flex-col font-sans text-slate-800 pb-12">
+    <div className="portal-shell min-h-screen bg-[#F4F7FE] flex flex-col font-sans text-slate-800 pb-12">
       
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 px-6 py-4 shadow-sm flex justify-between items-center">
@@ -227,61 +227,67 @@ export default function ParentPortal() {
         </motion.button>
       </header>
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 mt-8">
-        
-        {/* Toolbar: Child Selector & Tabs */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
-          
-          {/* Segmented Tabs */}
-          <nav className="flex flex-wrap justify-center gap-1 bg-white p-2 rounded-2xl shadow-sm border border-slate-100 flex-1 md:flex-none">
+      <div className="portal-body">
+        <aside className="portal-sidebar">
+          <div className="portal-sidebar-brand">
+            <h2>LinkEdu Parent</h2>
+          </div>
+
+          <div className="portal-profile-card">
+            <strong>{parentName}</strong>
+            <p>Espace parent</p>
+          </div>
+
+          <nav className="portal-sidebar-nav">
             {tabs.map((tab) => {
               const Icon = tab.icon;
-              const isActive = activeTab === tab.key;
               return (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`relative px-3 py-2 text-sm font-semibold rounded-xl flex items-center gap-2 transition-colors z-10 ${
-                    isActive ? 'text-indigo-700' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-                  }`}
+                  className={activeTab === tab.key ? 'portal-side-link active' : 'portal-side-link'}
                 >
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeParentTab"
-                      className="absolute inset-0 bg-indigo-50 border border-indigo-100 rounded-xl -z-10"
-                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                    />
-                  )}
-                  <Icon size={16} className={isActive ? 'text-indigo-600' : 'text-slate-400'} />
-                  <span className="hidden lg:inline">{tab.label}</span>
+                  <Icon size={16} />
+                  <span>{tab.label}</span>
                 </button>
               );
             })}
           </nav>
 
-          {/* Child Selector */}
-          {children.length > 0 && activeTab !== 'dashboard' && activeTab !== 'reclamations' && activeTab !== 'enfants' && (
-            <div className="relative group min-w-[240px]">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Users size={16} className="text-indigo-500" />
+          <div className="portal-sidebar-footer">
+            <button className="portal-sidebar-logout" onClick={handleLogout}>
+              <LogOut size={16} />
+              <span>Se deconnecter</span>
+            </button>
+          </div>
+        </aside>
+
+        <main className="portal-content max-w-6xl w-full mx-auto px-4 mt-8">
+          {/* Toolbar: Child Selector */}
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
+            {/* Child Selector */}
+            {children.length > 0 && activeTab !== 'dashboard' && activeTab !== 'reclamations' && activeTab !== 'enfants' && (
+              <div className="relative group min-w-[240px] ml-auto">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Users size={16} className="text-indigo-500" />
+                </div>
+                <select
+                  className="w-full pl-10 pr-10 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-700 shadow-sm appearance-none cursor-pointer outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
+                  value={selectedChildId}
+                  onChange={(event) => setSelectedChildId(event.target.value)}
+                >
+                  {children.map((child) => (
+                    <option key={child.id_etudiant} value={child.id_etudiant}>
+                      Ã‰lÃ¨ve: {child.nom_complet || child.prenom || `ID #${child.id_etudiant}`}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                  <ChevronDown size={16} className="text-slate-400 group-hover:text-indigo-500 transition-colors" />
+                </div>
               </div>
-              <select
-                className="w-full pl-10 pr-10 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-700 shadow-sm appearance-none cursor-pointer outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
-                value={selectedChildId}
-                onChange={(event) => setSelectedChildId(event.target.value)}
-              >
-                {children.map((child) => (
-                  <option key={child.id_etudiant} value={child.id_etudiant}>
-                    Ã‰lÃ¨ve: {child.nom_complet || child.prenom || `ID #${child.id_etudiant}`}
-                  </option>
-                ))}
-              </select>
-              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                <ChevronDown size={16} className="text-slate-400 group-hover:text-indigo-500 transition-colors" />
-              </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
 
         {/* Content Area */}
         <div className="relative min-h-[400px]">
@@ -487,7 +493,8 @@ export default function ParentPortal() {
             )}
           </AnimatePresence>
         </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

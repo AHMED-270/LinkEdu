@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Professeur;
 use App\Models\Reclamation;
@@ -58,25 +59,107 @@ class DirecteurController extends Controller
 
     public function getReclamations(): JsonResponse
     {
-        $reclamations = Reclamation::with(['parentEleve.user'])->orderByDesc('created_at')->get()->map(function ($rec) {
-            $userName = $rec->parentEleve && $rec->parentEleve->user ? $rec->parentEleve->user->name : 'Parent Inconnu';
-            $typeClass = 'badge-nouveau';
-            if (strtolower($rec->statut) == 'en cours') $typeClass = 'badge-encours';
-            else if (strtolower($rec->statut) == 'résolu' || strtolower($rec->statut) == 'resolu') $typeClass = 'badge-resolu';
-
-            return [
-                'id' => $rec->id_reclamation,
-                'type' => $rec->statut ?: 'Nouveau',
-                'typeClass' => $typeClass,
-                'date' => $rec->created_at ? $rec->created_at->format('d M Y • H:i') : $rec->date_soumission,
-                'name' => $userName . ' (Parent)',
-                'subject' => $rec->sujet,
-                'logo' => strtoupper(substr($userName, 0, 1)),
-                'message' => $rec->message
-            ];
-        });
+        $reclamations = Reclamation::with(['parentEleve.user'])
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function ($rec) {
+                return [
+                    'id_reclamation' => $rec->id_reclamation,
+                    'statut' => $rec->statut ?: 'Nouveau',
+                    'date_reclamation' => $rec->date_soumission ?? $rec->created_at,
+                    'id_parent' => $rec->id_parent,
+                    'sujet' => $rec->sujet,
+                    'description' => $rec->message,
+                ];
+            });
 
         return response()->json($reclamations);
+    }
+
+    public function storeReclamation(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'sujet' => 'required|string|max:255',
+            'description' => 'required|string|max:5000',
+            'id_parent' => 'nullable|integer|exists:parents,id_parent',
+        ]);
+
+        $parentId = $validated['id_parent'] ?? DB::table('parents')->value('id_parent');
+
+        if (! $parentId) {
+            return response()->json([
+                'message' => 'Aucun parent disponible pour rattacher la reclamation.'
+            ], 422);
+        }
+
+        $reclamation = Reclamation::create([
+            'sujet' => $validated['sujet'],
+            'message' => $validated['description'],
+            'date_soumission' => now(),
+            'statut' => 'Nouveau',
+            'id_parent' => $parentId,
+        ]);
+
+        return response()->json([
+            'message' => 'Reclamation ajoutee avec succes.',
+            'reclamation' => [
+                'id_reclamation' => $reclamation->id_reclamation,
+                'statut' => $reclamation->statut,
+                'date_reclamation' => $reclamation->date_soumission,
+                'id_parent' => $reclamation->id_parent,
+                'sujet' => $reclamation->sujet,
+                'description' => $reclamation->message,
+            ],
+        ], 201);
+    }
+
+    public function updateReclamation(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'sujet' => 'required|string|max:255',
+            'description' => 'required|string|max:5000',
+        ]);
+
+        $reclamation = Reclamation::where('id_reclamation', $id)->first();
+
+        if (! $reclamation) {
+            return response()->json([
+                'message' => 'Reclamation introuvable.'
+            ], 404);
+        }
+
+        $reclamation->sujet = $validated['sujet'];
+        $reclamation->message = $validated['description'];
+        $reclamation->save();
+
+        return response()->json([
+            'message' => 'Reclamation modifiee avec succes.',
+            'reclamation' => [
+                'id_reclamation' => $reclamation->id_reclamation,
+                'statut' => $reclamation->statut,
+                'date_reclamation' => $reclamation->date_soumission,
+                'id_parent' => $reclamation->id_parent,
+                'sujet' => $reclamation->sujet,
+                'description' => $reclamation->message,
+            ],
+        ]);
+    }
+
+    public function deleteReclamation(int $id): JsonResponse
+    {
+        $reclamation = Reclamation::where('id_reclamation', $id)->first();
+
+        if (! $reclamation) {
+            return response()->json([
+                'message' => 'Reclamation introuvable.'
+            ], 404);
+        }
+
+        $reclamation->delete();
+
+        return response()->json([
+            'message' => 'Reclamation supprimee avec succes.'
+        ]);
     }
 
     public function getProfile(\Illuminate\Http\Request $request): JsonResponse

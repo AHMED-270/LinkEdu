@@ -1,10 +1,13 @@
 ﻿import React from 'react';
+import { ROLE, getPortalLabelByRole } from '../constants/roles';
 
-function DirectoryFallback({ activeMenu }) {
+function DirectoryFallback({ activeMenu, userRole = ROLE.DIRECTEUR }) {
+  const portalLabel = getPortalLabelByRole(userRole);
+
   return (
     <div className="prof-page">
       <div className="prof-breadcrumb">
-        Portail Directeur &gt; <span>{activeMenu}</span>
+        {portalLabel} &gt; <span>{activeMenu}</span>
       </div>
       <header className="page-dashboard-header">
         <div>

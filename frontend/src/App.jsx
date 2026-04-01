@@ -24,17 +24,9 @@ import Parametres from './pages/Parametres';
 // import Login from './pages/Login';
 import StudentPortal from './pages/StudentPortal';
 import ParentPortal from './pages/ParentPortal';
+import { ROLE, getHomeRouteByRole } from './constants/roles';
 
 import './App.css';
-
-const getHomeRouteByRole = (role) => {
-  if (role === 'admin') return '/admin';
-  if (role === 'directeur') return '/directeur';
-  if (role === 'professeur') return '/dashboard';
-  if (role === 'etudiant') return '/etudiant';
-  if (role === 'parent') return '/parent';
-  return '/login';
-};
 
 // Global Loading Component
 const FullScreenLoader = () => (
@@ -111,9 +103,9 @@ const AppRoutes = () => {
         <Route
           path="/admin/*"
           element={
-            <ProtectedRoute allowedRoles={['admin']}>
+            <ProtectedRoute allowedRoles={[ROLE.ADMIN]}>
               <PageTransition>
-                <AdminDashboard onLogout={logout} userRole={user?.role || 'admin'} user={user} />
+                <AdminDashboard onLogout={logout} userRole={user?.role || ROLE.ADMIN} user={user} />
               </PageTransition>
             </ProtectedRoute>
           }
@@ -122,7 +114,7 @@ const AppRoutes = () => {
         <Route
           path="/directeur/*"
           element={
-            <ProtectedRoute allowedRoles={['directeur']}>
+            <ProtectedRoute allowedRoles={[ROLE.DIRECTEUR]}>
               <PageTransition>
                 <DirecteurDashboard onLogout={logout} user={user} />
               </PageTransition>
@@ -131,22 +123,22 @@ const AppRoutes = () => {
         />
 
         {/* Student and Parent Routes */}
-        <Route path="/etudiant/*" element={<ProtectedRoute allowedRoles={['etudiant']}><PageTransition><StudentPortal /></PageTransition></ProtectedRoute>} />
-        <Route path="/parent/*" element={<ProtectedRoute allowedRoles={['parent']}><PageTransition><ParentPortal /></PageTransition></ProtectedRoute>} />
+        <Route path="/etudiant/*" element={<ProtectedRoute allowedRoles={[ROLE.ETUDIANT]}><PageTransition><StudentPortal /></PageTransition></ProtectedRoute>} />
+        <Route path="/parent/*" element={<ProtectedRoute allowedRoles={[ROLE.PARENT]}><PageTransition><ParentPortal /></PageTransition></ProtectedRoute>} />
         
         {/* Professeur Routes */}
-        <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['professeur']}><PageTransition><Layout title="Tableau de Bord"><Dashboard /></Layout></PageTransition></ProtectedRoute>} />
-        <Route path="/devoirs" element={<ProtectedRoute allowedRoles={['professeur']}><PageTransition><Layout title="Devoirs & Ressources"><Devoirs /></Layout></PageTransition></ProtectedRoute>} />
-        <Route path="/ressources" element={<ProtectedRoute allowedRoles={['professeur']}><PageTransition><Layout title="Publier une Ressource"><Ressources /></Layout></PageTransition></ProtectedRoute>} />
-        <Route path="/emploi-du-temps" element={<ProtectedRoute allowedRoles={['professeur']}><PageTransition><Layout title="Emploi du Temps"><EmploiDuTemps /></Layout></PageTransition></ProtectedRoute>} />
-        <Route path="/annonces" element={<ProtectedRoute allowedRoles={['professeur']}><PageTransition><Layout title="Annonces"><Annonces /></Layout></PageTransition></ProtectedRoute>} />
-        <Route path="/mes-classes" element={<ProtectedRoute allowedRoles={['professeur']}><PageTransition><Layout title="Mes Classes"><Eleves /></Layout></PageTransition></ProtectedRoute>} />
-        <Route path="/appel" element={<ProtectedRoute allowedRoles={['professeur']}><PageTransition><Layout title="Feuille d'Appel"><Appel /></Layout></PageTransition></ProtectedRoute>} />
-        <Route path="/notes-absences" element={<ProtectedRoute allowedRoles={['professeur']}><PageTransition><Layout title="Notes & Absences"><Notes /></Layout></PageTransition></ProtectedRoute>} />
-        <Route path="/avancement" element={<ProtectedRoute allowedRoles={['professeur']}><PageTransition><Layout title="Avancement"><Avancement /></Layout></PageTransition></ProtectedRoute>} />
-        <Route path="/reclamation" element={<ProtectedRoute allowedRoles={['professeur']}><PageTransition><Layout title="Réclamation"><Reclamation /></Layout></PageTransition></ProtectedRoute>} />
-        <Route path="/profil" element={<ProtectedRoute allowedRoles={['professeur']}><PageTransition><Layout title="Profil"><Parametres /></Layout></PageTransition></ProtectedRoute>} />
-        <Route path="/parametres" element={<ProtectedRoute allowedRoles={['professeur']}><PageTransition><Layout title="Paramètres"><Parametres /></Layout></PageTransition></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute allowedRoles={[ROLE.PROFESSEUR]}><PageTransition><Layout title="Tableau de Bord"><Dashboard /></Layout></PageTransition></ProtectedRoute>} />
+        <Route path="/devoirs" element={<ProtectedRoute allowedRoles={[ROLE.PROFESSEUR]}><PageTransition><Layout title="Devoirs & Ressources"><Devoirs /></Layout></PageTransition></ProtectedRoute>} />
+        <Route path="/ressources" element={<ProtectedRoute allowedRoles={[ROLE.PROFESSEUR]}><PageTransition><Layout title="Publier une Ressource"><Ressources /></Layout></PageTransition></ProtectedRoute>} />
+        <Route path="/emploi-du-temps" element={<ProtectedRoute allowedRoles={[ROLE.PROFESSEUR]}><PageTransition><Layout title="Emploi du Temps"><EmploiDuTemps /></Layout></PageTransition></ProtectedRoute>} />
+        <Route path="/annonces" element={<ProtectedRoute allowedRoles={[ROLE.PROFESSEUR]}><PageTransition><Layout title="Annonces"><Annonces /></Layout></PageTransition></ProtectedRoute>} />
+        <Route path="/mes-classes" element={<ProtectedRoute allowedRoles={[ROLE.PROFESSEUR]}><PageTransition><Layout title="Mes Classes"><Eleves /></Layout></PageTransition></ProtectedRoute>} />
+        <Route path="/appel" element={<ProtectedRoute allowedRoles={[ROLE.PROFESSEUR]}><PageTransition><Layout title="Feuille d'Appel"><Appel /></Layout></PageTransition></ProtectedRoute>} />
+        <Route path="/notes-absences" element={<ProtectedRoute allowedRoles={[ROLE.PROFESSEUR]}><PageTransition><Layout title="Notes & Absences"><Notes /></Layout></PageTransition></ProtectedRoute>} />
+        <Route path="/avancement" element={<ProtectedRoute allowedRoles={[ROLE.PROFESSEUR]}><PageTransition><Layout title="Avancement"><Avancement /></Layout></PageTransition></ProtectedRoute>} />
+        <Route path="/reclamation" element={<ProtectedRoute allowedRoles={[ROLE.PROFESSEUR]}><PageTransition><Layout title="Réclamation"><Reclamation /></Layout></PageTransition></ProtectedRoute>} />
+        <Route path="/profil" element={<ProtectedRoute allowedRoles={[ROLE.PROFESSEUR]}><PageTransition><Layout title="Profil"><Parametres /></Layout></PageTransition></ProtectedRoute>} />
+        <Route path="/parametres" element={<ProtectedRoute allowedRoles={[ROLE.PROFESSEUR]}><PageTransition><Layout title="Paramètres"><Parametres /></Layout></PageTransition></ProtectedRoute>} />
         
         {/* Fallback */}
         <Route path="*" element={<Navigate to={user ? getHomeRouteByRole(user?.role) : '/login'} replace />} />

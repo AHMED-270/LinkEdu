@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import AdminUserForm from './AdminUserForm';
+import { ROLE, getPortalLabelByRole } from '../constants/roles';
 
 axios.defaults.withCredentials = true;
 
-function DirectoryProfessors() {
+function DirectoryProfessors({ userRole = ROLE.DIRECTEUR }) {
   const [isAdding, setIsAdding] = useState(false);
   const [professors, setProfessors] = useState([]);
   const [loading, setLoading] = useState(true);
+  const portalLabel = getPortalLabelByRole(userRole);
 
   useEffect(() => {
     fetchProfessors();
@@ -30,7 +32,7 @@ function DirectoryProfessors() {
     return (
       <div className="prof-page">
         <div className="prof-breadcrumb">
-          Portail Directeur &gt; <span onClick={() => setIsAdding(false)} style={{cursor: 'pointer', color: '#1d4ed8', textDecoration: 'underline'}}>Professeurs</span> &gt; <span>Ajouter</span>
+          {portalLabel} &gt; <span onClick={() => setIsAdding(false)} style={{cursor: 'pointer', color: '#1d4ed8', textDecoration: 'underline'}}>Professeurs</span> &gt; <span>Ajouter</span>
         </div>
         <div style={{ padding: '20px', backgroundColor: '#fff', borderRadius: '8px', marginTop: '20px' }}>
           <AdminUserForm
@@ -45,7 +47,7 @@ function DirectoryProfessors() {
 
   return (
     <div className="prof-page">
-      <div className="prof-breadcrumb">Portail Directeur &gt; <span>Professeurs</span></div>
+      <div className="prof-breadcrumb">{portalLabel} &gt; <span>Professeurs</span></div>
       <header className="page-dashboard-header">
         <div>
           <h1>Liste des Professeurs par Classe</h1>

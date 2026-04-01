@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { getHomeRouteByRole } from '../constants/roles';
 
 const AUTH_TOKEN_KEY = 'linkedu_token';
 const browserHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
@@ -13,7 +14,6 @@ export default function LoginCard({ onLoginSuccess }) {
   const [isResetSent, setIsResetSent] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
-  const [loginRole, setLoginRole] = useState('etudiant'); // Default to generic student/all role handling
   const [loginFeedback, setLoginFeedback] = useState('');
   const [loginFeedbackType, setLoginFeedbackType] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -80,18 +80,7 @@ export default function LoginCard({ onLoginSuccess }) {
       setLoginFeedback('Authentification réussie !');
       setLoginFeedbackType('success');
 
-      const role = connectedUser?.role;
-      const roleHome = role === 'admin'
-        ? '/admin'
-        : role === 'directeur'
-          ? '/directeur'
-          : role === 'professeur'
-            ? '/dashboard'
-            : role === 'etudiant'
-              ? '/etudiant'
-              : role === 'parent'
-                ? '/parent'
-                : '/login';
+      const roleHome = getHomeRouteByRole(connectedUser?.role);
 
       setTimeout(() => navigate(roleHome, { replace: true }), 500);
     } catch (err) {

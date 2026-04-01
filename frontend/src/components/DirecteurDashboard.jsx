@@ -12,6 +12,7 @@ import DirectoryGrades from './DirectoryGrades';
 import DirectorySettings from './DirectorySettings';
 import DirectoryTimetable from './DirectoryTimetable';
 import DirectoryAnnonces from './DirectoryAnnonces';
+import { getRoleDisplayLabel, getRoleLabel } from '../constants/roles';
 
 function DirecteurDashboard({ user, onLogout }) {
   const [stats, setStats] = useState(null)
@@ -63,6 +64,7 @@ function DirecteurDashboard({ user, onLogout }) {
 
   const [activeTab, setActiveTab] = useState('devoir')
   const [actionFeedback, setActionFeedback] = useState('')
+  const fallbackUserName = `le ${String(getRoleLabel(user?.role) || 'Utilisateur').toLowerCase()}`;
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -125,8 +127,8 @@ function DirecteurDashboard({ user, onLogout }) {
           <div className="topbar-profile" onClick={onLogout} title="Deconnexion">
             <img src="https://i.pravatar.cc/150?u=director" alt="Avatar" className="topbar-avatar" />
             <div className="topbar-profile-text">
-              <strong>{user?.prenom ?? 'M.'} {user?.nom ?? 'le Directeur'}</strong>
-              <span>Direction Generale</span>
+              <strong>{user?.prenom ?? 'M.'} {user?.nom ?? fallbackUserName}</strong>
+              <span>{getRoleDisplayLabel(user?.role)}</span>
             </div>
           </div>
         </div>
@@ -143,7 +145,7 @@ function DirecteurDashboard({ user, onLogout }) {
             <div className="page-dashboard">
               <header className="page-dashboard-header">
                 <div>
-                  <h1>Bonjour, {user?.prenom ?? 'M.'} {user?.nom ?? 'le Directeur'}</h1>
+                  <h1>Bonjour, {user?.prenom ?? 'M.'} {user?.nom ?? fallbackUserName}</h1>
                   <p>Voici le point de situation de l'etablissement pour aujourd'hui.</p>
                 </div>
                 <div className="header-actions">
@@ -266,22 +268,22 @@ function DirecteurDashboard({ user, onLogout }) {
               <DirectoryReclamations />
             )}
             {!isLoading && !error && activeMenu === 'Liste des Professeurs' && (
-              <DirectoryProfessors />
+              <DirectoryProfessors userRole={user?.role} />
             )}
             {!isLoading && !error && activeMenu === 'Liste des Etudiants' && (
-                <DirectoryStudents />
+                <DirectoryStudents userRole={user?.role} />
               )}
               {!isLoading && !error && activeMenu === 'Liste des Classes' && (
-                <DirectoryClasses />
+                <DirectoryClasses userRole={user?.role} />
               )}
               {!isLoading && !error && activeMenu === 'Notes & Examens' && (
-                <DirectoryGrades />
+                <DirectoryGrades userRole={user?.role} />
               )}
               {!isLoading && !error && activeMenu === 'Parametres' && (
-                <DirectorySettings />
+                <DirectorySettings userRole={user?.role} />
               )}
               {!isLoading && !error && activeMenu === 'Communication' && (
-                <DirectoryFallback activeMenu={activeMenu} />
+                <DirectoryFallback activeMenu={activeMenu} userRole={user?.role} />
               )}
               {!isLoading && !error && activeMenu === 'Rapports' && (<DirectoryReports />)}
               {!isLoading && !error && activeMenu === 'Annonces' && (

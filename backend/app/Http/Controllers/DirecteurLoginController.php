@@ -56,8 +56,12 @@ class DirecteurLoginController extends Controller
             $request->session()->regenerateToken();
         }
 
-        if (method_exists($request->user(), 'currentAccessToken')) {
-            $request->user()?->currentAccessToken()?->delete();
+        $user = $request->user();
+        if ($user && method_exists($user, 'currentAccessToken')) {
+            $token = $user->currentAccessToken();
+            if ($token && method_exists($token, 'delete')) {
+                $token->delete();
+            }
         }
 
         return response()->json(['message' => 'Deconnexion reussie']);

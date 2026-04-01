@@ -47,6 +47,9 @@ Route::middleware(['auth:sanctum', 'role:directeur'])->group(function () {
     Route::get('/directeur/dashboard', [DirecteurController::class, 'dashboard']);
     Route::get('/directeur/professeurs', [DirecteurController::class, 'getProfessors']);
     Route::get('/directeur/reclamations', [DirecteurController::class, 'getReclamations']);
+    Route::post('/directeur/reclamations', [DirecteurController::class, 'storeReclamation']);
+    Route::put('/directeur/reclamations/{id}', [DirecteurController::class, 'updateReclamation']);
+    Route::delete('/directeur/reclamations/{id}', [DirecteurController::class, 'deleteReclamation']);
     Route::get('/directeur/profile', [DirecteurController::class, 'getProfile']);
     Route::put('/directeur/profile', [DirecteurController::class, 'updateProfile']);
     Route::put('/directeur/password', [DirecteurController::class, 'updatePassword']);
