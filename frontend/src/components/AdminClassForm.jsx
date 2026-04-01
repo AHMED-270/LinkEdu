@@ -7,32 +7,69 @@ import { BiSolidUserDetail } from 'react-icons/bi';
 export default function AdminClassForm({ mode = 'create', classToEdit = null, onBack, onSuccess, isModal = false }) {
   const isEditing = mode === 'edit' && !!classToEdit;
   const [professeurs, setProfesseurs] = useState([]);
+  const [matieres, setMatieres] = useState([]);
+  const [selectedProfForModal, setSelectedProfForModal] = useState(null);
+  const [selectedMatieres, setSelectedMatieres] = useState([]);
 
   const [formData, setFormData] = useState({
     nom: '',
     niveau: '',
+    filiere: '',
+    pricing: 0,
     professeur_ids: []
   });
+  const [classOptions, setClassOptions] = useState({
+    niveaux: [],
+    filieresByNiveau: {},
+    pricingByNiveauFiliere: {}
+  });
+  const [professeurMatieres, setProfesseurMatieres] = useState({});
   const [formMsg, setFormMsg] = useState('');
   const [saving, setSaving] = useState(false);
 
   const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
   useEffect(() => {
-    const fetchProfesseurs = async () => {
+    const fetchData = async () => {
       try {
-        const response = await axios.get(apiBaseUrl + '/api/admin/users', {
-          withCredentials: true,
-          headers: { Accept: 'application/json' }
-        });
+        const [professResponse, matieresResponse, classOptionsResponse] = await Promise.all([
+          axios.get(apiBaseUrl + '/api/admin/users', {
+            withCredentials: true,
+            headers: { Accept: 'application/json' }
+          }),
+          axios.get(apiBaseUrl + '/api/admin/matieres', {
+            withCredentials: true,
+            headers: { Accept: 'application/json' }
+          }),
+          axios.get(apiBaseUrl + '/api/admin/class-options', {
+            withCredentials: true,
+            headers: { Accept: 'application/json' }
+          })
+        ]);
 
-        const profs = (response.data || []).filter((u) => u.role === 'professeur');
+        const profs = (professResponse.data || []).filter((u) => u.role === 'professeur');
         setProfesseurs(profs);
+        
+        const matieresList = Array.isArray(matieresResponse.data) ? matieresResponse.data : [];
+        setMatieres(matieresList);
+
+        const optionsData = classOptionsResponse.data || {};
+        setClassOptions({
+          niveaux: Array.isArray(optionsData.niveaux) ? optionsData.niveaux : [],
+          filieresByNiveau: optionsData.filieres_by_niveau && typeof optionsData.filieres_by_niveau === 'object'
+            ? optionsData.filieres_by_niveau
+            : {},
+          pricingByNiveauFiliere: optionsData.pricing_by_niveau_filiere && typeof optionsData.pricing_by_niveau_filiere === 'object'
+            ? optionsData.pricing_by_niveau_filiere
+            : {},
+        });
 
         if (isEditing) {
           setFormData({
             nom: classToEdit.nom || '',
             niveau: classToEdit.niveau || '',
+            filiere: classToEdit.filiere || '',
+            pricing: Number(classToEdit.pricing) || 0,
             professeur_ids: Array.isArray(classToEdit.professeurs_ids)
               ? classToEdit.professeurs_ids.map((id) => String(id))
               : []
@@ -41,16 +78,39 @@ export default function AdminClassForm({ mode = 'create', classToEdit = null, on
           setFormData({
             nom: '',
             niveau: '',
+            filiere: '',
+            pricing: 0,
             professeur_ids: []
           });
         }
       } catch (error) {
-        setFormMsg('Impossible de charger la liste des professeurs.');
+        setFormMsg('Impossible de charger les données.');
       }
     };
 
-    fetchProfesseurs();
+    fetchData();
   }, [apiBaseUrl, isEditing, classToEdit]);
+
+  useEffect(() => {
+    if (!formData.niveau) {
+      if (formData.filiere !== '') {
+        setFormData((prev) => ({ ...prev, filiere: '' }));
+      }
+      return;
+    }
+
+    const allowedFilieres = classOptions.filieresByNiveau[formData.niveau] || [];
+    if (allowedFilieres.length === 0) {
+      if (formData.filiere !== '') {
+        setFormData((prev) => ({ ...prev, filiere: '' }));
+      }
+      return;
+    }
+
+    if (!allowedFilieres.includes(formData.filiere)) {
+      setFormData((prev) => ({ ...prev, filiere: allowedFilieres[0] }));
+    }
+  }, [formData.niveau, formData.filiere, classOptions]);
 
   const ensureCsrfCookie = async () => {
     await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', {
@@ -70,10 +130,26 @@ export default function AdminClassForm({ mode = 'create', classToEdit = null, on
       return;
     }
 
+    // Check if all professors have at least one matière assigned
+    const missingMatieres = formData.professeur_ids.some(profId => !professeurMatieres[profId] || professeurMatieres[profId].length === 0);
+    if (missingMatieres) {
+      setFormMsg('Chaque professeur doit avoir au moins une matière assignée.');
+      setSaving(false);
+      return;
+    }
+
     const payload = {
       nom: formData.nom,
       niveau: formData.niveau,
-      professeur_ids: formData.professeur_ids.map((id) => Number(id))
+      filiere: formData.filiere,
+      pricing: Number(formData.pricing),
+      professeur_ids: formData.professeur_ids.map((id) => Number(id)),
+      professeur_matieres: Object.fromEntries(
+        Object.entries(professeurMatieres).map(([profId, matIds]) => [
+          profId,
+          matIds.map(id => Number(id))
+        ])
+      )
     };
 
     try {
@@ -101,8 +177,159 @@ export default function AdminClassForm({ mode = 'create', classToEdit = null, on
     }
   };
 
+  const availableFilieres = formData.niveau ? (classOptions.filieresByNiveau[formData.niveau] || []) : [];
+
   return (
     <div className={isModal ? 'bg-[#f8fafc]' : 'dashboard-content bg-gray-50/30'}>
+      {/* Modal for Assigning Matières to Professor */}
+      {selectedProfForModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.7)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10000,
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            maxWidth: '500px',
+            width: '90%',
+            padding: '32px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+          }}>
+            <h3 style={{
+              fontSize: '1.25rem',
+              fontWeight: '600',
+              color: '#0f172a',
+              marginBottom: '12px',
+            }}>
+              Assigner les matières
+            </h3>
+            <p style={{
+              color: '#64748b',
+              fontSize: '0.95rem',
+              marginBottom: '24px',
+              lineHeight: '1.5',
+            }}>
+              Sélectionnez une ou plusieurs matières pour <strong>{selectedProfForModal.name}</strong>
+            </p>
+
+            <div style={{
+              border: '1px solid #e2e8f0',
+              borderRadius: '8px',
+              padding: '12px',
+              maxHeight: '300px',
+              overflowY: 'auto',
+              marginBottom: '24px',
+            }}>
+              {matieres.length === 0 ? (
+                <p style={{ textAlign: 'center', color: '#94a3b8', padding: '16px' }}>
+                  Aucune matière disponible
+                </p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {matieres.map((mat) => {
+                    const matId = String(mat.id_matiere || mat.id || mat.ID);
+                    const isSelected = selectedMatieres.includes(matId);
+                    return (
+                    <label key={matId} style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      backgroundColor: isSelected ? '#dbeafe' : '#f8fafc',
+                      border: '1px solid ' + (isSelected ? '#93c5fd' : '#e2e8f0'),
+                    }}>
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedMatieres([...selectedMatieres, matId]);
+                          } else {
+                            setSelectedMatieres(selectedMatieres.filter(id => id !== matId));
+                          }
+                        }}
+                        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                      />
+                      <span style={{ fontWeight: '500', color: '#1e293b' }}>
+                        {mat.nom}
+                      </span>
+                    </label>
+                  );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'flex-end',
+            }}>
+              <button
+                onClick={() => {
+                  setSelectedProfForModal(null);
+                  setSelectedMatieres([]);
+                  // Remove professor if no matieres selected
+                  if (selectedMatieres.length === 0) {
+                    setFormData(prev => ({
+                      ...prev,
+                      professeur_ids: prev.professeur_ids.filter(id => id !== String(selectedProfForModal.id))
+                    }));
+                  }
+                }}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: 'white',
+                  color: '#475569',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                }}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => {
+                  if (selectedMatieres.length > 0) {
+                    setProfesseurMatieres({
+                      ...professeurMatieres,
+                      [String(selectedProfForModal.id)]: selectedMatieres
+                    });
+                    setSelectedProfForModal(null);
+                    setSelectedMatieres([]);
+                  } else {
+                    alert('Veuillez sélectionner au moins une matière.');
+                  }
+                }}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#2563eb',
+                  color: 'white',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                }}
+              >
+                Confirmer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {!isModal && (
         <header className="content-header flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
@@ -165,12 +392,54 @@ export default function AdminClassForm({ mode = 'create', classToEdit = null, on
                   </div>
                   <div className="space-y-2">
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Niveau scolaire</label>
-                    <input
-                      type="text"
+                    <select
                       value={formData.niveau}
                       onChange={(e) => setFormData({ ...formData, niveau: e.target.value })}
                       required
-                      placeholder="Ex: Collège"
+                      className="w-full px-4 py-3.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm font-bold text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm"
+                    >
+                      <option value="">Sélectionner un niveau...</option>
+                      {classOptions.niveaux.map((niv) => (
+                        <option key={niv.code} value={niv.code}>{niv.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Section: Filière & Pricing */}
+            <section className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm">
+              <div className="grid grid-cols-1 md:grid-cols-12">
+                <div className="md:col-span-4 bg-slate-50 p-6 border-b md:border-b-0 md:border-r border-slate-200 flex flex-col justify-center">
+                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-1">Structure</h3>
+                  <p className="text-xs text-slate-500 font-medium leading-relaxed">Définissez la filière et le coût de scolarité pour cette classe.</p>
+                </div>
+                <div className="md:col-span-8 p-6 grid grid-cols-1 sm:grid-cols-2 gap-6 bg-white">
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Filière</label>
+                    <select
+                      value={formData.filiere}
+                      onChange={(e) => setFormData({ ...formData, filiere: e.target.value })}
+                      required
+                      disabled={!formData.niveau}
+                      className="w-full px-4 py-3.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm font-bold text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm"
+                    >
+                      <option value="">Sélectionner une filière...</option>
+                      {availableFilieres.map((fil) => (
+                        <option key={fil} value={fil}>{fil}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Coût de scolarité (DH)</label>
+                    <input
+                      type="number"
+                      value={formData.pricing}
+                      onChange={(e) => setFormData({ ...formData, pricing: e.target.value })}
+                      min="0"
+                      step="100"
+                      placeholder="Entrer le coût de scolarité"
                       className="w-full px-4 py-3.5 rounded-xl border border-slate-200 bg-slate-50/50 text-sm font-bold text-slate-700 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm"
                     />
                   </div>
@@ -218,8 +487,13 @@ export default function AdminClassForm({ mode = 'create', classToEdit = null, on
                                 onChange={(e) => {
                                   if (e.target.checked) {
                                     setFormData(prev => ({ ...prev, professeur_ids: [...prev.professeur_ids, String(p.id)] }));
+                                    setSelectedProfForModal(p);
+                                    setSelectedMatieres(professeurMatieres[String(p.id)] || []);
                                   } else {
                                     setFormData(prev => ({ ...prev, professeur_ids: prev.professeur_ids.filter(id => id !== String(p.id)) }));
+                                    const newMatieres = { ...professeurMatieres };
+                                    delete newMatieres[String(p.id)];
+                                    setProfesseurMatieres(newMatieres);
                                   }
                                 }}
                               />

@@ -64,17 +64,44 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = safeStorage.get();
+    const initializeAuth = async () => {
+      const storedUser = safeStorage.get();
 
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch {
-        safeStorage.remove();
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          
+          // Validate session by checking if user still exists on backend
+          try {
+            const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const validateResponse = await fetch(apiBaseUrl + '/api/user', {
+              method: 'GET',
+              credentials: 'include',
+              headers: { 'Accept': 'application/json' }
+            });
+            
+            if (validateResponse.ok) {
+              setUser(parsedUser);
+            } else {
+              // Session invalid, clear stale auth
+              safeStorage.remove();
+              setUser(null);
+            }
+          } catch (validationError) {
+            // If validation request fails, most likely DB was reset
+            // Clear stale auth tokens and require re-login
+            safeStorage.remove();
+            setUser(null);
+          }
+        } catch {
+          safeStorage.remove();
+        }
       }
-    }
 
-    setLoading(false);
+      setLoading(false);
+    };
+
+    initializeAuth();
   }, []);
 
   const setAuthenticatedUser = (userData) => {

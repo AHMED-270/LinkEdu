@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 import jsPDF from 'jspdf';
-import { jsPDF as jsPDFType } from 'jspdf';
 import { FiUser, FiCalendar, FiMail, FiPhone, FiMapPin, FiArrowLeft, FiCheckCircle, FiSearch, FiEdit2, FiTrash2, FiPlus, FiUsers, FiDownload, FiEye, FiX, FiUpload } from 'react-icons/fi';
 
 const emptyForm = {
@@ -22,7 +21,7 @@ const emptyForm = {
 };
 
 export default function SecretaireEtudiants() {
-  const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000';
+  const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
   const [absences, setAbsences] = useState([]);

@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class AdminDashboardController extends Controller
 {
@@ -296,19 +297,35 @@ class AdminDashboardController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
         
-        $usersQuery = User::select('users.id', 'users.name', 'users.email', 'users.role', 'users.created_at', 'users.account_status', 'users.activated_at', 'etudiants.id_classe')
+        $usersQuery = User::select(
+                'users.id',
+                'users.name',
+                'users.nom',
+                'users.prenom',
+                'users.email',
+                'users.role',
+                'users.created_at',
+                'users.account_status',
+                'users.activated_at',
+                'etudiants.id_classe',
+                'etudiants.id_parent',
+                DB::raw("TRIM(CONCAT(COALESCE(classes.nom, ''), CASE WHEN classes.niveau IS NOT NULL AND classes.niveau <> '' THEN CONCAT(' - ', classes.niveau) ELSE '' END)) as classe"),
+                'parent_user.email as parent_email'
+            )
             ->leftJoin('etudiants', 'users.id', '=', 'etudiants.id_etudiant')
+            ->leftJoin('classes', 'etudiants.id_classe', '=', 'classes.id_classe')
             ->leftJoin('parents as own_parent', 'users.id', '=', 'own_parent.id_parent')
             ->leftJoin('parents as linked_parent', 'etudiants.id_parent', '=', 'linked_parent.id_parent')
+            ->leftJoin('users as parent_user', 'linked_parent.id_parent', '=', 'parent_user.id')
             ->leftJoin('professeurs as own_professeur', 'users.id', '=', 'own_professeur.id_professeur');
 
         if (Schema::hasColumn('directeurs', 'telephone')) {
             $usersQuery = $usersQuery
                 ->leftJoin('directeurs as own_directeur', 'users.id', '=', 'own_directeur.id_directeur')
-                ->addSelect('etudiants.id_parent', DB::raw('COALESCE(linked_parent.telephone, own_parent.telephone, own_directeur.telephone, own_professeur.telephone) as telephone'));
+                ->addSelect(DB::raw('COALESCE(linked_parent.telephone, own_parent.telephone, own_directeur.telephone, own_professeur.telephone) as telephone'));
         } else {
             $usersQuery = $usersQuery
-                ->addSelect('etudiants.id_parent', DB::raw('COALESCE(linked_parent.telephone, own_parent.telephone, own_professeur.telephone) as telephone'));
+                ->addSelect(DB::raw('COALESCE(linked_parent.telephone, own_parent.telephone, own_professeur.telephone) as telephone'));
         }
 
         $users = $usersQuery
@@ -530,6 +547,8 @@ class AdminDashboardController extends Controller
                 'classes.id_classe',
                 'classes.nom',
                 'classes.niveau',
+                'classes.filiere',
+                'classes.pricing',
                 DB::raw('COUNT(DISTINCT etudiants.id_etudiant) as students_count'),
                 DB::raw('COUNT(DISTINCT professeur_user.id) as professeurs_count'),
                 DB::raw("GROUP_CONCAT(DISTINCT professeur_user.name ORDER BY professeur_user.id SEPARATOR '||') as professeurs_names"),
@@ -539,7 +558,7 @@ class AdminDashboardController extends Controller
                 DB::raw("GROUP_CONCAT(DISTINCT etudiant_user.name ORDER BY etudiant_user.id SEPARATOR '||') as etudiants_names"),
                 DB::raw("GROUP_CONCAT(DISTINCT COALESCE(etudiants.matricule, '') ORDER BY etudiant_user.id SEPARATOR '||') as etudiants_matricules")
             )
-            ->groupBy('classes.id_classe', 'classes.nom', 'classes.niveau')
+            ->groupBy('classes.id_classe', 'classes.nom', 'classes.niveau', 'classes.filiere', 'classes.pricing')
             ->orderBy('classes.niveau')
             ->get();
 
@@ -590,6 +609,7 @@ class AdminDashboardController extends Controller
             $classe->professeurs_ids = $ids;
             $classe->professeurs_details = $professeursDetails;
             $classe->effectif_details = $effectifDetails;
+            $classe->pricing = (float) ($classe->pricing ?? 0);
 
             unset($classe->professeurs_telephones, $classe->etudiants_ids, $classe->etudiants_names, $classe->etudiants_matricules);
 
@@ -597,6 +617,19 @@ class AdminDashboardController extends Controller
         });
 
         return response()->json($classes);
+    }
+
+    public function getClassOptions(Request $request)
+    {
+        if (!$request->user() || $request->user()->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        return response()->json([
+            'niveaux' => array_values(config('school_options.niveaux', [])),
+            'filieres_by_niveau' => config('school_options.filieres_by_niveau', []),
+            'pricing_by_niveau_filiere' => config('school_options.pricing_by_niveau_filiere', []),
+        ]);
     }
 
     public function createClass(Request $request)
@@ -607,10 +640,23 @@ class AdminDashboardController extends Controller
 
         $validated = $request->validate([
             'nom' => 'required|string|max:255',
-            'niveau' => 'required|string|max:255',
+            'niveau' => ['required', 'string', Rule::in(array_column(config('school_options.niveaux', []), 'code'))],
+            'filiere' => 'required|string|max:255',
+            'pricing' => 'required|numeric|min:0',
             'professeur_ids' => 'required|array|min:1',
             'professeur_ids.*' => 'integer|exists:professeurs,id_professeur',
+            'professeur_matieres' => 'nullable|array',
+            'professeur_matieres.*' => 'array',
+            'professeur_matieres.*.*' => 'integer|exists:matieres,id_matiere',
         ]);
+
+        // Validate filière belongs to this niveau
+        $allowedFilieres = config('school_options.filieres_by_niveau.' . $validated['niveau'], []);
+        if (!in_array($validated['filiere'], $allowedFilieres, true)) {
+            return response()->json([
+                'message' => 'La filiere selectionnee est invalide pour ce niveau.',
+            ], 422);
+        }
 
         $classe = null;
 
@@ -618,7 +664,8 @@ class AdminDashboardController extends Controller
             $classe = Classe::create([
                 'nom' => $validated['nom'],
                 'niveau' => $validated['niveau'],
-                'id_professeur' => null,
+                'filiere' => $validated['filiere'],
+                'pricing' => $validated['pricing'],
             ]);
 
             $now = now();
@@ -634,6 +681,26 @@ class AdminDashboardController extends Controller
                 ->all();
 
             DB::table('classe_professeur_assignments')->insert($rows);
+
+            // Insert professor-matière assignments in the enseigner table
+            if (!empty($validated['professeur_matieres'])) {
+                $enseignerRows = [];
+                foreach ($validated['professeur_matieres'] as $profIdStr => $matiereIds) {
+                    $profId = (int) $profIdStr;
+                    foreach ($matiereIds as $matId) {
+                        $enseignerRows[] = [
+                            'id_professeur' => $profId,
+                            'id_classe' => $classe->id_classe,
+                            'id_matiere' => $matId,
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ];
+                    }
+                }
+                if (!empty($enseignerRows)) {
+                    DB::table('enseigner')->insertOrIgnore($enseignerRows);
+                }
+            }
         });
 
         return response()->json([
@@ -650,10 +717,23 @@ class AdminDashboardController extends Controller
 
         $validated = $request->validate([
             'nom' => 'required|string|max:255',
-            'niveau' => 'required|string|max:255',
+            'niveau' => ['required', 'string', Rule::in(array_column(config('school_options.niveaux', []), 'code'))],
+            'filiere' => 'required|string|max:255',
+            'pricing' => 'required|numeric|min:0',
             'professeur_ids' => 'required|array|min:1',
             'professeur_ids.*' => 'integer|exists:professeurs,id_professeur',
+            'professeur_matieres' => 'nullable|array',
+            'professeur_matieres.*' => 'array',
+            'professeur_matieres.*.*' => 'integer|exists:matieres,id_matiere',
         ]);
+
+        // Validate filière belongs to this niveau
+        $allowedFilieres = config('school_options.filieres_by_niveau.' . $validated['niveau'], []);
+        if (!in_array($validated['filiere'], $allowedFilieres, true)) {
+            return response()->json([
+                'message' => 'La filiere selectionnee est invalide pour ce niveau.',
+            ], 422);
+        }
 
         $classe = Classe::findOrFail($id);
 
@@ -661,6 +741,8 @@ class AdminDashboardController extends Controller
             $classe->update([
                 'nom' => $validated['nom'],
                 'niveau' => $validated['niveau'],
+                'filiere' => $validated['filiere'],
+                'pricing' => $validated['pricing'],
             ]);
 
             DB::table('classe_professeur_assignments')
@@ -680,6 +762,31 @@ class AdminDashboardController extends Controller
                 ->all();
 
             DB::table('classe_professeur_assignments')->insert($rows);
+
+            // Delete existing enseigner records for this class
+            DB::table('enseigner')
+                ->where('id_classe', $classe->id_classe)
+                ->delete();
+
+            // Insert updated professor-matière assignments
+            if (!empty($validated['professeur_matieres'])) {
+                $enseignerRows = [];
+                foreach ($validated['professeur_matieres'] as $profIdStr => $matiereIds) {
+                    $profId = (int) $profIdStr;
+                    foreach ($matiereIds as $matId) {
+                        $enseignerRows[] = [
+                            'id_professeur' => $profId,
+                            'id_classe' => $classe->id_classe,
+                            'id_matiere' => $matId,
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ];
+                    }
+                }
+                if (!empty($enseignerRows)) {
+                    DB::table('enseigner')->insert($enseignerRows);
+                }
+            }
         });
 
         return response()->json([
@@ -765,6 +872,27 @@ class AdminDashboardController extends Controller
         return response()->json([
             'message' => 'Matiere supprimee avec succes.',
         ]);
+    }
+
+    private function resolveAutomaticPricing(string $niveau, string $filiere): ?float
+    {
+        $filieresByNiveau = config('school_options.filieres_by_niveau', []);
+        $allowedFilieres = $filieresByNiveau[$niveau] ?? [];
+
+        if (!in_array($filiere, $allowedFilieres, true)) {
+            return null;
+        }
+
+        $pricingByNiveauFiliere = config('school_options.pricing_by_niveau_filiere', []);
+        if (!array_key_exists($niveau, $pricingByNiveauFiliere)) {
+            return null;
+        }
+
+        if (!array_key_exists($filiere, $pricingByNiveauFiliere[$niveau])) {
+            return null;
+        }
+
+        return (float) $pricingByNiveauFiliere[$niveau][$filiere];
     }
 
     public function generateReport(Request $request)
