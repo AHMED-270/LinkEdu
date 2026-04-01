@@ -59,6 +59,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::delete('/admin/users/{id}', [AdminDashboardController::class, 'deleteUser']);
     Route::post('/admin/users/{id}/activate', [AdminDashboardController::class, 'activateUser']);
     Route::post('/admin/users/{id}/deactivate', [AdminDashboardController::class, 'deactivateUser']);
+    Route::get('/admin/class-options', [AdminDashboardController::class, 'getClassOptions']);
     Route::post('/admin/classes', [AdminDashboardController::class, 'createClass']);
     Route::put('/admin/classes/{id}', [AdminDashboardController::class, 'updateClass']);
     Route::delete('/admin/classes/{id}', [AdminDashboardController::class, 'deleteClass']);

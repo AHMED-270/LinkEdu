@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 import jsPDF from 'jspdf';
-import { jsPDF as jsPDFType } from 'jspdf';
 import { useNavigate } from 'react-router-dom';
 import { FiUser, FiCalendar, FiMail, FiPhone, FiMapPin, FiArrowLeft, FiCheckCircle, FiSearch, FiEdit2, FiTrash2, FiPlus, FiUsers, FiDownload, FiEye, FiX, FiUpload } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';

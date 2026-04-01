@@ -1,6 +1,9 @@
-﻿import { NavLink } from 'react-router-dom';
-import { FiGrid, FiUsers, FiCreditCard, FiBookOpen, FiCalendar, FiMessageCircle, FiAlertCircle } from 'react-icons/fi';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { FiGrid, FiUsers, FiCreditCard, FiBookOpen, FiCalendar, FiMessageCircle, FiAlertCircle, FiLogOut } from 'react-icons/fi';
+import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import axios from 'axios';
+import './SecretaireSidebar.css';
 
 const navItems = [
   { path: '/secretaire/dashboard', label: 'Tableau de bord', icon: FiGrid },
@@ -13,10 +16,67 @@ const navItems = [
 ];
 
 export default function SecretaireSidebar() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogoutConfirm = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+
+    try {
+      const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+      await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', {
+        withCredentials: true,
+        withXSRFToken: true,
+      });
+      await axios.post(apiBaseUrl + '/api/admin/logout', {}, {
+        withCredentials: true,
+        withXSRFToken: true,
+        headers: { Accept: 'application/json' },
+      });
+    } catch {
+      // Continue even if API request fails
+    } finally {
+      logout();
+      setIsLoggingOut(false);
+      setShowLogoutModal(false);
+      navigate('/login', { replace: true });
+    }
+  };
   const initials = (user?.name || 'S').trim().charAt(0).toUpperCase();
 
   return (
+      <>
+      {showLogoutModal && (
+        <div className="logout-modal-backdrop">
+          <div className="logout-modal-card">
+            <div className="logout-modal-icon">
+              <FiLogOut size={48} color="#f43f5e" />
+            </div>
+            <h3>Êtes-vous sûr de vouloir vous déconnecter ?</h3>
+            <p>Vous devrez saisir à nouveau vos identifiants pour accéder à ce panneau.</p>
+            <div className="logout-modal-actions">
+              <button
+                className="btn-cancel"
+                onClick={() => setShowLogoutModal(false)}
+                disabled={isLoggingOut}
+              >
+                Annuler
+              </button>
+              <button
+                className="btn-confirm-logout"
+                onClick={handleLogoutConfirm}
+                disabled={isLoggingOut}
+              >
+                {isLoggingOut ? 'Déconnexion...' : 'Oui, me déconnecter'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <aside className="fixed bottom-0 left-0 top-16 z-[90] w-[260px] border-r border-slate-200 bg-white">
         <div className="flex h-full flex-col px-3 py-4">
           
@@ -69,7 +129,18 @@ export default function SecretaireSidebar() {
               );
             })}
           </nav>
+
+          <div className="mt-auto border-t border-slate-200 pt-4">
+            <button
+              onClick={() => setShowLogoutModal(true)}
+              className="flex w-full items-center gap-3 rounded-xl border-l-2 border-transparent px-3 py-2.5 text-sm font-semibold text-red-600 transition-all hover:bg-red-50 hover:text-red-700"
+            >
+              <FiLogOut size={18} />
+              <span>Déconnexion</span>
+            </button>
+          </div>
         </div>
       </aside>
+      </>
   );
 }

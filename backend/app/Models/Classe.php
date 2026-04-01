@@ -17,6 +17,8 @@ class Classe extends Model
 	protected $fillable = [
 		'nom',
 		'niveau',
+		'filiere',
+		'pricing',
 	];
 
 	public function etudiants(): HasMany

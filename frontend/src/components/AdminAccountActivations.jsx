@@ -20,28 +20,43 @@ export default function AdminAccountActivations() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [activatingId, setActivatingId] = useState(null);
   const [deactivatingId, setDeactivatingId] = useState(null);
+  const [loadError, setLoadError] = useState('');
 
   const fetchData = async () => {
     setLoading(true);
+    setLoadError('');
     try {
-      const [studentsRes, classesRes] = await Promise.all([
-        axios.get(apiBaseUrl + '/api/secretaire/students', {
+      const [usersRes, classesRes] = await Promise.all([
+        axios.get(apiBaseUrl + '/api/admin/users', {
           withCredentials: true,
           withXSRFToken: true,
           headers: { Accept: 'application/json' },
         }),
-        axios.get(apiBaseUrl + '/api/secretaire/classes', {
+        axios.get(apiBaseUrl + '/api/admin/classes', {
           withCredentials: true,
           withXSRFToken: true,
           headers: { Accept: 'application/json' },
         })
       ]);
 
-      const allStudents = studentsRes.data?.students || [];
+      const allStudents = (usersRes.data || [])
+        .filter((u) => String(u.role || '').toLowerCase() === 'etudiant')
+        .map((u) => ({
+          id_etudiant: u.id,
+          nom: u.nom || '',
+          prenom: u.prenom || '',
+          email: u.email || '',
+          account_status: u.account_status || 'pending_activation',
+          id_classe: u.id_classe || null,
+          classe: u.classe || null,
+          parent_email: u.parent_email || '',
+        }));
+
       setStudents(allStudents);
       setClasses(classesRes.data?.classes || []);
     } catch (error) {
       console.error('Erreur chargement données:', error);
+      setLoadError(error?.response?.data?.message || 'Impossible de charger les comptes. Verifiez la session admin.');
       setStudents([]);
       setClasses([]);
     } finally {
@@ -150,6 +165,11 @@ export default function AdminAccountActivations() {
         </div>
 
         <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+          {loadError && (
+            <div className="mx-6 mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+              {loadError}
+            </div>
+          )}
           <div className="px-6 py-5 border-b border-gray-100 flex flex-col xl:flex-row xl:items-center gap-4 bg-gray-50/60">
             <div className="relative w-full xl:w-96">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
