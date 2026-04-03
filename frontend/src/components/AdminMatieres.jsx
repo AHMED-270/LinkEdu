@@ -40,7 +40,7 @@ export default function AdminMatieres({ userRole = ROLE.ADMIN }) {
       });
       setMatieres(response.data || []);
     } catch (error) {
-      console.error('Erreur chargement matiÃ¨res:', error);
+      console.error('Erreur chargement matières:', error);
     } finally {
       setLoading(false);
     }
@@ -93,7 +93,7 @@ export default function AdminMatieres({ userRole = ROLE.ADMIN }) {
       setShowForm(false);
       fetchMatieres();
     } catch (error) {
-      setFormError(error.response?.data?.message || "Erreur lors de l'enregistrement de la matiÃ¨re.");
+      setFormError(error.response?.data?.message || "Erreur lors de l'enregistrement de la matière.");
     } finally {
       setIsSaving(false);
     }
@@ -122,7 +122,7 @@ export default function AdminMatieres({ userRole = ROLE.ADMIN }) {
       setEditTarget(null);
       fetchMatieres();
     } catch (error) {
-      setEditFormError(error.response?.data?.message || "Erreur lors de la modification de la matiÃ¨re.");
+      setEditFormError(error.response?.data?.message || "Erreur lors de la modification de la matière.");
     } finally {
       setIsSavingEdit(false);
     }
@@ -143,7 +143,7 @@ export default function AdminMatieres({ userRole = ROLE.ADMIN }) {
       setDeleteTarget(null);
       fetchMatieres();
     } catch (error) {
-      alert(error.response?.data?.message || 'Erreur lors de la suppression de la matiÃ¨re.');
+      alert(error.response?.data?.message || 'Erreur lors de la suppression de la matière.');
     } finally {
       setIsDeleting(false);
     }
@@ -174,8 +174,8 @@ export default function AdminMatieres({ userRole = ROLE.ADMIN }) {
       <div className="layout-content flex items-center justify-center">
         <div className="text-center p-8 bg-red-50 text-red-600 rounded-xl border border-red-100">
           <AlertCircle size={48} className="mx-auto mb-4 opacity-50" />
-          <h2 className="text-xl font-bold mb-2">AccÃ¨s RefusÃ©</h2>
-          <p>Cette page est strictement rÃ©servÃ©e Ã  l'administrateur.</p>
+          <h2 className="text-xl font-bold mb-2">Accès Refusé</h2>
+          <p>Cette page est strictement réservée à l'administrateur.</p>
         </div>
       </div>
     );
@@ -186,8 +186,8 @@ export default function AdminMatieres({ userRole = ROLE.ADMIN }) {
       {/* Header Section */}
       <header className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Gestion des MatiÃ¨res</h1>
-          <p className="text-slate-500 text-sm mt-1">CrÃ©er, modifier et supprimer les matiÃ¨res de l'Ã©tablissement.</p>
+          <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Gestion des Matières</h1>
+          <p className="text-slate-500 text-sm mt-1">Créer, modifier et supprimer les matières de l'établissement.</p>
         </div>
         <motion.button
           whileHover={{ scale: 1.02, y: -2 }}
@@ -196,7 +196,7 @@ export default function AdminMatieres({ userRole = ROLE.ADMIN }) {
           onClick={openCreateForm}
         >
           <Plus size={18} />
-          Ajouter une MatiÃ¨re
+          Ajouter une Matière
         </motion.button>
       </header>
 
@@ -204,7 +204,7 @@ export default function AdminMatieres({ userRole = ROLE.ADMIN }) {
       <div className="card">
         <div className="card-header border-b border-slate-100 pb-4 mb-4">
           <h3 className="flex items-center gap-2">
-            Toutes les matiÃ¨res <span className="badge badge-blue">{filteredMatieres.length}</span>
+            Toutes les matières <span className="badge badge-blue">{filteredMatieres.length}</span>
           </h3>
           
           <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 transition-all focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-400">
@@ -213,7 +213,7 @@ export default function AdminMatieres({ userRole = ROLE.ADMIN }) {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Rechercher une matiÃ¨re..."
+              placeholder="Rechercher une matière..."
               className="bg-transparent border-none outline-none text-sm text-slate-700 w-64 placeholder-slate-400"
             />
           </div>
@@ -229,7 +229,7 @@ export default function AdminMatieres({ userRole = ROLE.ADMIN }) {
               <table className="table">
                 <thead>
                   <tr>
-                    <th>Nom de la matiÃ¨re</th>
+                    <th>Nom de la matière</th>
                     <th>Coefficient</th>
                     <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr>
@@ -239,7 +239,7 @@ export default function AdminMatieres({ userRole = ROLE.ADMIN }) {
                     <tr>
                       <td colSpan="3" className="text-center py-12 text-slate-500">
                         <BookOpen size={32} className="mx-auto mb-3 opacity-20" />
-                        Aucune matiÃ¨re trouvÃ©e.
+                        Aucune matière trouvée.
                       </td>
                     </tr>
                   ) : (
@@ -305,7 +305,7 @@ export default function AdminMatieres({ userRole = ROLE.ADMIN }) {
               transition={{ type: "spring", bounce: 0.3 }}
               className="card w-full max-w-lg p-6"
             >
-              <h3 className="text-xl font-bold text-slate-800 mb-4 border-b border-slate-100 pb-3">Nouvelle MatiÃ¨re</h3>
+              <h3 className="text-xl font-bold text-slate-800 mb-4 border-b border-slate-100 pb-3">Nouvelle Matière</h3>
               
               {formError && (
                 <div className="p-3 mb-4 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg flex items-center gap-2">
@@ -315,13 +315,13 @@ export default function AdminMatieres({ userRole = ROLE.ADMIN }) {
 
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <div className="form-group">
-                  <label className="form-label">Nom de la matiÃ¨re</label>
+                  <label className="form-label">Nom de la matière</label>
                   <input
                     type="text"
                     value={formData.nom}
                     onChange={(e) => setFormData((prev) => ({ ...prev, nom: e.target.value }))}
                     required
-                    placeholder="Ex: MathÃ©matiques"
+                    placeholder="Ex: Mathématiques"
                     className="form-input"
                   />
                 </div>
@@ -344,7 +344,7 @@ export default function AdminMatieres({ userRole = ROLE.ADMIN }) {
                     Annuler
                   </button>
                   <button type="submit" className="btn btn-primary" disabled={isSaving}>
-                    {isSaving ? 'CrÃ©ation...' : 'CrÃ©er la matiÃ¨re'}
+                    {isSaving ? 'Création...' : 'Créer la matière'}
                   </button>
                 </div>
               </form>
@@ -369,7 +369,7 @@ export default function AdminMatieres({ userRole = ROLE.ADMIN }) {
               transition={{ type: "spring", bounce: 0.3 }}
               className="card w-full max-w-lg p-6"
             >
-              <h3 className="text-xl font-bold text-slate-800 mb-4 border-b border-slate-100 pb-3">Modifier MatiÃ¨re</h3>
+              <h3 className="text-xl font-bold text-slate-800 mb-4 border-b border-slate-100 pb-3">Modifier Matière</h3>
               
               {editFormError && (
                 <div className="p-3 mb-4 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg flex items-center gap-2">
@@ -379,7 +379,7 @@ export default function AdminMatieres({ userRole = ROLE.ADMIN }) {
 
               <form onSubmit={handleEditSubmit} className="flex flex-col gap-4">
                 <div className="form-group">
-                  <label className="form-label">Nom de la matiÃ¨re</label>
+                  <label className="form-label">Nom de la matière</label>
                   <input
                     type="text"
                     value={editFormData.nom}
@@ -437,7 +437,7 @@ export default function AdminMatieres({ userRole = ROLE.ADMIN }) {
               </div>
               <h3 className="text-xl font-bold mb-2">Confirmer la suppression</h3>
               <p className="text-slate-500 mb-6">
-                Voulez-vous vraiment supprimer la matiÃ¨re <strong className="text-slate-800">{deleteTarget.nom}</strong> ? Cette action est irrÃ©versible.
+                Voulez-vous vraiment supprimer la matière <strong className="text-slate-800">{deleteTarget.nom}</strong> ? Cette action est irréversible.
               </p>
 
               <div className="flex gap-3 w-full">
@@ -465,3 +465,4 @@ export default function AdminMatieres({ userRole = ROLE.ADMIN }) {
     </div>
   );
 }
+

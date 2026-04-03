@@ -53,7 +53,7 @@ export default function AdminUserForm({ mode = 'create', userToEdit = null, onBa
         setClasses(classesData);
 
         if (usersResult.status === 'rejected' || classesResult.status === 'rejected') {
-          setLoadWarning("Certaines donnÃ©es du formulaire n'ont pas pu Ãªtre chargÃ©es.");
+          setLoadWarning("Certaines données du formulaire n'ont pas pu être chargées.");
         }
 
         if (isEditing) {
@@ -75,7 +75,7 @@ export default function AdminUserForm({ mode = 'create', userToEdit = null, onBa
           }));
         }
       } catch (error) {
-        setLoadWarning("Erreur lors du chargement des dÃ©pendances.");
+        setLoadWarning("Erreur lors du chargement des dépendances.");
       } finally {
         setLoading(false);
       }
@@ -166,7 +166,7 @@ export default function AdminUserForm({ mode = 'create', userToEdit = null, onBa
             <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">
               {isEditing ? 'Modifier Utilisateur' : 'Nouvel Utilisateur'}
             </h1>
-            <p className="text-slate-500 text-sm mt-1">Formulaire dÃ©diÃ© pour ajouter ou modifier un utilisateur.</p>
+            <p className="text-slate-500 text-sm mt-1">Formulaire dédié pour ajouter ou modifier un utilisateur.</p>
           </div>
           <motion.button
             whileHover={{ scale: 1.02 }}
@@ -176,7 +176,7 @@ export default function AdminUserForm({ mode = 'create', userToEdit = null, onBa
             className="btn btn-outline"
           >
             <ArrowLeft size={16} />
-            Retour Ã  la gestion
+            Retour à la gestion
           </motion.button>
         </header>
       ) : (
@@ -243,12 +243,12 @@ export default function AdminUserForm({ mode = 'create', userToEdit = null, onBa
                 onChange={handleInputChange}
                 required={!isEditing}
                 className="form-input"
-                placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                placeholder="••••••••"
               />
             </div>
             
             <div className="form-group">
-              <label className="form-label">RÃ´le</label>
+              <label className="form-label">Rôle</label>
               <select
                 name="role"
                 value={formData.role}
@@ -273,7 +273,7 @@ export default function AdminUserForm({ mode = 'create', userToEdit = null, onBa
                 className="grid-2 p-5 bg-slate-50 border border-slate-100 rounded-xl"
               >
                 <div className="form-group">
-                  <label className="form-label">Classe de l'Ã©tudiant</label>
+                  <label className="form-label">Classe de l'étudiant</label>
                   <select
                     name="id_classe"
                     value={formData.id_classe}
@@ -281,7 +281,7 @@ export default function AdminUserForm({ mode = 'create', userToEdit = null, onBa
                     required
                     className="form-select"
                   >
-                    <option value="">-- SÃ©lectionner une classe --</option>
+                    <option value="">-- Sélectionner une classe --</option>
                     {classes.map((c) => (
                       <option key={c.id_classe} value={c.id_classe}>{c.nom} ({c.niveau})</option>
                     ))}
@@ -289,7 +289,7 @@ export default function AdminUserForm({ mode = 'create', userToEdit = null, onBa
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Parent de l'Ã©tudiant</label>
+                  <label className="form-label">Parent de l'étudiant</label>
                   <select
                     name="id_parent"
                     value={formData.id_parent}
@@ -297,7 +297,7 @@ export default function AdminUserForm({ mode = 'create', userToEdit = null, onBa
                     required
                     className="form-select"
                   >
-                    <option value="">-- SÃ©lectionner un parent --</option>
+                    <option value="">-- Sélectionner un parent --</option>
                     {parentUsers.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.name} {p.telephone ? `(${p.telephone})` : ''}
@@ -306,7 +306,7 @@ export default function AdminUserForm({ mode = 'create', userToEdit = null, onBa
                   </select>
                   {selectedParent?.telephone && (
                     <motion.small initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="block mt-1 text-xs text-slate-500 font-medium">
-                      ðŸ“ž TÃ©lÃ©phone du parent: {selectedParent.telephone}
+                      📞 Téléphone du parent: {selectedParent.telephone}
                     </motion.small>
                   )}
                 </div>
@@ -363,7 +363,7 @@ export default function AdminUserForm({ mode = 'create', userToEdit = null, onBa
               {saving ? (
                 <><span className="loading-spinner w-4 h-4 border-white mr-2"></span> Enregistrement...</>
               ) : (
-                <><Save size={18} /> {isEditing ? 'Enregistrer les modifications' : 'CrÃ©er l\'utilisateur'}</>
+                <><Save size={18} /> {isEditing ? 'Enregistrer les modifications' : 'Créer l\'utilisateur'}</>
               )}
             </motion.button>
           </div>
@@ -372,3 +372,4 @@ export default function AdminUserForm({ mode = 'create', userToEdit = null, onBa
     </div>
   );
 }
+

@@ -99,11 +99,11 @@ export default function AdminDashboard({ onLogout, userRole = ROLE.ADMIN, user =
 
   // Define navigation items for easy filtering and staggered animation
   const navItems = [
-    { id: 'home', label: 'Tableau de bord', icon: LayoutDashboard, roles: [ROLE.ADMIN, ROLE.DIRECTEUR] },
+    { id: 'home', label: 'Tableau de bord', icon: LayoutDashboard, roles: [ROLE.ADMIN, ROLE.DIRECTEUR, ROLE.SECRETAIRE] },
     { id: 'users', label: 'Utilisateurs', icon: Users, roles: [ROLE.ADMIN] },
-    { id: 'classes', label: 'Classes', icon: GraduationCap, roles: [ROLE.ADMIN, ROLE.DIRECTEUR] },
+    { id: 'classes', label: 'Classes', icon: GraduationCap, roles: [ROLE.ADMIN, ROLE.DIRECTEUR, ROLE.SECRETAIRE] },
     { id: 'matieres', label: 'Matières', icon: BookOpen, roles: [ROLE.ADMIN] },
-    { id: 'settings', label: 'Paramètres', icon: Settings, roles: [ROLE.ADMIN, ROLE.DIRECTEUR] },
+    { id: 'settings', label: 'Paramètres', icon: Settings, roles: [ROLE.ADMIN, ROLE.DIRECTEUR, ROLE.SECRETAIRE] },
   ].filter(item => item.roles.includes(userRole));
 
   // Framer Motion Variants

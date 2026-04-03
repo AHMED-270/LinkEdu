@@ -95,7 +95,7 @@ export default function AdminUsers({ onCreateUser }) {
       <header className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Gestion des Utilisateurs</h1>
-          <p className="text-slate-500 text-sm mt-1">CrÃ©er, modifier ou supprimer des utilisateurs.</p>
+          <p className="text-slate-500 text-sm mt-1">Créer, modifier ou supprimer des utilisateurs.</p>
         </div>
         <motion.button
           whileHover={{ scale: 1.02, y: -2 }}
@@ -137,8 +137,8 @@ export default function AdminUsers({ onCreateUser }) {
                   <tr>
                     <th>Nom</th>
                     <th>Email</th>
-                    <th>RÃ´le</th>
-                    <th>TÃ©lÃ©phone</th>
+                    <th>Rôle</th>
+                    <th>Téléphone</th>
                     <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
@@ -146,7 +146,7 @@ export default function AdminUsers({ onCreateUser }) {
                   {filteredUsers.length === 0 ? (
                     <tr>
                       <td colSpan="5" className="text-center py-8 text-slate-500">
-                        Aucun utilisateur ne correspond Ã  votre recherche.
+                        Aucun utilisateur ne correspond à votre recherche.
                       </td>
                     </tr>
                   ) : (
@@ -220,7 +220,7 @@ export default function AdminUsers({ onCreateUser }) {
               </div>
               <h3>Confirmer la suppression</h3>
               <p>
-                Voulez-vous vraiment supprimer l'utilisateur <strong>{deleteTarget.name}</strong> ? Cette action est irrÃ©versible.
+                Voulez-vous vraiment supprimer l'utilisateur <strong>{deleteTarget.name}</strong> ? Cette action est irréversible.
               </p>
 
               <div className="logout-modal-actions">
@@ -279,3 +279,4 @@ export default function AdminUsers({ onCreateUser }) {
     </div>
   );
 }
+

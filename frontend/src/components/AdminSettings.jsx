@@ -50,25 +50,25 @@ export default function AdminSettings() {
   const saveSettings = () => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-      showToast('ParamÃ¨tres de configuration enregistrÃ©s.');
+      showToast('Paramètres de configuration enregistrés.');
     } catch (error) {
-      showToast("Impossible d'enregistrer les paramÃ¨tres.");
+      showToast("Impossible d'enregistrer les paramètres.");
     }
   };
 
   const resetSettings = () => {
     setSettings(defaultSettings);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultSettings));
-    showToast('ParamÃ¨tres rÃ©initialisÃ©s par dÃ©faut.');
+    showToast('Paramètres réinitialisés par défaut.');
   };
 
   const saveSubproject = () => {
     try {
       localStorage.setItem(SUBPROJECT_STORAGE_KEY, JSON.stringify(subproject));
       window.dispatchEvent(new Event('linkedu-subproject-updated'));
-      showToast('ParamÃ¨tres du sous-projet enregistrÃ©s.');
+      showToast('Paramètres du sous-projet enregistrés.');
     } catch (error) {
-      showToast('Impossible d\'enregistrer les paramÃ¨tres du sous-projet.');
+      showToast('Impossible d\'enregistrer les paramètres du sous-projet.');
     }
   };
 
@@ -76,7 +76,7 @@ export default function AdminSettings() {
     setSubproject(defaultSubproject);
     localStorage.setItem(SUBPROJECT_STORAGE_KEY, JSON.stringify(defaultSubproject));
     window.dispatchEvent(new Event('linkedu-subproject-updated'));
-    showToast('Sous-projet rÃ©initialisÃ© par dÃ©faut.');
+    showToast('Sous-projet réinitialisé par défaut.');
   };
 
   // Custom Animated Toggle Switch Component
@@ -114,8 +114,8 @@ export default function AdminSettings() {
     <div className="layout-content relative">
       <header className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">ParamÃ¨tres</h1>
-          <p className="text-slate-500 text-sm mt-1">RÃ©glages simples de la console administrateur et du sous-projet.</p>
+          <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Paramètres</h1>
+          <p className="text-slate-500 text-sm mt-1">Réglages simples de la console administrateur et du sous-projet.</p>
         </div>
       </header>
 
@@ -150,7 +150,7 @@ export default function AdminSettings() {
             <div className="flex justify-between items-center">
               <div>
                 <span className="font-semibold text-slate-700 block">Mode tableau compact</span>
-                <span className="text-xs text-slate-500">RÃ©duit l'espacement dans les tableaux de donnÃ©es</span>
+                <span className="text-xs text-slate-500">Réduit l'espacement dans les tableaux de données</span>
               </div>
               <AnimatedToggle
                 isOn={settings.compactTable}
@@ -170,7 +170,7 @@ export default function AdminSettings() {
             </div>
 
             <div className="form-group mt-2">
-              <label className="form-label">DÃ©lai d'expiration de session</label>
+              <label className="form-label">Délai d'expiration de session</label>
               <select
                 className="form-select"
                 value={settings.sessionTimeout}
@@ -193,7 +193,7 @@ export default function AdminSettings() {
               className="btn btn-outline"
             >
               <RotateCcw size={16} />
-              RÃ©initialiser
+              Réinitialiser
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -219,7 +219,7 @@ export default function AdminSettings() {
 
           <div className="flex flex-col gap-5">
             <div className="form-group">
-              <label className="form-label">Nom affichÃ©</label>
+              <label className="form-label">Nom affiché</label>
               <input
                 type="text"
                 className="form-input"
@@ -242,7 +242,7 @@ export default function AdminSettings() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="form-group">
-                <label className="form-label">AnnÃ©e scolaire</label>
+                <label className="form-label">Année scolaire</label>
                 <input
                   type="text"
                   className="form-input"
@@ -274,7 +274,7 @@ export default function AdminSettings() {
               className="btn btn-outline"
             >
               <RotateCcw size={16} />
-              RÃ©initialiser
+              Réinitialiser
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -292,3 +292,4 @@ export default function AdminSettings() {
     </div>
   );
 }
+

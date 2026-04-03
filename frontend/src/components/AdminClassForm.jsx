@@ -65,7 +65,7 @@ export default function AdminClassForm({ mode = 'create', classToEdit = null, on
     setSaving(true);
 
     if (!formData.professeur_ids || formData.professeur_ids.length === 0) {
-      setFormMsg({ type: 'error', text: 'Veuillez sÃ©lectionner au moins un professeur pour cette classe.' });
+      setFormMsg({ type: 'error', text: 'Veuillez sélectionner au moins un professeur pour cette classe.' });
       setSaving(false);
       return;
     }
@@ -148,7 +148,7 @@ export default function AdminClassForm({ mode = 'create', classToEdit = null, on
             <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">
               {isEditing ? 'Modifier Classe' : 'Nouvelle Classe'}
             </h1>
-            <p className="text-slate-500 text-sm mt-1">GÃ©rez les informations et le corps professoral de cette classe.</p>
+            <p className="text-slate-500 text-sm mt-1">Gérez les informations et le corps professoral de cette classe.</p>
           </div>
           <motion.button
             whileHover={{ scale: 1.02 }}
@@ -158,7 +158,7 @@ export default function AdminClassForm({ mode = 'create', classToEdit = null, on
             className="btn btn-outline"
           >
             <ArrowLeft size={16} />
-            Retour Ã  la gestion
+            Retour à la gestion
           </motion.button>
         </header>
       ) : (
@@ -207,7 +207,7 @@ export default function AdminClassForm({ mode = 'create', classToEdit = null, on
                 onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
                 required
                 className="form-input"
-                placeholder="Ex: 1Ã¨re AnnÃ©e Dev"
+                placeholder="Ex: 1ère Année Dev"
               />
             </motion.div>
             <motion.div variants={itemVariants} className="form-group">
@@ -227,10 +227,10 @@ export default function AdminClassForm({ mode = 'create', classToEdit = null, on
           <motion.div variants={itemVariants} className="form-group mt-2">
             <div className="flex justify-between items-end mb-2">
               <label className="form-label mb-0 flex items-center gap-2">
-                <Users size={16} className="text-slate-400" /> Professeurs AssignÃ©s
+                <Users size={16} className="text-slate-400" /> Professeurs Assignés
               </label>
               <span className="badge badge-blue bg-blue-50 text-blue-600 border border-blue-100">
-                {formData.professeur_ids.length} sÃ©lectionnÃ©(s)
+                {formData.professeur_ids.length} sélectionné(s)
               </span>
             </div>
             
@@ -238,7 +238,7 @@ export default function AdminClassForm({ mode = 'create', classToEdit = null, on
               {professeurs.length === 0 ? (
                 <div className="p-8 text-center text-slate-500">
                   <Users size={32} className="mx-auto mb-2 opacity-20" />
-                  <p>Aucun professeur disponible dans la base de donnÃ©es.</p>
+                  <p>Aucun professeur disponible dans la base de données.</p>
                 </div>
               ) : (
                 <div className="flex flex-col gap-1">
@@ -292,7 +292,7 @@ export default function AdminClassForm({ mode = 'create', classToEdit = null, on
               {saving ? (
                 <><span className="loading-spinner w-4 h-4 border-white mr-2"></span> Enregistrement...</>
               ) : (
-                <><Save size={18} /> {isEditing ? 'Enregistrer les modifications' : 'CrÃ©er la classe'}</>
+                <><Save size={18} /> {isEditing ? 'Enregistrer les modifications' : 'Créer la classe'}</>
               )}
             </motion.button>
           </motion.div>
@@ -302,3 +302,4 @@ export default function AdminClassForm({ mode = 'create', classToEdit = null, on
     </div>
   );
 }
+
