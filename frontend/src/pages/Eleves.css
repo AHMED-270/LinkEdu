@@ -1,70 +1,134 @@
-/* ===== ELEVES PAGE ===== */
 .eleves-page {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
+  padding: 24px;
 }
 
-.eleves-header h2 { font-size: var(--font-2xl); font-weight: 800; }
-.eleves-header p { color: var(--text-secondary); font-size: var(--font-sm); margin-top: var(--space-1); }
+.eleves-panel,
+.card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.eleves-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.eleves-header h2,
+.eleves-header h3 {
+  margin: 0;
+}
+
+.eleves-search {
+  width: 320px;
+  max-width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+}
 
 .eleves-toolbar {
-  padding: var(--space-4) var(--space-5);
-  border-bottom: 1px solid var(--border-color);
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-4);
-  background: var(--gray-50);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 .eleves-filters {
   display: flex;
-  align-items: center;
-  gap: var(--space-4);
+  gap: 8px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-input,
+.form-select,
+.teacher-form input,
+.teacher-form select,
+.teacher-form textarea {
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.teacher-form {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.teacher-form button,
+.btn,
+.btn-primary {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.teacher-form button:first-of-type,
+.btn-primary {
+  background: #2563eb;
+  color: #ffffff;
 }
 
 .eleves-table-wrapper {
   overflow-x: auto;
 }
 
-.eleves-state-message {
-  margin: 0;
-  padding: var(--space-4) var(--space-5);
-  font-size: var(--font-sm);
-  color: var(--text-secondary);
+.eleves-table,
+.table {
+  width: 100%;
+  border-collapse: collapse;
 }
 
-.eleves-state-error {
-  color: var(--accent-red);
+.eleves-table th,
+.eleves-table td,
+.table th,
+.table td {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 10px;
+  text-align: left;
 }
 
-.eleves-table th { background: white; white-space: nowrap; }
+.badge,
+.badge-blue {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 12px;
+}
 
 .eleve-profile-cell {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: 10px;
 }
 
 .eleve-avatar {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   object-fit: cover;
-  border: 1px solid var(--border-color);
 }
 
 .eleve-avatar-fallback {
-  background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
-  color: white;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-  font-size: var(--font-sm);
+  background: #e5e7eb;
+  color: #374151;
+  font-weight: 600;
 }
 
 .eleve-info {
@@ -73,64 +137,53 @@
 }
 
 .eleve-name {
-  font-size: var(--font-sm);
-  font-weight: 700;
-  color: var(--text-primary);
+  font-weight: 600;
 }
 
 .eleve-id {
-  font-size: var(--font-xs);
-  color: var(--text-secondary);
+  font-size: 12px;
+  color: #6b7280;
 }
 
 .eleve-contact {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  font-size: 0.75rem;
-  color: var(--text-secondary);
+  gap: 4px;
 }
 
-.eleve-contact span {
+.eleves-state-message {
+  margin: 10px 0;
+}
+
+.eleves-state-error {
+  color: #b91c1c;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.login-input-wrapper {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: 8px;
 }
 
-.eleve-rank-circle {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--gray-100);
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--font-xs);
-  font-weight: 700;
-  border: 1px solid var(--border-color);
+.login-input-icon {
+  color: #6b7280;
 }
-
-.eleve-avg {
-  font-weight: 700;
-  font-size: var(--font-sm);
-}
-.eleve-avg.high { color: var(--accent-green); }
-.eleve-avg.med { color: var(--accent-orange); }
-.eleve-avg.low { color: var(--accent-red); }
 
 .eleves-footer {
-  padding: var(--space-3) var(--space-5);
-  border-top: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  background: var(--gray-50);
-  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  margin-top: 12px;
+  color: #6b7280;
 }
 
-.eleves-count {
-  font-size: var(--font-xs);
-  color: var(--text-secondary);
-  font-weight: 500;
+@media (max-width: 768px) {
+  .eleves-toolbar {
+    flex-direction: column;
+  }
+
+  .eleves-search {
+    width: 100%;
+  }
 }

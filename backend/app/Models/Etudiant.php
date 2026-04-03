@@ -21,6 +21,9 @@ class Etudiant extends Model
         'matricule',
         'id_classe',
         'id_parent',
+        'date_naissance',
+        'genre',
+        'adresse',
     ];
 
     public function user(): BelongsTo
@@ -46,5 +49,15 @@ class Etudiant extends Model
     public function notes(): HasMany
     {
         return $this->hasMany(Note::class, 'id_etudiant', 'id_etudiant');
+    }
+
+    public function paiements(): HasMany
+    {
+        return $this->hasMany(Paiement::class, 'id_etudiant', 'id_etudiant');
+    }
+
+    public function reclamations(): HasMany
+    {
+        return $this->hasMany(Reclamation::class, 'id_etudiant', 'id_etudiant');
     }
 }

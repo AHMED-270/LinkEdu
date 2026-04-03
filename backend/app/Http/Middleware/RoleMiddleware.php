@@ -19,6 +19,12 @@ class RoleMiddleware
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
+        if (($user->account_status ?? 'active') !== 'active') {
+            return response()->json([
+                'message' => 'Compte en attente d activation par l administration.',
+            ], 403);
+        }
+
         if (empty($roles) || in_array($user->role, $roles, true)) {
             return $next($request);
         }
