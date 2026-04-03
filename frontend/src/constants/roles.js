@@ -41,7 +41,7 @@ export const ROLE_META = {
   [ROLE.SECRETAIRE]: {
     label: 'Secretaire',
     displayLabel: 'Secretaire',
-    homeRoute: '/login',
+    homeRoute: '/admin',
     badgeClass: 'badge-blue',
   },
 };

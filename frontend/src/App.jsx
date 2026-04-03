@@ -103,7 +103,7 @@ const AppRoutes = () => {
         <Route
           path="/admin/*"
           element={
-            <ProtectedRoute allowedRoles={[ROLE.ADMIN]}>
+            <ProtectedRoute allowedRoles={[ROLE.ADMIN, ROLE.SECRETAIRE]}>
               <PageTransition>
                 <AdminDashboard onLogout={logout} userRole={user?.role || ROLE.ADMIN} user={user} />
               </PageTransition>
@@ -133,8 +133,9 @@ const AppRoutes = () => {
         <Route path="/emploi-du-temps" element={<ProtectedRoute allowedRoles={[ROLE.PROFESSEUR]}><PageTransition><Layout title="Emploi du Temps"><EmploiDuTemps /></Layout></PageTransition></ProtectedRoute>} />
         <Route path="/annonces" element={<ProtectedRoute allowedRoles={[ROLE.PROFESSEUR]}><PageTransition><Layout title="Annonces"><Annonces /></Layout></PageTransition></ProtectedRoute>} />
         <Route path="/mes-classes" element={<ProtectedRoute allowedRoles={[ROLE.PROFESSEUR]}><PageTransition><Layout title="Mes Classes"><Eleves /></Layout></PageTransition></ProtectedRoute>} />
-        <Route path="/appel" element={<ProtectedRoute allowedRoles={[ROLE.PROFESSEUR]}><PageTransition><Layout title="Feuille d'Appel"><Appel /></Layout></PageTransition></ProtectedRoute>} />
-        <Route path="/notes-absences" element={<ProtectedRoute allowedRoles={[ROLE.PROFESSEUR]}><PageTransition><Layout title="Notes & Absences"><Notes /></Layout></PageTransition></ProtectedRoute>} />
+        <Route path="/appel" element={<ProtectedRoute allowedRoles={[ROLE.PROFESSEUR]}><PageTransition><Layout title="Absences"><Appel /></Layout></PageTransition></ProtectedRoute>} />
+        <Route path="/notes" element={<ProtectedRoute allowedRoles={[ROLE.PROFESSEUR]}><PageTransition><Layout title="Notes"><Notes /></Layout></PageTransition></ProtectedRoute>} />
+        <Route path="/notes-absences" element={<Navigate to="/notes" replace />} />
         <Route path="/avancement" element={<ProtectedRoute allowedRoles={[ROLE.PROFESSEUR]}><PageTransition><Layout title="Avancement"><Avancement /></Layout></PageTransition></ProtectedRoute>} />
         <Route path="/reclamation" element={<ProtectedRoute allowedRoles={[ROLE.PROFESSEUR]}><PageTransition><Layout title="Réclamation"><Reclamation /></Layout></PageTransition></ProtectedRoute>} />
         <Route path="/profil" element={<ProtectedRoute allowedRoles={[ROLE.PROFESSEUR]}><PageTransition><Layout title="Profil"><Parametres /></Layout></PageTransition></ProtectedRoute>} />
