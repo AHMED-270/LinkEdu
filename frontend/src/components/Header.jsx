@@ -23,7 +23,7 @@ export default function Header() {
         className="header-logo"
       >
         {/* Added the graduation cap from the login page for consistency */}
-        <span className="logo-icon-small">ðŸŽ“</span>
+        <span className="logo-icon-small">🎓</span>
         <span className="logo-link">Linked</span>
         <span className="logo-edu">U</span>
       </motion.div>
@@ -77,3 +77,4 @@ export default function Header() {
     </header>
   );
 }
+

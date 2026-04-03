@@ -10,10 +10,11 @@ const navItems = [
   { path: '/dashboard', label: 'Tableau de bord', icon: FiGrid },
   { path: '/emploi-du-temps', label: 'Emploi du temps', icon: FiCalendar },
   { path: '/mes-classes', label: 'Mes Classes', icon: FiUsers },
-  { path: '/notes-absences', label: 'Notes & Absences', icon: FiStar },
+  { path: '/notes', label: 'Notes', icon: FiStar },
+  { path: '/appel', label: 'Absences', icon: FiCalendar },
   { path: '/devoirs', label: 'Devoirs & Ressources', icon: FiFileText },
   { path: '/annonces', label: 'Annonces', icon: FiMessageCircle },
-  { path: '/parametres', label: 'ParamÃ¨tres', icon: FiSettings },
+  { path: '/parametres', label: 'Paramètres', icon: FiSettings },
 ];
 
 export default function Sidebar() {
@@ -79,8 +80,8 @@ export default function Sidebar() {
               <div className="logout-modal-icon">
                 <FiLogOut size={36} color="#EF4444" />
               </div>
-              <h3>ÃŠtes-vous sÃ»r de vouloir vous dÃ©connecter ?</h3>
-              <p>Vous devrez saisir Ã  nouveau vos identifiants pour revenir sur l'espace LinkEdu.</p>
+              <h3>Êtes-vous sûr de vouloir vous déconnecter ?</h3>
+              <p>Vous devrez saisir à nouveau vos identifiants pour revenir sur l'espace LinkEdu.</p>
               <div className="logout-modal-actions">
                 <button
                   className="btn btn-outline"
@@ -94,7 +95,7 @@ export default function Sidebar() {
                   onClick={handleLogoutConfirm}
                   disabled={isLoggingOut}
                 >
-                  {isLoggingOut ? 'DÃ©connexion...' : 'Oui, me dÃ©connecter'}
+                  {isLoggingOut ? 'Déconnexion...' : 'Oui, me déconnecter'}
                 </button>
               </div>
             </motion.div>
@@ -163,10 +164,11 @@ export default function Sidebar() {
             onClick={() => setShowLogoutModal(true)}
           >
             <FiLogOut size={20} className="sidebar-icon" />
-            <span>Se dÃ©connecter</span>
+            <span>Se déconnecter</span>
           </button>
         </motion.div>
       </aside>
     </>
   );
 }
+
