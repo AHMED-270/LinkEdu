@@ -345,7 +345,7 @@ class AdminDashboardController extends Controller
 
         if ($user->role !== 'etudiant') {
             return response()->json([
-                'message' => 'Seul un compte etudiant peut etre active depuis ce flux.',
+                'message' => 'Seul un compte étudiant peut être activé depuis ce flux.',
             ], 422);
         }
 
@@ -399,7 +399,7 @@ class AdminDashboardController extends Controller
             }
 
             $studentMailBody = "Bonjour {$studentFullName},\n\n"
-                . "Votre compte eleve LinkEdu est active.\n"
+                . "Votre compte LinkEdu a été activé.\n"
                 . "Email: {$studentUser->email}\n"
                 . "Mot de passe: {$studentPassword}\n\n"
                 . "Lien de connexion: " . (config('app.frontend_url') ?: 'http://localhost:5173') . "/login\n\n";
@@ -408,12 +408,12 @@ class AdminDashboardController extends Controller
                 $studentMailBody,
                 function ($message) use ($studentUser) {
                     $message->to($studentUser->email)
-                        ->subject('Activation compte Eleve - LinkEdu')
+                        ->subject('Activation compte - LinkEdu')
                         ->from(config('mail.from.address'), config('mail.from.name'));
                 }
             );
         } catch (\Throwable $e) {
-            $mailWarnings[] = 'Email eleve non envoye: ' . $e->getMessage();
+            $mailWarnings[] = 'Email non envoyé: ' . $e->getMessage();
         }
 
         try {
@@ -422,7 +422,7 @@ class AdminDashboardController extends Controller
             }
 
             $parentMailBody = "Bonjour {$parentFullName},\n\n"
-                . "Votre compte parent LinkEdu est active.\n"
+                . "Votre compte LinkEdu a été activé.\n"
                 . "Email: {$parentUser->email}\n"
                 . "Mot de passe: {$parentPassword}\n\n"
                 . "Lien de connexion: " . (config('app.frontend_url') ?: 'http://localhost:5173') . "/login\n\n";
@@ -431,16 +431,16 @@ class AdminDashboardController extends Controller
                 $parentMailBody,
                 function ($message) use ($parentUser) {
                     $message->to($parentUser->email)
-                        ->subject('Activation compte Parent - LinkEdu')
+                        ->subject('Activation compte - LinkEdu')
                         ->from(config('mail.from.address'), config('mail.from.name'));
                 }
             );
         } catch (\Throwable $e) {
-            $mailWarnings[] = 'Email parent non envoye: ' . $e->getMessage();
+            $mailWarnings[] = 'Email non envoyé: ' . $e->getMessage();
         }
 
         return response()->json([
-            'message' => 'Compte etudiant active. Les identifiants ont ete prepares pour etudiant et parent.',
+            'message' => 'Compte activé avec succès. Les identifiants ont été préparés.',
             'warnings' => $mailWarnings,
         ]);
     }
@@ -455,13 +455,13 @@ class AdminDashboardController extends Controller
 
         if ($user->role !== 'etudiant') {
             return response()->json([
-                'message' => 'Seul un compte etudiant peut etre desactive depuis ce flux.',
+                'message' => 'Seul un compte étudiant peut être désactivé depuis ce flux.',
             ], 422);
         }
 
         $student = Etudiant::with(['user', 'parentEleve.user'])->find($user->id);
         if (! $student) {
-            return response()->json(['message' => 'Profil etudiant introuvable.'], 404);
+            return response()->json(['message' => 'Profil étudiant introuvable.'], 404);
         }
 
         $studentUser = $student->user;
@@ -469,7 +469,7 @@ class AdminDashboardController extends Controller
 
         if (! $studentUser || ! $parentUser) {
             return response()->json([
-                'message' => 'Etudiant ou parent associe introuvable. Verifiez l inscription.',
+                'message' => 'Étudiant ou parent associé introuvable. Vérifiez l\'inscription.',
             ], 422);
         }
 
@@ -486,7 +486,7 @@ class AdminDashboardController extends Controller
         });
 
         return response()->json([
-            'message' => 'Compte eleve et compte parent repasses en non active.',
+            'message' => 'Compte désactivé avec succès.',
         ]);
     }
 

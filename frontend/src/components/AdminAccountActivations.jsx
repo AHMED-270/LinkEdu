@@ -21,6 +21,7 @@ export default function AdminAccountActivations() {
   const [activatingId, setActivatingId] = useState(null);
   const [deactivatingId, setDeactivatingId] = useState(null);
   const [loadError, setLoadError] = useState('');
+  const [notification, setNotification] = useState(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -68,6 +69,13 @@ export default function AdminAccountActivations() {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
   const ensureCsrfCookie = async () => {
     await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', {
       withCredentials: true,
@@ -86,15 +94,18 @@ export default function AdminAccountActivations() {
       });
 
       const warnings = res.data?.warnings || [];
-      if (warnings.length > 0) {
-        alert(`${res.data?.message || 'Compte active.'}\n${warnings.join('\n')}`);
-      } else {
-        alert(res.data?.message || 'Compte active avec succes.');
-      }
+      setNotification({
+        type: 'success',
+        message: res.data?.message || 'Compte activé avec succès.',
+        warnings: warnings.length > 0 ? warnings : null
+      });
 
       await fetchData();
     } catch (error) {
-      alert(error?.response?.data?.message || 'Erreur lors de l activation du compte.');
+      setNotification({
+        type: 'error',
+        message: error?.response?.data?.message || 'Erreur lors de l\'activation du compte.'
+      });
     } finally {
       setActivatingId(null);
     }
@@ -110,10 +121,17 @@ export default function AdminAccountActivations() {
         headers: { Accept: 'application/json' },
       });
 
-      alert(res.data?.message || 'Compte desactive avec succes.');
+      setNotification({
+        type: 'success',
+        message: res.data?.message || 'Compte désactivé avec succès.'
+      });
+
       await fetchData();
     } catch (error) {
-      alert(error?.response?.data?.message || 'Erreur lors de la desactivation du compte.');
+      setNotification({
+        type: 'error',
+        message: error?.response?.data?.message || 'Erreur lors de la désactivation du compte.'
+      });
     } finally {
       setDeactivatingId(null);
     }
@@ -144,6 +162,58 @@ export default function AdminAccountActivations() {
 
   return (
     <div className="min-h-screen p-4 lg:p-8 bg-[#f5f7fb]">
+      {/* Notification Toast */}
+      {notification && (
+        <div className="fixed top-4 right-4 z-50 animate-in fade-in slide-in-from-top-2 duration-300">
+          {notification.type === 'success' ? (
+            <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl shadow-lg p-4 max-w-sm">
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-emerald-100">
+                  <svg className="w-5 h-5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-emerald-900 text-sm">{notification.message}</h3>
+                  {notification.warnings && (
+                    <div className="mt-2 space-y-1">
+                      {notification.warnings.map((w, i) => (
+                        <p key={i} className="text-xs text-emerald-700">⚠️ {w}</p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => setNotification(null)}
+                  className="text-emerald-400 hover:text-emerald-600"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-gradient-to-r from-rose-50 to-pink-50 border border-rose-200 rounded-xl shadow-lg p-4 max-w-sm">
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-rose-100">
+                  <svg className="w-5 h-5 text-rose-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-rose-900 text-sm">{notification.message}</h3>
+                </div>
+                <button
+                  onClick={() => setNotification(null)}
+                  className="text-rose-400 hover:text-rose-600"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="max-w-[1400px] mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
           <div>
