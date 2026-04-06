@@ -70,7 +70,7 @@ export default function Dashboard() {
         >
           {/* === TOP ROW: STAT CARDS === */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            <motion.div variants={itemVariants} className="stat-card p-6 flex items-center gap-4 transition-colors" style={{ borderRadius: 'var(--radius-xl)' }}>
+            <motion.div variants={itemVariants} className="stat-card p-6 flex items-center gap-4 transition-colors">
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0" style={{ background: 'var(--primary-100)', color: 'var(--primary-600)' }}>
                 <Users size={28} />
               </div>
@@ -90,7 +90,7 @@ export default function Dashboard() {
               </div>
             </motion.div>
 
-            <motion.div variants={itemVariants} className="stat-card p-6 flex items-center gap-4 transition-colors" style={{ borderRadius: 'var(--radius-xl)' }}>
+            <motion.div variants={itemVariants} className="stat-card p-6 flex items-center gap-4 transition-colors">
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0" style={{ background: 'rgba(242, 153, 74, 0.1)', color: 'var(--accent-orange)' }}>
                 <FileText size={28} />
               </div>
@@ -100,7 +100,7 @@ export default function Dashboard() {
               </div>
             </motion.div>
 
-            <motion.div variants={itemVariants} className="stat-card p-6 flex items-center gap-4 transition-colors" style={{ borderRadius: 'var(--radius-xl)' }}>
+            <motion.div variants={itemVariants} className="stat-card p-6 flex items-center gap-4 transition-colors">
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0" style={{ background: 'rgba(39, 174, 96, 0.1)', color: 'var(--accent-green)' }}>
                 <Folder size={28} />
               </div>
