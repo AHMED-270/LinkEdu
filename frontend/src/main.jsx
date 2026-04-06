@@ -8,6 +8,7 @@ import '@fontsource/poppins/600.css'
 import '@fontsource/poppins/700.css'
 import axios from 'axios'
 import './index.css'
+import './styles/prof-borderless.css'
 import App from './App.jsx'
 
 axios.interceptors.request.use(config => {

@@ -34,14 +34,12 @@ return [
         '3ac' => ['General'],
         'tc' => ['TC Scientifique', 'TC Technologique', 'TC Lettres'],
         '1bac' => [
-            'Sciences Experimentales - SVT',
-            'Sciences Experimentales - Physique-Chimie',
-            'Sciences Mathematiques A',
-            'Sciences Mathematiques B',
-            'Sciences et Technologies Electrique',
-            'Sciences et Technologies Mecanique',
-            'Lettres et Sciences Humaines',
-            'Sciences Economiques',
+            'Sciences Experimentales',
+            'Sciences Mathematiques',
+            'Sciences et Technologies',
+            'Lettres et Ressources Humaines',
+            
+            'Economie',
         ],
         '2bac' => [
             'Sciences Experimentales - SVT',
@@ -74,14 +72,11 @@ return [
             'TC Lettres' => 1900,
         ],
         '1bac' => [
-            'Sciences Experimentales - SVT' => 2500,
-            'Sciences Experimentales - Physique-Chimie' => 2500,
-            'Sciences Mathematiques A' => 2600,
-            'Sciences Mathematiques B' => 2600,
-            'Sciences et Technologies Electrique' => 2450,
-            'Sciences et Technologies Mecanique' => 2450,
-            'Lettres et Sciences Humaines' => 2200,
-            'Sciences Economiques' => 2300,
+            'Sciences Experimentales' => 2500,
+            'Sciences Mathematiques' => 2600,
+            'Sciences et Technologies' => 2450,
+            'Lettres et Ressources Humaines' => 2200,
+            'Economie' => 2300,
         ],
         '2bac' => [
             'Sciences Experimentales - SVT' => 3000,
@@ -128,34 +123,22 @@ return [
             ],
         ],
         '1bac' => [
-            'Sciences Experimentales - SVT' => [
+            'Sciences Experimentales' => [
                 'Mathematiques', 'Physique-Chimie', 'Sciences de la Vie et de la Terre (SVT)', 'Francais', 'Arabe',
                 'Education Islamique', 'Histoire-Geographie', 'Education Physique', 'Philosophie', 'Anglais',
             ],
-            'Sciences Experimentales - Physique-Chimie' => [
-                'Mathematiques', 'Physique-Chimie', 'Sciences de la Vie et de la Terre (SVT)', 'Francais', 'Arabe',
-                'Education Islamique', 'Histoire-Geographie', 'Education Physique', 'Philosophie', 'Anglais',
-            ],
-            'Sciences Mathematiques A' => [
+            'Sciences Mathematiques' => [
                 'Mathematiques', 'Physique-Chimie', 'Sciences d Ingenieur', 'Francais', 'Arabe',
                 'Education Islamique', 'Histoire-Geographie', 'Education Physique', 'Philosophie', 'Anglais',
             ],
-            'Sciences Mathematiques B' => [
-                'Mathematiques', 'Physique-Chimie', 'Sciences de la Vie et de la Terre (SVT)', 'Francais', 'Arabe',
-                'Education Islamique', 'Histoire-Geographie', 'Education Physique', 'Philosophie', 'Anglais',
-            ],
-            'Sciences et Technologies Electrique' => [
+            'Sciences et Technologies' => [
                 'Mathematiques', 'Physique-Chimie', 'Electrotechnique', 'Electronique', 'Sciences d Ingenieur', 'Francais',
                 'Arabe', 'Education Islamique', 'Histoire-Geographie', 'Education Physique', 'Anglais',
             ],
-            'Sciences et Technologies Mecanique' => [
-                'Mathematiques', 'Physique-Chimie', 'Mecanique Appliquee', 'Conception Mecanique', 'Sciences d Ingenieur', 'Francais',
-                'Arabe', 'Education Islamique', 'Histoire-Geographie', 'Education Physique', 'Anglais',
+            'Lettres et Ressources Humaines' => [
+                'Langue Arabe', 'Francais', 'Anglais', 'Philosophie', 'Histoire-Geographie', 'Education Islamique', 'Sociologie', 'Education Physique', 'Management des Ressources Humaines',
             ],
-            'Lettres et Sciences Humaines' => [
-                'Langue Arabe', 'Francais', 'Anglais', 'Philosophie', 'Histoire-Geographie', 'Education Islamique', 'Sociologie', 'Education Physique',
-            ],
-            'Sciences Economiques' => [
+            'Economie' => [
                 'Economie Generale et Statistiques', 'Comptabilite Generale', 'Mathematiques', 'Histoire-Geographie', 'Francais',
                 'Arabe', 'Education Islamique', 'Anglais', 'Education Physique', 'Philosophie',
             ],

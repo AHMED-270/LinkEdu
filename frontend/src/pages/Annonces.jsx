@@ -1,20 +1,24 @@
-﻿import { useEffect, useState } from 'react';
-import { 
-  Bell, Plus, MessageCircle, Calendar, User, 
-  CheckCircle2, AlertCircle, Send, Info, UserCircle2, 
-  MoreHorizontal, Megaphone
+﻿import { useEffect, useMemo, useState } from 'react';
+import {
+  Megaphone,
+  Search,
+  Eye,
+  Download,
+  Calendar,
+  User,
+  X,
+  AlertCircle,
+  Info,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { professorGet, professorPost } from '../services/professorApi';
+import { professorGet } from '../services/professorApi';
 
 export default function Annonces() {
   const [annonces, setAnnonces] = useState([]);
-  const [filter, setFilter] = useState('all'); 
+  const [searchTitle, setSearchTitle] = useState('');
+  const [selectedAnnonce, setSelectedAnnonce] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [isPublishing, setIsPublishing] = useState(false);
 
   const loadAnnonces = async () => {
     setLoading(true);
@@ -33,39 +37,45 @@ export default function Annonces() {
     loadAnnonces();
   }, []);
 
-  const markAsRead = (id) => {
-    setAnnonces(annonces.map(a => a.id === id ? { ...a, read: true } : a));
+  const downloadAttachment = (annonce) => {
+    const attachmentUrl = annonce.attachmentUrl || annonce.photoUrl || annonce.attachment_url || annonce.photo_url;
+    if (!attachmentUrl) return;
+
+    const link = document.createElement('a');
+    link.href = attachmentUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.download = `annonce-${annonce.id || 'piece-jointe'}`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   };
 
-  const publishAnnouncement = async (e) => {
-    e.preventDefault();
-    if (!title.trim() || !content.trim()) return;
-    
-    setIsPublishing(true);
-    try {
-      await professorPost('/api/professeur/annonces', { title, content });
-      setTitle('');
-      setContent('');
-      await loadAnnonces();
-    } catch {
-      setError('Publication impossible pour le moment.');
-    } finally {
-      setIsPublishing(false);
+  const filteredAnnonces = useMemo(() => {
+    const term = searchTitle.trim().toLowerCase();
+    if (!term) return annonces;
+
+    return annonces.filter((annonce) =>
+      String(annonce.title || '').toLowerCase().includes(term)
+    );
+  }, [annonces, searchTitle]);
+
+  const hasAttachment = (annonce) => {
+    return Boolean(annonce.attachmentUrl || annonce.photoUrl || annonce.attachment_url || annonce.photo_url);
+  };
+
+  const formatDateOnly = (value) => {
+    if (!value) return '-';
+
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toLocaleDateString('fr-FR');
     }
-  };
 
-  const filteredAnnonces = filter === 'unread' ? annonces.filter(a => !a.read) : annonces;
-  const unreadCount = annonces.filter(a => !a.read).length;
-
-  // Animation Variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.08 } }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 15 },
-    visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100 } }
+    const raw = String(value);
+    if (raw.includes('T')) return raw.split('T')[0];
+    if (raw.includes(' ')) return raw.split(' ')[0];
+    return raw;
   };
 
   return (
@@ -77,186 +87,145 @@ export default function Annonces() {
           <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
             <Megaphone className="text-blue-600" size={28} /> Communication Interne
           </h1>
-          <p className="text-slate-500 text-sm mt-1">Gérez et consultez les annonces officielles de l'établissement.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <AnimatePresence>
-            {unreadCount > 0 && (
-              <motion.span 
-                initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                className="badge bg-red-100 text-red-600 border-red-200 font-bold px-3"
-              >
-                {unreadCount} nouvelle{unreadCount > 1 ? 's' : ''}
-              </motion.span>
-            )}
-          </AnimatePresence>
+          <p className="text-slate-500 text-sm mt-1">Affichage en table simple: Voir et Télécharger.</p>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
-        
-        {/* === MAIN CONTENT (Announcements) === */}
-        <div className="xl:col-span-8 flex flex-col gap-6">
-          
-          {/* Create Announcement Card */}
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="card p-6 border-2 border-blue-50">
-            <h3 className="text-sm font-bold text-blue-600 uppercase tracking-widest mb-4 flex items-center gap-2">
-               <Plus size={16} /> Publier un message
-            </h3>
-            <form onSubmit={publishAnnouncement} className="flex flex-col gap-4">
-              <input
-                type="text"
-                className="form-input text-lg font-bold border-none bg-slate-50 focus:bg-white px-4 py-3"
-                placeholder="Quel est l'objet de votre annonce ?"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-              <textarea
-                className="form-input min-h-[100px] border-none bg-slate-50 focus:bg-white px-4 py-3 resize-none"
-                placeholder="Rédigez le contenu détaillé ici..."
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-              />
-              <div className="flex justify-end">
-                <motion.button 
-                  whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                  type="submit"
-                  disabled={isPublishing || !title.trim() || !content.trim()}
-                  className="btn btn-primary px-8 shadow-md"
-                >
-                  {isPublishing ? 'Envoi...' : <><Send size={16} className="mr-2"/> Diffuser</>}
-                </motion.button>
-              </div>
-            </form>
-          </motion.div>
-
-          {/* List Toolbar */}
-          <div className="flex justify-between items-center px-2">
-            <div className="flex p-1 bg-slate-100 rounded-xl w-fit">
-              {['all', 'unread'].map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setFilter(t)}
-                  className={`relative px-6 py-2 text-sm font-bold rounded-lg transition-all ${
-                    filter === t ? 'text-blue-700' : 'text-slate-500 hover:text-slate-700'
-                  }`}
-                >
-                  {filter === t && (
-                    <motion.div layoutId="activeTab" className="absolute inset-0 bg-white shadow-sm rounded-lg -z-10" />
-                  )}
-                  {t === 'all' ? 'Toutes les annonces' : 'Messages non lus'}
-                </button>
-              ))}
-            </div>
+      <div className="card p-0 overflow-hidden">
+        <div className="p-4 border-b border-slate-100 bg-white flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div className="relative w-full md:w-96">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              className="form-input pl-9"
+              placeholder="Rechercher par titre d'annonce..."
+              value={searchTitle}
+              onChange={(e) => setSearchTitle(e.target.value)}
+            />
           </div>
-
-          {/* Announcements List */}
-          <motion.div 
-            variants={containerVariants} initial="hidden" animate="visible"
-            className="flex flex-col gap-4"
-          >
-            {loading ? (
-              <div className="py-20 text-center"><span className="loading-spinner border-blue-500" /></div>
-            ) : filteredAnnonces.length === 0 ? (
-              <div className="card p-12 text-center text-slate-400 bg-slate-50/50">
-                <Info size={48} className="mx-auto mb-3 opacity-20" />
-                <p className="font-medium">Aucune annonce trouvée dans cette catégorie.</p>
-              </div>
-            ) : (
-              <AnimatePresence mode="popLayout">
-                {filteredAnnonces.map(annonce => (
-                  <motion.div 
-                    layout key={annonce.id} variants={itemVariants}
-                    className={`card p-6 flex gap-5 hover:shadow-md transition-shadow relative overflow-hidden group ${!annonce.read ? 'border-l-4 border-l-blue-500' : 'border-l-4 border-l-slate-200'}`}
-                  >
-                    {!annonce.read && (
-                      <div className="absolute top-0 right-0 w-16 h-16 pointer-events-none">
-                        <div className="absolute top-0 right-0 bg-blue-500 text-white text-[10px] font-black py-1 px-8 rotate-45 translate-x-4 translate-y-[-4px]">NEW</div>
-                      </div>
-                    )}
-
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${!annonce.read ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-400'}`}>
-                      <Bell size={24} className={!annonce.read ? 'animate-pulse' : ''} />
-                    </div>
-
-                    <div className="flex-1">
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="text-lg font-bold text-slate-800 leading-tight group-hover:text-blue-700 transition-colors">{annonce.title}</h4>
-                        <div className="flex gap-2">
-                           {!annonce.read && (
-                            <button 
-                              onClick={() => markAsRead(annonce.id)}
-                              className="text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 px-2 py-1 rounded-md"
-                            >
-                              Marquer lu
-                            </button>
-                           )}
-                           <button className="text-slate-300 hover:text-slate-600"><MoreHorizontal size={18}/></button>
-                        </div>
-                      </div>
-                      <p className="text-slate-600 text-sm mb-4 leading-relaxed">{annonce.content}</p>
-                      
-                      <div className="flex items-center gap-6 pt-4 border-t border-slate-50">
-                        <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
-                          <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center"><User size={12}/></div>
-                          {annonce.author}
-                        </div>
-                        <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
-                          <Calendar size={14} /> {annonce.date}
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            )}
-          </motion.div>
+          <span className="text-sm font-semibold text-slate-500">{filteredAnnonces.length} annonce(s)</span>
         </div>
 
-        {/* === SIDEBAR (Contacts) === */}
-        <aside className="xl:col-span-4 flex flex-col gap-6">
-          <div className="card p-0 overflow-hidden">
-            <div className="p-5 border-b border-slate-100 bg-white">
-              <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                <UserCircle2 className="text-slate-400" size={20} /> Contacts Administratifs
-              </h3>
-            </div>
-            <div className="p-2 bg-slate-50/50">
-              <div className="flex flex-col gap-1">
-                {[
-                  { name: 'Directeur', role: 'Direction Générale', icon: 'D', color: 'var(--primary-500)' },
-                  { name: 'Surveillant Général', role: 'Vie Scolaire', icon: 'S', color: 'var(--accent-green)' },
-                  { name: 'Support IT', role: 'Assistance Technique', icon: 'I', color: 'var(--accent-orange)' }
-                ].map((contact, idx) => (
-                  <button key={idx} className="flex items-center gap-4 p-3 rounded-xl hover:bg-white hover:shadow-sm transition-all text-left group">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white shadow-sm transition-transform group-hover:scale-110" style={{ backgroundColor: contact.color }}>
-                      {contact.icon}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-bold text-slate-800">{contact.name}</p>
-                      <p className="text-xs text-slate-500">{contact.role}</p>
-                    </div>
-                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-                      <MessageCircle size={16} />
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="p-4 bg-white border-t border-slate-100">
-               <button className="btn btn-outline w-full text-xs font-bold justify-center">Annuaire complet</button>
-            </div>
+        {error && (
+          <div className="m-4 card p-3 border border-red-100 bg-red-50 text-red-700 text-sm font-medium flex items-center gap-2">
+            <AlertCircle size={16} /> {error}
           </div>
+        )}
 
-          <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-10"><Bell size={120}/></div>
-            <h4 className="font-bold mb-1 relative z-10">Notifications Push</h4>
-            <p className="text-sm text-blue-100 mb-4 relative z-10 leading-relaxed">Activez les notifications pour ne jamais manquer une urgence administrative.</p>
-            <button className="bg-white text-blue-700 text-xs font-bold px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors relative z-10 shadow-sm">Paramétrer</button>
-          </div>
-        </aside>
-
+        <div className="overflow-x-auto">
+          <table className="w-full text-left min-w-[760px]">
+            <thead>
+              <tr className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500 border-b border-slate-200">
+                <th className="py-3 px-4 font-bold">Titre</th>
+                <th className="py-3 px-4 font-bold">Auteur</th>
+                <th className="py-3 px-4 font-bold">Date</th>
+                <th className="py-3 px-4 font-bold text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={4} className="py-12 text-center">
+                    <span className="loading-spinner border-blue-500" />
+                  </td>
+                </tr>
+              ) : filteredAnnonces.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="py-12 text-center text-slate-400">
+                    <Info size={40} className="mx-auto mb-2 opacity-30" />
+                    Aucune annonce trouvée.
+                  </td>
+                </tr>
+              ) : (
+                filteredAnnonces.map((annonce) => (
+                  <tr key={annonce.id} className="border-b border-slate-100 hover:bg-slate-50/70">
+                    <td className="py-3 px-4">
+                      <p className="font-semibold text-slate-800">{annonce.title}</p>
+                    </td>
+                    <td className="py-3 px-4 text-sm text-slate-600">{annonce.author || '-'}</td>
+                    <td className="py-3 px-4 text-sm text-slate-600 whitespace-nowrap">{formatDateOnly(annonce.date)}</td>
+                    <td className="py-3 px-4">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedAnnonce(annonce)}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-white bg-slate-100 text-slate-600 transition-colors hover:bg-slate-600 hover:text-white"
+                        >
+                          <Eye size={14} /> 
+                        </button>
+                        <button
+                          type="button"
+                          disabled={!hasAttachment(annonce)}
+                          onClick={() => downloadAttachment(annonce)}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-white bg-emerald-600 text-white transition-colors hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <Download size={14} /> 
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
+
+      <AnimatePresence>
+        {selectedAnnonce && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-[1px] p-4 flex items-center justify-center"
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 16, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.98 }}
+              className="w-full max-w-2xl bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden"
+            >
+              <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                <h3 className="font-bold text-slate-800">Détails de l'annonce</h3>
+                <button
+                  type="button"
+                  onClick={() => setSelectedAnnonce(null)}
+                  className="p-2 rounded-md hover:bg-slate-100 text-slate-500"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="p-5 space-y-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Titre</p>
+                  <p className="text-slate-800 font-semibold">{selectedAnnonce.title}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Contenu</p>
+                  <p className="text-slate-700 whitespace-pre-wrap">{selectedAnnonce.content || '-'}</p>
+                </div>
+                <div className="flex flex-wrap gap-4 text-sm text-slate-500">
+                  <span className="inline-flex items-center gap-1"><User size={14} /> {selectedAnnonce.author || '-'}</span>
+                  <span className="inline-flex items-center gap-1"><Calendar size={14} /> {selectedAnnonce.date || '-'}</span>
+                </div>
+              </div>
+
+              <div className="px-5 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+               
+                <button
+                  type="button"
+                  disabled={!hasAttachment(selectedAnnonce)}
+                  onClick={() => downloadAttachment(selectedAnnonce)}
+                  className="inline-flex items-center gap-2 rounded-md border border-white bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Download size={14} /> Télécharger
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

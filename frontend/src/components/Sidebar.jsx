@@ -1,6 +1,6 @@
 ﻿import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { FiGrid, FiCalendar, FiUsers, FiStar, FiFileText, FiMessageCircle, FiSettings, FiLogOut } from 'react-icons/fi';
+import { FiGrid, FiCalendar, FiUsers, FiStar, FiFileText, FiMessageCircle, FiSettings, FiLogOut, FiAlertCircle } from 'react-icons/fi';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,6 +13,7 @@ const navItems = [
   { path: '/notes-absences', label: 'Notes', icon: FiStar },
   { path: '/appel', label: 'Absences', icon: FiCalendar },
   { path: '/devoirs', label: 'Devoirs & Ressources', icon: FiFileText },
+  { path: '/reclamation', label: 'Réclamations', icon: FiAlertCircle },
   { path: '/annonces', label: 'Annonces', icon: FiMessageCircle },
   { path: '/parametres', label: 'Paramètres', icon: FiSettings },
 ];
@@ -152,21 +153,7 @@ export default function Sidebar() {
         </nav>
 
         {/* Footer / Logout */}
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8, duration: 0.5 }}
-          className="sidebar-footer"
-        >
-          <button 
-            type="button" 
-            className="sidebar-logout" 
-            onClick={() => setShowLogoutModal(true)}
-          >
-            <FiLogOut size={20} className="sidebar-icon" />
-            <span>Se déconnecter</span>
-          </button>
-        </motion.div>
+      
       </aside>
     </>
   );

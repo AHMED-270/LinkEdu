@@ -2,7 +2,7 @@
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, GraduationCap, FileText, Calendar, BookOpen, FolderOpen, Bell, LogOut } from 'lucide-react';
+import { LayoutDashboard, GraduationCap, FileText, Calendar, BookOpen, FolderOpen, Bell, LogOut, Download } from 'lucide-react';
 import './RolePortal.css';
 
 const tabs = [
@@ -176,6 +176,20 @@ export default function StudentPortal() {
     }
   };
 
+  const downloadAnnonceAttachment = (annonce) => {
+    const attachmentUrl = annonce?.attachment_url || annonce?.photo_url;
+    if (!attachmentUrl) return;
+
+    const link = document.createElement('a');
+    link.href = attachmentUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.download = `annonce-${annonce?.id_annonce || 'piece-jointe'}`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
   return (
     <div className="portal-shell">
       <header className="portal-header">
@@ -322,7 +336,18 @@ export default function StudentPortal() {
             <article key={annonce.id_annonce} className="portal-list-item">
               <h3>{annonce.titre}</h3>
               <p>{annonce.contenu}</p>
+              <p>Cible: {annonce.cible || 'Tous'}</p>
               <p>Publiee le: {annonce.date_publication || '-'}</p>
+              {(annonce.attachment_url || annonce.photo_url) && (
+                <button
+                  type="button"
+                  className="portal-action"
+                  onClick={() => downloadAnnonceAttachment(annonce)}
+                >
+                  <Download size={14} />
+                  <span>Telecharger</span>
+                </button>
+              )}
             </article>
           ))}
           {annonces.length === 0 && <p className="portal-state">Aucune annonce disponible.</p>}

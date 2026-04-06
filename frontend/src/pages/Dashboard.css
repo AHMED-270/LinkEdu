@@ -53,7 +53,7 @@
 
 .dash-schedule-item.now {
   border-color: var(--accent-green);
-  background: rgba(39, 174, 96, 0.04);
+  background: rgba(0, 0, 0, 0.02); /* Teal tint removed for a neutral look */
 }
 
 .dash-schedule-time {
@@ -93,8 +93,10 @@
 }
 
 .dash-admin-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.85); /* Un peu d'opacité */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
   border-radius: var(--radius-md);
   padding: var(--space-4);
   display: flex;

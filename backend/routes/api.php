@@ -82,7 +82,13 @@ Route::middleware(['auth:sanctum', 'role:professeur'])->prefix('professeur')->gr
     // Devoirs et Ressources
     Route::get('/publications', [ProfessorController::class, 'getDevoirsEtRessources']);
     Route::post('/devoirs', [ProfessorController::class, 'publishDevoir']);
+    Route::put('/devoirs/{id}', [ProfessorController::class, 'updateDevoir']);
+    Route::delete('/devoirs/{id}', [ProfessorController::class, 'deleteDevoir']);
+    Route::get('/devoirs/{id}/soumissions', [ProfessorController::class, 'getDevoirSoumissions']);
+    Route::put('/soumissions/{id}/received', [ProfessorController::class, 'markSoumissionReceived']);
     Route::post('/ressources', [ProfessorController::class, 'publishRessource']);
+    Route::post('/ressources/{id}', [ProfessorController::class, 'updateRessource']);
+    Route::delete('/ressources/{id}', [ProfessorController::class, 'deleteRessource']);
 
     // Élèves, Appel et Notes
     Route::get('/classes/{class_id}/eleves', [ProfessorController::class, 'getStudents']);
@@ -97,6 +103,7 @@ Route::middleware(['auth:sanctum', 'role:professeur'])->prefix('professeur')->gr
     Route::get('/annonces', [ProfessorController::class, 'getAnnouncements']);
 
     // Réclamations
+    Route::get('/reclamations', [ProfessorController::class, 'getComplaints']);
     Route::post('/reclamations', [ProfessorController::class, 'submitComplaint']);
 });
 

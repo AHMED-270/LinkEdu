@@ -153,6 +153,9 @@
 .form-input,
 .form-select,
 .form-textarea {
+  width: 100%;
+  min-width: 0;
+  display: block;
   padding: 10px 14px;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
@@ -160,6 +163,13 @@
   color: var(--text-primary);
   background: white;
   transition: all var(--transition-fast);
+}
+
+.form-input:hover,
+.form-select:hover,
+.form-textarea:hover {
+  border-color: var(--primary-300);
+  background: #fcfdff;
 }
 
 .form-input:focus,
@@ -312,4 +322,30 @@
   border-radius: var(--radius-full);
   background: linear-gradient(90deg, var(--primary-500), var(--primary-400));
   transition: width 0.6s ease;
+}
+
+/* Ensure textarea matches title input style (border + hover/focus) */
+.form-textarea {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db; /* gray-300 */
+  background-color: #ffffff;
+  color: #0f172a;
+  font-size: 0.9375rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-textarea::placeholder {
+  color: #94a3b8;
+}
+
+.form-textarea:hover {
+  border-color: #2563eb; /* blue-600 */
+  background-color: #ffffff;
+}
+
+.form-textarea:focus {
+  border-color: #2563eb; /* blue-600 */
+  box-shadow: 0 0 0 4px rgba(37,99,235,0.08);
+  outline: none;
 }

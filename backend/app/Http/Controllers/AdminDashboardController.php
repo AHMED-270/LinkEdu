@@ -60,7 +60,7 @@ class AdminDashboardController extends Controller
                 'string',
                 'email',
                 'max:255',
-                \Illuminate\Validation\Rule::unique('users')
+                \Illuminate\Validation\Rule::unique('users')->where(fn ($query) => $query->where('role', $request->input('role')))
             ],
             'role' => 'required|string|in:secretaire,directeur,professeur',
             'telephone' => 'nullable|string|max:30',
@@ -169,7 +169,7 @@ class AdminDashboardController extends Controller
                 'string',
                 'email',
                 'max:255',
-                \Illuminate\Validation\Rule::unique('users')->ignore($id)
+                \Illuminate\Validation\Rule::unique('users')->ignore($id)->where(fn ($query) => $query->where('role', $request->input('role')))
             ],
             'role' => 'required|string|in:etudiant,parent,secretaire,admin,directeur,professeur',
             'password' => 'nullable|string|min:6',

@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, Users, GraduationCap, FileText, Calendar, 
   Bell, UserCheck, Clock, LifeBuoy, LogOut, AlertCircle, 
-  Send, CheckCircle2, ChevronDown
+  Send, CheckCircle2, ChevronDown, Download
 } from 'lucide-react';
 import './RolePortal.css'; // Uses the upgraded CSS we made earlier!
 
@@ -182,6 +182,20 @@ export default function ParentPortal() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const downloadAnnonceAttachment = (annonce) => {
+    const attachmentUrl = annonce?.attachment_url || annonce?.photo_url;
+    if (!attachmentUrl) return;
+
+    const link = document.createElement('a');
+    link.href = attachmentUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.download = `annonce-${annonce?.id_annonce || 'piece-jointe'}`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   };
 
   // Framer Motion Variants
@@ -391,6 +405,31 @@ export default function ParentPortal() {
                         <p className="text-sm font-medium text-slate-500 flex items-center gap-1 mt-auto">
                           <Calendar size={14}/> À rendre avant le : {devoir.date_limite || '-'}
                         </p>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+
+                {/* === ANNONCES TAB === */}
+                {activeTab === 'annonces' && (
+                  annonces.length === 0 ? <EmptyState icon={Bell} message="Aucune annonce disponible pour le moment." /> :
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {annonces.map((annonce) => (
+                      <motion.div variants={cardVariants} key={annonce.id_annonce} className="card p-6 border-l-4 border-l-blue-500">
+                        <h3 className="font-bold text-slate-800 mb-2">{annonce.titre}</h3>
+                        <p className="text-sm text-slate-600 mb-3 whitespace-pre-wrap">{annonce.contenu}</p>
+                        <p className="text-xs text-slate-500 font-medium">Public cible: {annonce.cible || 'Tous'}</p>
+                        <p className="text-xs text-slate-400 mt-1">Publiee le: {annonce.date_publication || '-'}</p>
+
+                        {(annonce.attachment_url || annonce.photo_url) && (
+                          <button
+                            type="button"
+                            onClick={() => downloadAnnonceAttachment(annonce)}
+                            className="btn btn-outline mt-4"
+                          >
+                            <Download size={14} /> Telecharger la piece jointe
+                          </button>
+                        )}
                       </motion.div>
                     ))}
                   </div>

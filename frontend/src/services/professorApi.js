@@ -57,3 +57,29 @@ export async function professorPost(path, data, isForm = false) {
   });
   return response.data;
 }
+
+export async function professorPut(path, data) {
+  if (!getStoredToken()) {
+    await withCsrf();
+  }
+
+  const response = await axios.put(apiBaseUrl + path, data, {
+    withCredentials: true,
+    withXSRFToken: true,
+    headers: buildHeaders({ Accept: 'application/json' }),
+  });
+  return response.data;
+}
+
+export async function professorDelete(path) {
+  if (!getStoredToken()) {
+    await withCsrf();
+  }
+
+  const response = await axios.delete(apiBaseUrl + path, {
+    withCredentials: true,
+    withXSRFToken: true,
+    headers: buildHeaders({ Accept: 'application/json' }),
+  });
+  return response.data;
+}

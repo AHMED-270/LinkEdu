@@ -3,7 +3,7 @@ import SecretaireSidebar from './SecretaireSidebar';
 
 export default function SecretaireLayout({ children }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#F9FAFB' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-main)' }}>
       <Header />
       <div style={{ display: 'flex', flex: 1, marginTop: '64px' }}>
         <SecretaireSidebar />

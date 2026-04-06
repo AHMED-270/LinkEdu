@@ -1,10 +1,10 @@
 ﻿import { useEffect, useState } from 'react';
 import { 
-  Check, X, MessageSquare, Calendar, Users, 
-  RotateCcw, Save, AlertCircle, CheckCircle2, UserCheck, UserX 
+  Check, X, MessageSquare, Calendar,
+  Save, AlertCircle, CheckCircle2, UserCheck, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { professorGet, professorPost } from '../services/professorApi';
 import { useAuth } from '../context/AuthContext';
 
@@ -19,7 +19,6 @@ export default function Appel() {
   const [seances, setSeances] = useState([]);
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedMatiere, setSelectedMatiere] = useState('');
-  const [selectedSeance, setSelectedSeance] = useState('');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   
   const [loading, setLoading] = useState(true);
@@ -31,7 +30,7 @@ export default function Appel() {
     navigate('/login', { replace: true });
   };
 
-  const loadAttendance = async (classId, selectedDate, matiereId = selectedMatiere, seanceStart = selectedSeance) => {
+  const loadAttendance = async (classId, selectedDate, matiereId = selectedMatiere) => {
     setLoading(true);
     setStatusMsg({ type: '', text: '' });
     try {
@@ -39,17 +38,22 @@ export default function Appel() {
         class_id: classId,
         matiere_id: matiereId,
         date: selectedDate,
-        seance_start: seanceStart,
       });
       setClasses(data.classes || []);
       setMatieres(data.matieres || []);
       setShowMatiereField(Boolean(data.showMatiereField ?? (data.matieres || []).length > 1));
       setSeances(data.seances || []);
-      setStudents(data.students?.map(s => ({ ...s, status: s.status || 'present' })) || []);
+      setStudents(
+        data.students?.map((s) => ({
+          ...s,
+          status: s.status || 'present',
+          seance1Absent: Boolean(s.seance1Absent),
+          seance2Absent: Boolean(s.seance2Absent),
+        })) || []
+      );
       
       if (data.selectedClassId) setSelectedClass(String(data.selectedClassId));
       if (data.selectedMatiereId) setSelectedMatiere(String(data.selectedMatiereId));
-      setSelectedSeance(data.selectedSeanceStart ? String(data.selectedSeanceStart) : '');
     } catch (error) {
       const status = error?.response?.status;
       if (status === 401) {
@@ -70,19 +74,63 @@ export default function Appel() {
   }, []);
 
   const updateStatus = (id, status) => {
-    setStudents(students.map(s => s.id === id ? { ...s, status } : s));
+    setStudents(students.map((student) => {
+      if (student.id !== id) {
+        return student;
+      }
+
+      if (status === 'present') {
+        return { ...student, status: 'present', seance1Absent: false, seance2Absent: false };
+      }
+
+      const hasSelectedSeance = student.seance1Absent || student.seance2Absent;
+      return {
+        ...student,
+        status: 'absent',
+        seance1Absent: hasSelectedSeance ? student.seance1Absent : true,
+        seance2Absent: student.seance2Absent,
+      };
+    }));
+  };
+
+  const toggleStudentSeance = (id, seanceKey) => {
+    setStudents(students.map((student) => {
+      if (student.id !== id) {
+        return student;
+      }
+
+      const updated = {
+        ...student,
+        [seanceKey]: !student[seanceKey],
+      };
+
+      const hasAbsentSeance = Boolean(updated.seance1Absent || updated.seance2Absent);
+      updated.status = hasAbsentSeance ? 'absent' : 'present';
+      return updated;
+    }));
   };
 
   const markAllPresent = () => {
-    setStudents(students.map(s => ({ ...s, status: 'present' })));
+    setStudents(students.map((student) => ({
+      ...student,
+      status: 'present',
+      seance1Absent: false,
+      seance2Absent: false,
+    })));
   };
 
   const presentCount = students.filter(s => s.status === 'present').length;
   const absentCount = students.filter(s => s.status === 'absent').length;
+  const seance1Label = seances?.[0]?.label || 'Seance 1';
+  const seance2Label = seances?.[1]?.label || 'Seance 2';
 
   const handleSave = async () => {
-    if (!selectedSeance) {
-      setStatusMsg({ type: 'error', text: 'Selectionnez une seance avant de valider l appel.' });
+    const invalidStudent = students.find((student) => {
+      return student.status === 'absent' && !student.seance1Absent && !student.seance2Absent;
+    });
+
+    if (invalidStudent) {
+      setStatusMsg({ type: 'error', text: 'Cochez au moins une seance (1 ou 2) pour chaque eleve absent.' });
       return;
     }
 
@@ -91,17 +139,18 @@ export default function Appel() {
       await professorPost('/api/professeur/appel', {
         classId: Number(selectedClass),
         matiereId: Number(selectedMatiere),
-        seanceStart: selectedSeance,
         date,
         statuses: students.map((student) => ({
           studentId: student.id,
           status: student.status,
+          seance1: Boolean(student.seance1Absent),
+          seance2: Boolean(student.seance2Absent),
         })),
       });
 
       setStatusMsg({ type: 'success', text: 'Feuille d\'appel enregistrée avec succès.' });
       setTimeout(() => setStatusMsg({ type: '', text: '' }), 4000);
-      await loadAttendance(selectedClass, date, selectedMatiere, selectedSeance);
+      await loadAttendance(selectedClass, date, selectedMatiere);
     } catch (error) {
       const status = error?.response?.status;
       if (status === 401) {
@@ -145,20 +194,6 @@ export default function Appel() {
           <p className="text-slate-500 text-sm mt-1 flex items-center gap-2">
             <Calendar size={14} /> {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
-          <div className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white p-1">
-            <Link
-              to="/notes"
-              className="px-3 py-1.5 text-sm font-semibold rounded-lg text-slate-600 hover:bg-slate-100"
-            >
-              Notes
-            </Link>
-            <Link
-              to="/appel"
-              className="px-3 py-1.5 text-sm font-semibold rounded-lg bg-blue-600 text-white"
-            >
-              Absences
-            </Link>
-          </div>
         </div>
         <div className="flex gap-3">
           <motion.button 
@@ -173,27 +208,76 @@ export default function Appel() {
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card p-0 overflow-hidden flex flex-col">
         {/* Filters Toolbar */}
-        <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex flex-wrap gap-3 flex-1">
-            <select className="form-select min-w-[180px] shadow-sm" value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)}>
-              {classes.map((c) => <option key={c.id} value={c.id}>{c.nom} - {c.niveau}</option>)}
-            </select>
-            {showMatiereField && (
-              <select className="form-select min-w-[180px] shadow-sm" value={selectedMatiere} onChange={(e) => setSelectedMatiere(e.target.value)}>
-                {matieres.map((m) => <option key={m.id} value={m.id}>{m.nom}</option>)}
+        <div className="p-5 border-b border-slate-100 bg-slate-50/50">
+          <div className="flex flex-nowrap items-center justify-between gap-3 w-full overflow-x-auto pb-1">
+            <div className="flex flex-nowrap items-center gap-3 shrink-0">
+              <select
+                className="form-select min-w-[220px] shrink-0 !px-4 !py-2.5 rounded-xl border border-slate-300 bg-white shadow-sm"
+                value={selectedClass}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSelectedClass(value);
+                  loadAttendance(value, date, selectedMatiere);
+                }}
+              >
+                {classes.map((c) => <option key={c.id} value={c.id}>{c.nom}</option>)}
               </select>
-            )}
-            <select className="form-select min-w-[180px] shadow-sm" value={selectedSeance} onChange={(e) => setSelectedSeance(e.target.value)}>
-              <option value="">Selectionner une seance</option>
-              {seances.map((seance) => (
-                <option key={seance.value} value={seance.value}>{seance.label}</option>
-              ))}
-            </select>
-            <input type="date" className="form-input w-auto shadow-sm" value={date} onChange={(e) => setDate(e.target.value)} />
+              {showMatiereField && (
+                <select
+                  className="form-select min-w-[220px] shrink-0 !px-4 !py-2.5 rounded-xl border border-slate-300 bg-white shadow-sm"
+                  value={selectedMatiere}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setSelectedMatiere(value);
+                    loadAttendance(selectedClass, date, value);
+                  }}
+                >
+                  {matieres.map((m) => <option key={m.id} value={m.id}>{m.nom}</option>)}
+                </select>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 ml-auto bg-slate-50/80 p-1.5 rounded-2xl border border-slate-100 shadow-sm">
+              <button
+                className="flex items-center justify-center h-9 w-10 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 transition-colors shadow-sm"
+                onClick={() => {
+                  const d = new Date(date);
+                  d.setDate(d.getDate() - 1);
+                  const newDate = d.toISOString().slice(0, 10);
+                  setDate(newDate);
+                  loadAttendance(selectedClass, newDate, selectedMatiere);
+                }}
+                title="Jour précédent"
+              >
+                <ChevronLeft size={18} />
+              </button>
+
+              <input
+                type="date"
+                className="form-input h-9 w-[140px] px-3 font-semibold text-slate-700 text-sm rounded-xl border border-slate-200 bg-white shadow-sm text-center focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all"
+                value={date}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setDate(value);
+                  loadAttendance(selectedClass, value, selectedMatiere);
+                }}
+              />
+
+              <button
+                className="flex items-center justify-center h-9 w-10 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 transition-colors shadow-sm"
+                onClick={() => {
+                  const d = new Date(date);
+                  d.setDate(d.getDate() + 1);
+                  const newDate = d.toISOString().slice(0, 10);
+                  setDate(newDate);
+                  loadAttendance(selectedClass, newDate, selectedMatiere);
+                }}
+                title="Jour suivant"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
           </div>
-          <button className="btn btn-outline bg-white" onClick={() => loadAttendance(selectedClass, date, selectedMatiere, selectedSeance)}>
-            <RotateCcw size={16} className="mr-2" /> Actualiser
-          </button>
         </div>
 
         {/* Attendance Table */}
@@ -210,6 +294,8 @@ export default function Appel() {
                   <th className="w-12 text-center">N°</th>
                   <th className="w-16">Photo</th>
                   <th>Nom Complet</th>
+                  <th className="text-center w-28">{seance1Label}</th>
+                  <th className="text-center w-28">{seance2Label}</th>
                   <th className="text-center w-64">Statut de présence</th>
                 </tr>
               </thead>
@@ -230,6 +316,24 @@ export default function Appel() {
                       <span className={`font-bold ${s.status === 'absent' ? 'text-red-700' : 'text-slate-800'}`}>
                         {s.firstName} {s.lastName}
                       </span>
+                    </td>
+                    <td className="text-center">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(s.seance1Absent)}
+                        onChange={() => toggleStudentSeance(s.id, 'seance1Absent')}
+                        className="h-4 w-4 accent-red-600 cursor-pointer"
+                        title={`Absent en ${seance1Label}`}
+                      />
+                    </td>
+                    <td className="text-center">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(s.seance2Absent)}
+                        onChange={() => toggleStudentSeance(s.id, 'seance2Absent')}
+                        className="h-4 w-4 accent-red-600 cursor-pointer"
+                        title={`Absent en ${seance2Label}`}
+                      />
                     </td>
                     <td>
                       <div className="flex justify-center items-center gap-2">

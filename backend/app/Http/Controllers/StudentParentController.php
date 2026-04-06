@@ -16,6 +16,7 @@ use App\Models\Ressource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
 class StudentParentController extends Controller
@@ -35,10 +36,12 @@ class StudentParentController extends Controller
             ->whereDate('date_limite', '>=', now()->toDateString())
             ->count();
 
-        $recentAnnouncements = $this->studentAnnouncementsQuery($classId)
+        $recentAnnouncements = $this->studentAnnouncementsQuery($classId, 'etudiants')
             ->orderByDesc('date_publication')
             ->limit(5)
-            ->get();
+            ->get()
+            ->map(fn (Annonce $annonce) => $this->formatAnnouncement($annonce))
+            ->values();
 
         $average = Note::query()
             ->where('id_etudiant', $student->id_etudiant)
@@ -225,10 +228,12 @@ class StudentParentController extends Controller
             return response()->json(['annonces' => []]);
         }
 
-        $annonces = $this->studentAnnouncementsQuery($student->id_classe)
+        $annonces = $this->studentAnnouncementsQuery($student->id_classe, 'etudiants')
             ->orderByDesc('date_publication')
             ->limit(30)
-            ->get();
+            ->get()
+            ->map(fn (Annonce $annonce) => $this->formatAnnouncement($annonce))
+            ->values();
 
         return response()->json(['annonces' => $annonces]);
     }
@@ -502,10 +507,12 @@ class StudentParentController extends Controller
             return $error;
         }
 
-        $annonces = $this->studentAnnouncementsQuery($child->id_classe)
+        $annonces = $this->studentAnnouncementsQuery($child->id_classe, 'parents')
             ->orderByDesc('date_publication')
             ->limit(30)
-            ->get();
+            ->get()
+            ->map(fn (Annonce $annonce) => $this->formatAnnouncement($annonce))
+            ->values();
 
         return response()->json([
             'id_etudiant' => $child->id_etudiant,
@@ -625,9 +632,61 @@ class StudentParentController extends Controller
         return [$child, null];
     }
 
-    private function studentAnnouncementsQuery(?int $classId)
+    private function studentAnnouncementsQuery(?int $classId, ?string $audience = null)
     {
-        return \App\Models\Annonce::query()
+        $hasTargetColumn = Schema::hasColumn('annonces', 'cible');
+        $hasPhotoColumn = Schema::hasColumn('annonces', 'photo_path');
+
+        $query = \App\Models\Annonce::query()
             ->select('id_annonce', 'titre', 'contenu', 'date_publication', 'type', 'auteur');
+
+        if ($hasTargetColumn) {
+            $query->addSelect('cible');
+
+            if ($audience) {
+                $audienceAliases = match (strtolower($audience)) {
+                    'etudiants' => ['etudiants', 'etudiant', 'eleves', 'eleve'],
+                    'parents' => ['parents', 'parent'],
+                    'professeurs' => ['professeurs', 'professeur'],
+                    default => [strtolower($audience)],
+                };
+
+                $query->where(function ($targetQuery) use ($audienceAliases) {
+                    $targetQuery
+                        ->whereNull('cible')
+                        ->orWhere('cible', '')
+                        ->orWhereRaw('LOWER(cible) = ?', ['tous']);
+
+                    foreach ($audienceAliases as $alias) {
+                        $targetQuery->orWhereRaw('LOWER(cible) = ?', [$alias]);
+                    }
+                });
+            }
+        }
+
+        if ($hasPhotoColumn) {
+            $query->addSelect('photo_path');
+        }
+
+        return $query;
+    }
+
+    private function formatAnnouncement(Annonce $annonce): array
+    {
+        $photoPath = $annonce->photo_path ?? null;
+        $photoUrl = $photoPath ? Storage::disk('public')->url($photoPath) : null;
+
+        return [
+            'id_annonce' => $annonce->id_annonce,
+            'titre' => $annonce->titre,
+            'contenu' => $annonce->contenu,
+            'date_publication' => optional($annonce->date_publication)->toDateTimeString(),
+            'type' => $annonce->type,
+            'auteur' => $annonce->auteur,
+            'cible' => $annonce->cible ?? 'Tous',
+            'photo_url' => $photoUrl,
+            'attachment_url' => $photoUrl,
+            'has_attachment' => (bool) $photoUrl,
+        ];
     }
 }

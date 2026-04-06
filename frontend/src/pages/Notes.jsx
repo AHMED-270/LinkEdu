@@ -1,7 +1,7 @@
 ﻿import { useEffect, useState } from 'react';
-import { Save, Printer, UploadCloud, Search, CheckCircle2, AlertCircle, FileSpreadsheet, Trash2 } from 'lucide-react';
+import { Save, Printer, UploadCloud, CheckCircle2, AlertCircle, FileSpreadsheet, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { professorGet, professorPost } from '../services/professorApi';
 import { useAuth } from '../context/AuthContext';
 
@@ -22,6 +22,26 @@ export default function Notes() {
   const [isSaving, setIsSaving] = useState(false);
   const [statusMsg, setStatusMsg] = useState({ type: '', text: '' });
 
+  const getDynamicAppreciation = (value) => {
+    const note = Number(value);
+    if (!Number.isFinite(note)) return '';
+    if (note >= 18) return 'Excellent';
+    if (note >= 16) return 'Tres bien';
+    if (note >= 14) return 'Bien';
+    if (note >= 12) return 'Assez bien';
+    if (note >= 10) return 'Passable';
+    return 'Insuffisant';
+  };
+
+  const getAppreciationStyle = (value) => {
+    const note = Number(value);
+    if (!Number.isFinite(note)) return 'bg-slate-100 text-slate-500 border-slate-200';
+    if (note >= 16) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    if (note >= 12) return 'bg-blue-50 text-blue-700 border-blue-200';
+    if (note >= 10) return 'bg-amber-50 text-amber-700 border-amber-200';
+    return 'bg-red-50 text-red-700 border-red-200';
+  };
+
   const redirectToLogin = () => {
     logout();
     navigate('/login', { replace: true });
@@ -39,10 +59,13 @@ export default function Notes() {
       setClasses(data.classes || []);
       setMatieres(data.matieres || []);
       setShowMatiereField(Boolean(data.showMatiereField ?? (data.matieres || []).length > 1));
-      setStudents(data.students || []);
-      
-      if (!classId && data.selectedClassId) setSelectedClass(String(data.selectedClassId));
-      if (!matiereId && data.selectedMatiereId) setSelectedMatiere(String(data.selectedMatiereId));
+      setStudents((data.students || []).map((student) => ({
+        ...student,
+        appreciation: getDynamicAppreciation(student.note),
+      })));
+
+      if (data.selectedClassId) setSelectedClass(String(data.selectedClassId));
+      if (data.selectedMatiereId) setSelectedMatiere(String(data.selectedMatiereId));
     } catch (error) {
       const status = error?.response?.status;
       if (status === 401) {
@@ -71,7 +94,14 @@ export default function Notes() {
     const numValue = parseFloat(sanitizedValue);
     if (!isNaN(numValue) && numValue > 20) return;
 
-    setStudents(students.map(s => s.id === id ? { ...s, note: sanitizedValue } : s));
+    setStudents(students.map((s) => {
+      if (s.id !== id) return s;
+      return {
+        ...s,
+        note: sanitizedValue,
+        appreciation: sanitizedValue === '' ? '' : getDynamicAppreciation(sanitizedValue),
+      };
+    }));
   };
 
   const handleSave = async () => {
@@ -87,7 +117,7 @@ export default function Notes() {
           studentId: student.id,
           noteId: student.noteId ?? null,
           note: student.note === '' ? null : Number(student.note),
-          appreciation: student.appreciation || null,
+          appreciation: student.note === '' ? null : (student.appreciation || getDynamicAppreciation(student.note)),
         })),
       });
 
@@ -158,22 +188,21 @@ export default function Notes() {
         <div>
           <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Saisie des Notes</h1>
           <p className="text-slate-500 text-sm mt-1">Gérez les évaluations et les appréciations de vos classes.</p>
-          <div className="mt-3 inline-flex rounded-xl border border-slate-200 bg-white p-1">
-            <Link
-              to="/notes"
-              className="px-3 py-1.5 text-sm font-semibold rounded-lg bg-blue-600 text-white"
-            >
-              Notes
-            </Link>
-            <Link
-              to="/appel"
-              className="px-3 py-1.5 text-sm font-semibold rounded-lg text-slate-600 hover:bg-slate-100"
-            >
-              Absences
-            </Link>
-          </div>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 flex-wrap">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="btn btn-primary shadow-[0_4px_14px_rgba(59,130,246,0.25)] disabled:opacity-70 disabled:cursor-not-allowed"
+            onClick={handleSave}
+            disabled={isSaving || students.length === 0}
+          >
+            {isSaving ? (
+              <><span className="loading-spinner w-4 h-4 border-white mr-2"></span> Enregistrement...</>
+            ) : (
+              <><Save size={18} className="mr-2" /> Enregistrer les notes</>
+            )}
+          </motion.button>
           <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="btn btn-outline bg-white shadow-sm">
             <UploadCloud size={16} /> <span className="hidden sm:inline">Importer Excel</span>
           </motion.button>
@@ -191,17 +220,33 @@ export default function Notes() {
         className="card p-0 overflow-hidden flex flex-col"
       >
         {/* Filters Toolbar */}
-        <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-            <select className="form-select min-w-[200px] shadow-sm" value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)}>
+        <div className="p-5 border-b border-slate-100 bg-slate-50/50">
+          <div className="flex flex-wrap items-center gap-3 w-full">
+            <select
+              className="form-select min-w-[220px] !px-4 !py-2.5 rounded-xl border border-slate-300 bg-white shadow-sm"
+              value={selectedClass}
+              onChange={(e) => {
+                const value = e.target.value;
+                setSelectedClass(value);
+                loadNotes(value, selectedMatiere);
+              }}
+            >
               <option value="">Sélectionner une classe</option>
               {classes.map((classe) => (
-                <option key={classe.id} value={classe.id}>{classe.nom} - {classe.niveau}</option>
+                <option key={classe.id} value={classe.id}>{classe.nom}</option>
               ))}
             </select>
             
             {showMatiereField && (
-              <select className="form-select min-w-[180px] shadow-sm" value={selectedMatiere} onChange={(e) => setSelectedMatiere(e.target.value)}>
+              <select
+                className="form-select min-w-[220px] !px-4 !py-2.5 rounded-xl border border-slate-300 bg-white shadow-sm"
+                value={selectedMatiere}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSelectedMatiere(value);
+                  loadNotes(selectedClass, value);
+                }}
+              >
                 <option value="">Sélectionner une matière</option>
                 {matieres.map((matiere) => (
                   <option key={matiere.id} value={matiere.id}>{matiere.nom}</option>
@@ -209,22 +254,19 @@ export default function Notes() {
               </select>
             )}
             
-            <select className="form-select min-w-[160px] shadow-sm" value={evaluationType} onChange={(e) => setEvaluationType(e.target.value)}>
+            <select
+              className="form-select min-w-[220px] !px-4 !py-2.5 rounded-xl border border-slate-300 bg-white shadow-sm"
+              value={evaluationType}
+              onChange={(e) => setEvaluationType(e.target.value)}
+            >
               <option value="Contrôle 1">Contrôle 1</option>
               <option value="Contrôle 2">Contrôle 2</option>
               <option value="Contrôle 3">Contrôle 3</option>
-              <option value="Examen Final">Examen Final</option>
-              <option value="TP">Travaux Pratiques</option>
-              <option value="Projet">Projet / Exposé</option>
+              <option value="Contrôle 4">Contrôle 4</option>
+              <option value="TP et Participation">TP / Participation</option>
+              <option value="Projet / Exposé">Projet / Exposé</option>
             </select>
           </div>
-          
-          <button 
-            className="btn btn-primary w-full md:w-auto shadow-sm" 
-            onClick={() => loadNotes(selectedClass, selectedMatiere)}
-          >
-            <Search size={16} className="mr-2" /> Valider
-          </button>
         </div>
 
         {/* Data Table */}
@@ -242,7 +284,7 @@ export default function Notes() {
                   <th className="w-16">Photo</th>
                   <th>Nom de l'élève</th>
                   <th className="w-32 text-center">Note / 20</th>
-                  <th>Appréciation (Optionnel)</th>
+                  <th>Appréciation</th>
                   <th className="w-24 text-center">Action</th>
                 </tr>
               </thead>
@@ -293,13 +335,13 @@ export default function Notes() {
                         </div>
                       </td>
                       <td>
-                        <input
-                          type="text"
-                          className="form-input w-full bg-transparent hover:bg-white focus:bg-white transition-colors"
-                          placeholder="Ex: Excellent travail..."
-                          value={s.appreciation || ''}
-                          onChange={(e) => setStudents(students.map((x) => x.id === s.id ? { ...x, appreciation: e.target.value } : x))}
-                        />
+                        <div className="flex items-center">
+                          <span
+                            className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold ${getAppreciationStyle(s.note)}`}
+                          >
+                            {s.note === '' || s.note === null ? '-' : (s.appreciation || getDynamicAppreciation(s.note))}
+                          </span>
+                        </div>
                       </td>
                       <td className="text-center">
                         <button
@@ -319,22 +361,6 @@ export default function Notes() {
           )}
         </div>
 
-        {/* Footer Actions */}
-        <div className="p-5 border-t border-slate-100 bg-white flex justify-end">
-          <motion.button 
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="btn btn-primary px-8 shadow-[0_4px_14px_rgba(59,130,246,0.25)] disabled:opacity-70 disabled:cursor-not-allowed" 
-            onClick={handleSave}
-            disabled={isSaving || students.length === 0}
-          >
-            {isSaving ? (
-              <><span className="loading-spinner w-4 h-4 border-white mr-2"></span> Enregistrement...</>
-            ) : (
-              <><Save size={18} className="mr-2" /> Enregistrer les notes</>
-            )}
-          </motion.button>
-        </div>
       </motion.div>
     </div>
   );
