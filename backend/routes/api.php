@@ -8,16 +8,18 @@ use App\Http\Controllers\AdminLoginController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\DirecteurLoginController;
 use App\Http\Controllers\DirecteurController;
+use App\Http\Controllers\StudentParentController;
+use App\Http\Controllers\PaiementController;
+use App\Http\Controllers\SecretaireController;
 use App\Http\Controllers\AnnonceController;
 use App\Http\Controllers\EmploiDuTempsController;
-use App\Http\Controllers\StudentParentController;
 
 /*
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
 |
-| Here is where you can register API routes for your application. These
+| Here where you can is register API routes for your application. These
 | routes are loaded by the RouteServiceProvider and all of them will
 | be assigned to the "api" middleware group.
 |
@@ -29,12 +31,13 @@ Route::any('/health', function (Request $request) {
     ]);
 });
 
+// Unified login endpoint used by frontend LoginCard.
+Route::post('/login', [AuthController::class, 'login']);
+
 // Auth Check (Frontend check)
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
 });
-
-Route::post('/login', [AuthController::class, 'login']);
 
 // Admin routes
 Route::post('/admin/login', [AdminLoginController::class, 'login']);
@@ -75,6 +78,9 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::post('/admin/users', [AdminDashboardController::class, 'createUser']);
     Route::put('/admin/users/{id}', [AdminDashboardController::class, 'updateUser']);
     Route::delete('/admin/users/{id}', [AdminDashboardController::class, 'deleteUser']);
+    Route::post('/admin/users/{id}/activate', [AdminDashboardController::class, 'activateUser']);
+    Route::post('/admin/users/{id}/deactivate', [AdminDashboardController::class, 'deactivateUser']);
+    Route::get('/admin/class-options', [AdminDashboardController::class, 'getClassOptions']);
     Route::post('/admin/classes', [AdminDashboardController::class, 'createClass']);
     Route::put('/admin/classes/{id}', [AdminDashboardController::class, 'updateClass']);
     Route::delete('/admin/classes/{id}', [AdminDashboardController::class, 'deleteClass']);
@@ -83,6 +89,78 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::put('/admin/matieres/{id}', [AdminDashboardController::class, 'updateMatiere']);
     Route::delete('/admin/matieres/{id}', [AdminDashboardController::class, 'deleteMatiere']);
     Route::post('/admin/reports/generate', [AdminDashboardController::class, 'generateReport']);
+});
+
+// Student API routes
+Route::middleware(['auth:sanctum', 'role:etudiant'])->prefix('etudiant')->group(function () {
+    Route::get('/dashboard', [StudentParentController::class, 'studentDashboard']);
+    Route::get('/notes', [StudentParentController::class, 'studentNotes']);
+    Route::get('/devoirs', [StudentParentController::class, 'studentAssignments']);
+    Route::post('/devoirs/{devoirId}/soumettre', [StudentParentController::class, 'submitStudentAssignment']);
+    Route::get('/emploi-du-temps', [StudentParentController::class, 'studentSchedule']);
+    Route::get('/annonces', [StudentParentController::class, 'studentAnnouncements']);
+    Route::get('/lecons', [StudentParentController::class, 'studentLessons']);
+    Route::get('/ressources', [StudentParentController::class, 'studentResources']);
+});
+
+// Parent API routes
+Route::middleware(['auth:sanctum', 'role:parent'])->prefix('parent')->group(function () {
+    Route::get('/dashboard', [StudentParentController::class, 'parentDashboard']);
+    Route::get('/enfants', [StudentParentController::class, 'parentChildren']);
+    Route::get('/notes', [StudentParentController::class, 'parentNotes']);
+    Route::get('/devoirs', [StudentParentController::class, 'parentAssignments']);
+    Route::get('/absences', [StudentParentController::class, 'parentAbsences']);
+    Route::get('/emploi-du-temps', [StudentParentController::class, 'parentSchedule']);
+    Route::get('/annonces', [StudentParentController::class, 'parentAnnouncements']);
+    Route::get('/professeurs', [StudentParentController::class, 'parentProfessors']);
+    Route::get('/reclamations', [StudentParentController::class, 'parentComplaints']);
+    Route::post('/reclamations', [StudentParentController::class, 'submitParentComplaint']);
+});
+
+// Secretaire Module Routes
+Route::middleware(['auth:sanctum', 'role:secretaire,admin,directeur'])->prefix('secretaire')->group(function () {
+    Route::get('/dashboard', [SecretaireController::class, 'dashboard']);
+
+    // Students
+    Route::get('/students', [SecretaireController::class, 'listStudents']);
+    Route::post('/students/import', [SecretaireController::class, 'importStudents']);
+    Route::post('/students', [SecretaireController::class, 'createStudent']);
+    Route::put('/students/{id}', [SecretaireController::class, 'updateStudent']);
+    Route::delete('/students/{id}', [SecretaireController::class, 'deleteStudent']);
+
+    // Paiements
+    Route::get('/paiements', [PaiementController::class, 'index']);
+    Route::post('/paiements', [PaiementController::class, 'store']);
+    Route::put('/paiements/{id}', [PaiementController::class, 'update']);
+    Route::delete('/paiements/{id}', [PaiementController::class, 'destroy']);
+    Route::put('/paiements/{id}/toggle', [PaiementController::class, 'togglePaid']);
+
+    // Classes
+    Route::get('/classes', [SecretaireController::class, 'listClasses']);
+    Route::post('/classes', [SecretaireController::class, 'createClasse']);
+    Route::put('/classes/{id}', [SecretaireController::class, 'updateClasse']);
+    Route::delete('/classes/{id}', [SecretaireController::class, 'deleteClasse']);
+
+    // Absences
+    Route::get('/absences', [SecretaireController::class, 'listAbsences']);
+    Route::post('/absences', [SecretaireController::class, 'createAbsence']);
+    Route::put('/absences/{id}', [SecretaireController::class, 'updateAbsence']);
+    Route::delete('/absences/{id}', [SecretaireController::class, 'deleteAbsence']);
+
+    // Annonces
+    Route::get('/annonces', [SecretaireController::class, 'listAnnonces']);
+    Route::post('/annonces', [SecretaireController::class, 'createAnnonce']);
+    Route::post('/annonces/{id}', [SecretaireController::class, 'updateAnnonce']);
+    Route::put('/annonces/{id}', [SecretaireController::class, 'updateAnnonce']);
+    Route::delete('/annonces/{id}', [SecretaireController::class, 'deleteAnnonce']);
+
+    // Reclamations
+    Route::get('/reclamations', [SecretaireController::class, 'listReclamations']);
+    Route::post('/reclamations', [SecretaireController::class, 'createReclamation']);
+    Route::put('/reclamations/{id}', [SecretaireController::class, 'updateReclamation']);
+    Route::delete('/reclamations/{id}', [SecretaireController::class, 'deleteReclamation']);
+    Route::put('/reclamations/{id}/status', [SecretaireController::class, 'updateReclamationStatus']);
+    Route::get('/parents', [SecretaireController::class, 'listParents']);
 });
 
 // Professor Module Routes (RBAC protected)
@@ -122,30 +200,4 @@ Route::middleware(['auth:sanctum', 'role:professeur'])->prefix('professeur')->gr
     // RÃ©clamations
     Route::get('/reclamations', [ProfessorController::class, 'getComplaints']);
     Route::post('/reclamations', [ProfessorController::class, 'submitComplaint']);
-});
-
-// Student Module Routes
-Route::middleware(['auth:sanctum', 'role:etudiant'])->prefix('etudiant')->group(function () {
-    Route::get('/dashboard', [StudentParentController::class, 'studentDashboard']);
-    Route::get('/notes', [StudentParentController::class, 'studentNotes']);
-    Route::get('/devoirs', [StudentParentController::class, 'studentAssignments']);
-    Route::post('/devoirs/{devoirId}/soumettre', [StudentParentController::class, 'submitStudentAssignment']);
-    Route::get('/emploi-du-temps', [StudentParentController::class, 'studentSchedule']);
-    Route::get('/annonces', [StudentParentController::class, 'studentAnnouncements']);
-    Route::get('/lecons', [StudentParentController::class, 'studentLessons']);
-    Route::get('/ressources', [StudentParentController::class, 'studentResources']);
-});
-
-// Parent Module Routes
-Route::middleware(['auth:sanctum', 'role:parent'])->prefix('parent')->group(function () {
-    Route::get('/dashboard', [StudentParentController::class, 'parentDashboard']);
-    Route::get('/enfants', [StudentParentController::class, 'parentChildren']);
-    Route::get('/notes', [StudentParentController::class, 'parentNotes']);
-    Route::get('/devoirs', [StudentParentController::class, 'parentAssignments']);
-    Route::get('/absences', [StudentParentController::class, 'parentAbsences']);
-    Route::get('/emploi-du-temps', [StudentParentController::class, 'parentSchedule']);
-    Route::get('/annonces', [StudentParentController::class, 'parentAnnouncements']);
-    Route::get('/professeurs', [StudentParentController::class, 'parentProfessors']);
-    Route::get('/reclamations', [StudentParentController::class, 'parentComplaints']);
-    Route::post('/reclamations', [StudentParentController::class, 'submitParentComplaint']);
 });

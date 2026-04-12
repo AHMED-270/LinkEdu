@@ -1,31 +1,28 @@
 ﻿import { useState } from 'react';
 import axios from 'axios';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Mail, Lock, Eye, EyeOff, LogIn, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
-import { getHomeRouteByRole } from '../constants/roles';
 
 const AUTH_TOKEN_KEY = 'linkedu_token';
 const browserHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
-const apiBaseUrl = import.meta.env.VITE_API_URL ?? "http://" + browserHost + ":8000";
+const apiBaseUrl = import.meta.env.VITE_API_URL ?? `http://${browserHost}:8000`;
 
-export default function LoginCard({ onLoginSuccess }) {
-  const [isForgotMode, setIsForgotMode] = useState(false);
-  const [isResetSent, setIsResetSent] = useState(false);
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  const [loginFeedback, setLoginFeedback] = useState('');
-  const [loginFeedbackType, setLoginFeedbackType] = useState('');
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-
+export default function LoginCard() {
+  const [showPass, setShowPass] = useState(false);
+  const [email, setEmail] = useState('');
+  const [pass, setPass] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [feedback, setFeedback] = useState({ type: '', msg: '' });
+  
   const navigate = useNavigate();
   const { setAuthenticatedUser } = useAuth();
 
-  const handleLoginSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoggingIn(true);
-    setLoginFeedback('');
-    setLoginFeedbackType('');
+    setLoading(true);
+    setFeedback({ type: '', msg: '' });
 
     try {
       const performLogin = async () => {
@@ -34,11 +31,9 @@ export default function LoginCard({ onLoginSuccess }) {
           withXSRFToken: true,
         });
 
-        // Use the new unified /api/login endpoint instead of forcing /api/directeur/login
-        const endpoint = '/api/login';
         return axios.post(
-          apiBaseUrl + endpoint,
-          { email: loginEmail.trim().toLowerCase(), password: loginPassword },
+          apiBaseUrl + '/api/admin/login',
+          { email, password: pass },
           {
             withCredentials: true,
             withXSRFToken: true,
@@ -65,151 +60,118 @@ export default function LoginCard({ onLoginSuccess }) {
         try {
           localStorage.setItem(AUTH_TOKEN_KEY, authToken);
         } catch {
-          // Ignore storage failures
+          // Ignore storage failures.
         }
       }
 
-      if (setAuthenticatedUser) {
-        setAuthenticatedUser(connectedUser);
-      }
-      
-      if (onLoginSuccess && typeof onLoginSuccess === 'function') {
-        onLoginSuccess(connectedUser);
-      }
+      setAuthenticatedUser(connectedUser);
+      setFeedback({ type: 'success', msg: 'Authentification reussie !' });
 
-      setLoginFeedback('Authentification réussie !');
-      setLoginFeedbackType('success');
-
-      const roleHome = getHomeRouteByRole(connectedUser?.role);
+      const role = connectedUser?.role;
+      const roleHome = role === 'admin' || role === 'directeur'
+        ? '/admin'
+        : role === 'professeur'
+          ? '/dashboard'
+          : role === 'etudiant'
+            ? '/etudiant'
+            : role === 'parent'
+              ? '/parent'
+              : '/login';
 
       setTimeout(() => navigate(roleHome, { replace: true }), 500);
     } catch (err) {
       const status = err?.response?.status;
       if (status === 422 || status === 401) {
-        setLoginFeedback('E-mail ou mot de passe incorrect.');
-        setLoginFeedbackType('error');
-      } else if (status === 403) {
-        // Just in case backend somehow returns 403
-        setLoginFeedback(err?.response?.data?.message || 'Accès refusé.');
-        setLoginFeedbackType('error');
+        setFeedback({ type: 'error', msg: 'Identifiants invalides.' });
       } else if (status === 419) {
-        setLoginFeedback('Session expirée. Réessayez.');
-        setLoginFeedbackType('error');
+        setFeedback({ type: 'error', msg: 'Session expiree. Reessayez.' });
       } else {
-        setLoginFeedback(err?.response?.data?.message || 'Erreur de connexion.');
-        setLoginFeedbackType('error');
+        setFeedback({ type: 'error', msg: err?.response?.data?.message || 'Erreur de connexion.' });
       }
     } finally {
-      setIsLoggingIn(false);
+      setLoading(false);
     }
   };
 
-  const handleForgotSubmit = (e) => {
-    e.preventDefault();
-    setIsResetSent(true);
-  };
-
   return (
-    <section className="auth-panel">
-      <div className="auth-card">
-        <p className="auth-logo">LinkedU</p>
-        <h2 className="auth-heading">
-          {isForgotMode ? 'Mot de passe oublié ?' : 'Se connecter'}
-        </h2>
-        <p className="auth-description">
-          {isForgotMode
-            ? "Saisissez l'adresse e-mail associée à votre compte pour recevoir un lien de réinitialisation."
-            : "Saisissez vos informations afin d'accéder à la plateforme."}
-        </p>
-
-        {!isForgotMode && (
-          <form className="auth-form" onSubmit={handleLoginSubmit}>
-
-            <label htmlFor="email">E-mail</label>
-            <input
-              id="email"
-              type="email"
-              placeholder="nom@ecole.com"
-              value={loginEmail}
-              onChange={(event) => {
-                setLoginEmail(event.target.value);
-                setLoginFeedback('');
-                setLoginFeedbackType('');
-              }}
-              required
-            />
-
-            <label htmlFor="password">Mot de passe</label>
-            <input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              value={loginPassword}
-              onChange={(event) => {
-                setLoginPassword(event.target.value);
-                setLoginFeedback('');
-                setLoginFeedbackType('');
-              }}
-              required
-            />
-
-            <button
-              type="button"
-              className="link-small link-button"
-              onClick={() => setIsForgotMode(true)}
-            >
-              Mot de passe oublié ?
-            </button>
-
-            <button type="submit" className="auth-button" disabled={isLoggingIn}>
-              {isLoggingIn ? 'Connexion...' : 'Se connecter'}
-            </button>
-
-            {loginFeedback && (
-              <p
-                style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem', color: loginFeedbackType === 'error' ? '#d32f2f' : '#2e7d32' }}
-              >
-                {loginFeedbackType === 'error' ? <AlertCircle size={16} /> : <CheckCircle2 size={16} />}
-                {loginFeedback}
-              </p>
-            )}
-          </form>
-        )}
-
-        {isForgotMode && (
-          <form className="auth-form" onSubmit={handleForgotSubmit}>
-            <label htmlFor="forgot-email">E-mail</label>
-            <input id="forgot-email" type="email" placeholder="nom@ecole.com" required />
-
-            <button type="submit" className="auth-button">
-              Réinitialiser le mot de passe &rarr;
-            </button>
-
-            <button
-              type="button"
-              className="back-link link-small"
-              style={{marginTop: "0.5rem"}}
-              onClick={() => {
-                setIsForgotMode(false);
-                setIsResetSent(false);
-              }}
-            >
-              &larr; Retour à la page de connexion
-            </button>
-
-            {isResetSent && (
-              <p className="auth-feedback" style={{ fontSize: '0.85rem', color: '#2e7d32', marginTop: '0.5rem' }}>
-                Si cet e-mail existe, un lien de réinitialisation a été envoyé.
-              </p>
-            )}
-          </form>
-        )}
-
-        <div className="auth-footer" style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #eef2f7', display: 'flex', justifyContent: 'center', gap: '1rem' }}>
-          <a href="#" style={{ color: '#667085', fontSize: '0.75rem', textDecoration: 'none' }}>Conditions d'utilisation</a>
-          <a href="#" style={{ color: '#667085', fontSize: '0.75rem', textDecoration: 'none' }}>Politique de confidentialité</a>
+    <section className="auth-card-zone">
+      <motion.div 
+        initial={{ opacity: 0, y: 40, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+        className="login-glass-card"
+      >
+        <div className="auth-header">
+          <h2>Bon retour !</h2>
+          <p>Entrez vos accès pour continuer votre apprentissage.</p>
         </div>
-      </div>
+
+        <form onSubmit={handleSubmit} className="login-form">
+          <div className="input-field-group">
+            <label>Identifiant Académique</label>
+            <div className="input-wrapper">
+              <Mail className="input-icon" size={18} />
+              <input 
+                type="email" 
+                placeholder="nom@ecole.com" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required 
+              />
+            </div>
+          </div>
+
+          <div className="input-field-group">
+            <div className="flex-between">
+              <label>Mot de passe</label>
+              <button type="button" className="link-text">Oublié ?</button>
+            </div>
+            <div className="input-wrapper">
+              <Lock className="input-icon" size={18} />
+              <input 
+                type={showPass ? "text" : "password"} 
+                placeholder="••••••••" 
+                value={pass}
+                onChange={(e) => setPass(e.target.value)}
+                required 
+              />
+              <button type="button" onClick={() => setShowPass(!showPass)} className="pass-toggle">
+                {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
+
+          <motion.button 
+            whileHover={{ scale: 1.02, translateY: -2 }}
+            whileTap={{ scale: 0.98 }}
+            type="submit" 
+            disabled={loading}
+            className="submit-button-academic"
+          >
+            {loading ? <div className="loader-dots" /> : <><LogIn size={20} /> Se connecter</>}
+          </motion.button>
+
+          <AnimatePresence>
+            {feedback.msg && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className={`feedback-msg ${feedback.type}`}
+              >
+                {feedback.type === 'error' ? <AlertCircle size={16} /> : <CheckCircle2 size={16} />}
+                {feedback.msg}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </form>
+
+        <div className="card-footer">
+          <a href="#">Assistance technique</a>
+          <span className="dot" />
+          <a href="#">Règlement intérieur</a>
+        </div>
+      </motion.div>
     </section>
   );
 }

@@ -1,28 +1,92 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
-import { Plus, Edit, Trash2, Search, BookOpen, AlertCircle } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ROLE } from '../constants/roles';
+import { FiPlus as Plus, FiEdit2 as Edit, FiTrash2 as Trash2, FiSearch as Search, FiEye as Eye } from 'react-icons/fi';
+import { BiSolidUserDetail } from 'react-icons/bi';
+import {
+  LEVEL_LABELS,
+  PROFESSOR_SUBJECTS_BY_LEVEL,
+  PROFESSOR_SUBJECT_COEFFICIENTS_BY_LEVEL,
+} from '../constants/professorSubjectsByLevel';
 
-export default function AdminMatieres({ userRole = ROLE.ADMIN }) {
+const normalizeSubjectToken = (value = '') => {
+  const normalized = String(value)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+
+  switch (normalized) {
+    case 'math':
+      return 'mathematiques';
+    case 'pc':
+      return 'physiquechimie';
+    case 'svt':
+      return 'sciencesdelavieetdelaterresvt';
+    case 'eps':
+    case 'sport':
+      return 'educationphysique';
+    case 'ei':
+      return 'educationislamique';
+    case 'hg':
+    case 'histoiregeo':
+      return 'histoiregeographie';
+    case 'info':
+      return 'informatique';
+    case 'sciencedelingenieur':
+      return 'sciencesdingenieur';
+    case 'banglais':
+      return 'anglais';
+    default:
+      return normalized;
+  }
+};
+
+const AUTOMATIC_LEVELS = ['maternelle', 'primaire', 'college', 'lycee'];
+
+const AUTOMATIC_MATIERES = AUTOMATIC_LEVELS.flatMap((niveau) => {
+  const subjects = PROFESSOR_SUBJECTS_BY_LEVEL[niveau] || [];
+  const coefficientMap = PROFESSOR_SUBJECT_COEFFICIENTS_BY_LEVEL[niveau] || {};
+  return subjects.map((nom) => ({
+    nom,
+    niveau,
+    coefficient: Number.isFinite(Number(coefficientMap[nom])) ? Number(coefficientMap[nom]) : 1,
+  }));
+});
+
+const LEVEL_DISPLAY_ORDER = ['maternelle', 'primaire', 'college', 'lycee', 'general'];
+
+const buildMatiereKey = (nom, niveau) => `${String(niveau || '').toLowerCase()}::${normalizeSubjectToken(nom)}`;
+
+export default function AdminMatieres({ userRole = 'admin' }) {
   const [matieres, setMatieres] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  
-  const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({ nom: '', coefficient: 1 });
   const [formError, setFormError] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-
+  const [showForm, setShowForm] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [editFormData, setEditFormData] = useState({ nom: '', coefficient: 1 });
   const [editFormError, setEditFormError] = useState('');
   const [isSavingEdit, setIsSavingEdit] = useState(false);
-  
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [viewTarget, setViewTarget] = useState(null);
 
-  const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000';
+  const [selectedLevel, setSelectedLevel] = useState('all');
+  const levelFilterOptions = [
+    { value: 'all', label: 'Tous les niveaux' },
+    { value: 'maternelle', label: 'Maternelle' },
+    { value: 'primaire', label: 'Primaire' },
+    { value: 'college', label: 'College' },
+    { value: 'lycee', label: 'Lycee' },
+  ];
+
+  const [formData, setFormData] = useState({
+    nom: '',
+    niveau: 'college',
+    coefficient: 1,
+  });
+
+  const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
   const ensureCsrfCookie = async () => {
     await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', {
@@ -31,16 +95,96 @@ export default function AdminMatieres({ userRole = ROLE.ADMIN }) {
     });
   };
 
-  const fetchMatieres = async () => {
+  const ensureAutomaticMatieres = async (existingMatieres) => {
+    const existingByKey = new Map(
+      (existingMatieres || []).map((matiere) => [buildMatiereKey(matiere.nom, matiere.niveau), matiere])
+    );
+
+    const missing = AUTOMATIC_MATIERES.filter(
+      (matiere) => !existingByKey.has(buildMatiereKey(matiere.nom, matiere.niveau))
+    );
+
+    const coefficientUpdates = AUTOMATIC_MATIERES
+      .map((matiere) => {
+        const key = buildMatiereKey(matiere.nom, matiere.niveau);
+        const current = existingByKey.get(key);
+        if (!current) {
+          return null;
+        }
+
+        return Number(current.coefficient) !== Number(matiere.coefficient)
+          ? { current, expected: matiere }
+          : null;
+      })
+      .filter(Boolean);
+
+    if (missing.length === 0 && coefficientUpdates.length === 0) {
+      return { created: 0, updated: 0 };
+    }
+
+    await ensureCsrfCookie();
+
+    let created = 0;
+    for (const matiere of missing) {
+      try {
+        await axios.post(apiBaseUrl + '/api/admin/matieres', matiere, {
+          withCredentials: true,
+          withXSRFToken: true,
+          headers: { Accept: 'application/json' },
+        });
+        created += 1;
+      } catch (error) {
+        if (error.response?.status !== 422) {
+          throw error;
+        }
+      }
+    }
+
+    let updated = 0;
+    for (const updateItem of coefficientUpdates) {
+      const { current, expected } = updateItem;
+
+      try {
+        await axios.put(`${apiBaseUrl}/api/admin/matieres/${current.id_matiere}`, {
+          nom: current.nom,
+          niveau: current.niveau,
+          coefficient: Number(expected.coefficient),
+        }, {
+          withCredentials: true,
+          withXSRFToken: true,
+          headers: { Accept: 'application/json' },
+        });
+        updated += 1;
+      } catch (error) {
+        if (error.response?.status !== 422) {
+          throw error;
+        }
+      }
+    }
+
+    return { created, updated };
+  };
+
+  const fetchMatieres = async ({ syncDefaults = true } = {}) => {
     setLoading(true);
     try {
       const response = await axios.get(apiBaseUrl + '/api/admin/matieres', {
         withCredentials: true,
         headers: { Accept: 'application/json' },
       });
-      setMatieres(response.data || []);
+
+      const rows = Array.isArray(response.data) ? response.data : [];
+      setMatieres(rows);
+
+      if (syncDefaults) {
+        const syncResult = await ensureAutomaticMatieres(rows);
+        if ((syncResult.created + syncResult.updated) > 0) {
+          await fetchMatieres({ syncDefaults: false });
+          return;
+        }
+      }
     } catch (error) {
-      console.error('Erreur chargement matières:', error);
+      console.error('Erreur chargement matieres:', error);
     } finally {
       setLoading(false);
     }
@@ -50,9 +194,8 @@ export default function AdminMatieres({ userRole = ROLE.ADMIN }) {
     fetchMatieres();
   }, []);
 
-  // --- Modal Handlers ---
   const openCreateForm = () => {
-    setFormData({ nom: '', coefficient: 1 });
+    setFormData({ nom: '', niveau: selectedLevel !== 'all' ? selectedLevel : 'college', coefficient: 1 });
     setFormError('');
     setShowForm(true);
   };
@@ -66,24 +209,25 @@ export default function AdminMatieres({ userRole = ROLE.ADMIN }) {
     setEditTarget(matiere);
     setEditFormData({
       nom: matiere.nom || '',
+      niveau: matiere.niveau || 'college',
       coefficient: matiere.coefficient || 1,
     });
     setEditFormError('');
   };
 
-  // --- Submit Handlers ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError('');
-    setIsSaving(true);
 
     const payload = {
       nom: formData.nom.trim(),
+      niveau: formData.niveau,
       coefficient: Number(formData.coefficient),
     };
 
     try {
       await ensureCsrfCookie();
+
       await axios.post(apiBaseUrl + '/api/admin/matieres', payload, {
         withCredentials: true,
         withXSRFToken: true,
@@ -93,9 +237,7 @@ export default function AdminMatieres({ userRole = ROLE.ADMIN }) {
       setShowForm(false);
       fetchMatieres();
     } catch (error) {
-      setFormError(error.response?.data?.message || "Erreur lors de l'enregistrement de la matière.");
-    } finally {
-      setIsSaving(false);
+      setFormError(error.response?.data?.message || "Erreur lors de l'enregistrement de la matiere.");
     }
   };
 
@@ -108,11 +250,13 @@ export default function AdminMatieres({ userRole = ROLE.ADMIN }) {
 
     const payload = {
       nom: editFormData.nom.trim(),
+      niveau: editFormData.niveau,
       coefficient: Number(editFormData.coefficient),
     };
 
     try {
       await ensureCsrfCookie();
+
       await axios.put(`${apiBaseUrl}/api/admin/matieres/${editTarget.id_matiere}`, payload, {
         withCredentials: true,
         withXSRFToken: true,
@@ -122,18 +266,24 @@ export default function AdminMatieres({ userRole = ROLE.ADMIN }) {
       setEditTarget(null);
       fetchMatieres();
     } catch (error) {
-      setEditFormError(error.response?.data?.message || "Erreur lors de la modification de la matière.");
+      setEditFormError(error.response?.data?.message || "Erreur lors de la modification de la matiere.");
     } finally {
       setIsSavingEdit(false);
     }
   };
 
+  const requestDelete = (matiere) => {
+    setDeleteTarget(matiere);
+  };
+
   const handleDelete = async () => {
     if (!deleteTarget) return;
+
     setIsDeleting(true);
 
     try {
       await ensureCsrfCookie();
+
       await axios.delete(`${apiBaseUrl}/api/admin/matieres/${deleteTarget.id_matiere}`, {
         withCredentials: true,
         withXSRFToken: true,
@@ -143,309 +293,297 @@ export default function AdminMatieres({ userRole = ROLE.ADMIN }) {
       setDeleteTarget(null);
       fetchMatieres();
     } catch (error) {
-      alert(error.response?.data?.message || 'Erreur lors de la suppression de la matière.');
+      alert(error.response?.data?.message || 'Erreur lors de la suppression de la matiere.');
     } finally {
       setIsDeleting(false);
     }
   };
 
-  // --- Filtering & Animations ---
   const normalizedSearch = searchTerm.trim().toLowerCase();
+
+  const subjectLevelsByToken = useMemo(() => {
+    const grouped = new Map();
+
+    matieres.forEach((matiere) => {
+      const token = normalizeSubjectToken(matiere.nom || '');
+      if (!token) return;
+
+      const level = String(matiere.niveau || '').toLowerCase();
+      if (!grouped.has(token)) {
+        grouped.set(token, {
+          nom: String(matiere.nom || '').trim(),
+          levels: new Set(),
+        });
+      }
+
+      grouped.get(token).levels.add(level);
+    });
+
+    return grouped;
+  }, [matieres]);
+
   const filteredMatieres = useMemo(() => {
-    return matieres.filter((matiere) => {
+    const matches = matieres.filter((matiere) => {
+      const matiereLevel = String(matiere.niveau || '').toLowerCase();
+      if (selectedLevel !== 'all' && matiereLevel !== selectedLevel) {
+        return false;
+      }
+
       if (!normalizedSearch) return true;
-      return [matiere.nom, matiere.coefficient]
+
+      return [matiere.nom, matiere.coefficient, matiere.niveau]
         .filter((value) => value !== null && value !== undefined)
         .some((value) => String(value).toLowerCase().includes(normalizedSearch));
     });
-  }, [matieres, normalizedSearch]);
 
-  const tableRowVariants = {
-    hidden: { opacity: 0, y: 10 },
-    visible: (i) => ({
-      opacity: 1,
-      y: 0,
-      transition: { delay: i * 0.05, type: 'spring', stiffness: 100 }
-    })
-  };
+    // In "all" mode, display each subject only once regardless of assigned levels.
+    if (selectedLevel !== 'all') {
+      return matches;
+    }
 
-  if (userRole !== ROLE.ADMIN) {
+    const uniqueByToken = new Map();
+    matches.forEach((matiere) => {
+      const token = normalizeSubjectToken(matiere.nom || '');
+      if (!token) return;
+
+      if (!uniqueByToken.has(token)) {
+        uniqueByToken.set(token, matiere);
+        return;
+      }
+
+      const current = uniqueByToken.get(token);
+      const currentLevel = String(current?.niveau || '').toLowerCase();
+      const nextLevel = String(matiere?.niveau || '').toLowerCase();
+
+      if (currentLevel !== 'general' && nextLevel === 'general') {
+        uniqueByToken.set(token, matiere);
+      }
+    });
+
+    return Array.from(uniqueByToken.values());
+  }, [matieres, normalizedSearch, selectedLevel]);
+
+  if (userRole !== 'admin') {
     return (
-      <div className="layout-content flex items-center justify-center">
-        <div className="text-center p-8 bg-red-50 text-red-600 rounded-xl border border-red-100">
-          <AlertCircle size={48} className="mx-auto mb-4 opacity-50" />
-          <h2 className="text-xl font-bold mb-2">Accès Refusé</h2>
-          <p>Cette page est strictement réservée à l'administrateur.</p>
+      <div className="min-h-screen p-6 bg-[#f5f7fb]">
+        <div className="max-w-4xl mx-auto bg-white border border-gray-100 rounded-2xl shadow-sm p-8 text-gray-600 font-medium">
+          Acces reserve a l'administrateur.
         </div>
       </div>
     );
   }
 
   return (
-    <div className="layout-content">
-      {/* Header Section */}
-      <header className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Gestion des Matières</h1>
-          <p className="text-slate-500 text-sm mt-1">Créer, modifier et supprimer les matières de l'établissement.</p>
-        </div>
-        <motion.button
-          whileHover={{ scale: 1.02, y: -2 }}
-          whileTap={{ scale: 0.98 }}
-          className="btn btn-primary shadow-[0_4px_14px_rgba(59,130,246,0.25)]"
-          onClick={openCreateForm}
-        >
-          <Plus size={18} />
-          Ajouter une Matière
-        </motion.button>
-      </header>
-
-      {/* Main Card Panel */}
-      <div className="card">
-        <div className="card-header border-b border-slate-100 pb-4 mb-4">
-          <h3 className="flex items-center gap-2">
-            Toutes les matières <span className="badge badge-blue">{filteredMatieres.length}</span>
-          </h3>
-          
-          <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 transition-all focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-400">
-            <Search size={16} className="text-slate-400 mr-2" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Rechercher une matière..."
-              className="bg-transparent border-none outline-none text-sm text-slate-700 w-64 placeholder-slate-400"
-            />
+    <div className="min-h-screen p-4 lg:p-8 bg-[#f5f7fb]">
+      <div className="max-w-[1400px] mx-auto">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
+          <div>
+            <h1 className="mt-1 flex items-center gap-2 text-4xl lg:text-5xl font-extrabold italic tracking-tight text-slate-900">
+              <BiSolidUserDetail className="text-blue-600" />
+              Gestion des Matieres
+            </h1>
+            <p className="text-slate-500 mt-2">Creer, modifier et supprimer les matieres de l'etablissement.</p>
           </div>
+          <button
+            type="button"
+            onClick={openCreateForm}
+            className="flex items-center gap-2 px-4 py-2.5 bg-[#2563eb] text-white font-semibold rounded-xl shadow-sm hover:bg-[#1d4ed8] transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          >
+            <Plus className="w-4 h-4" />
+            Ajouter une Matiere
+          </button>
         </div>
 
-        <div className="card-body p-0">
-          {loading ? (
-            <div className="p-12 flex justify-center items-center">
-              <span className="loading-spinner border-blue-500"></span>
+        <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+          <div className="px-6 py-5 border-b border-gray-100 flex flex-col xl:flex-row xl:items-center justify-between gap-3 bg-gray-50/60">
+            <h2 className="text-sm font-semibold text-gray-700">Toutes les matieres ({filteredMatieres.length})</h2>
+            <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto">
+              <select
+                value={selectedLevel}
+                onChange={(e) => setSelectedLevel(e.target.value)}
+                className="block w-full sm:w-48 pl-3 pr-10 py-2 border border-gray-200 rounded-xl leading-5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors sm:text-sm"
+              >
+                {levelFilterOptions.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+              <div className="relative w-full sm:w-64">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="h-4 w-4 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Rechercher nom..."
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors sm:text-sm"
+                />
+              </div>
             </div>
-          ) : (
-            <div className="table-wrapper">
-              <table className="table">
-                <thead>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="table w-full text-left border-collapse min-w-[700px]">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="py-4 px-6 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Matiere</th>
+                  <th className="py-4 px-6 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {loading ? (
+                  [...Array(4)].map((_, i) => (
+                    <tr key={`skeleton-${i}`} className="animate-pulse">
+                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 rounded w-44"></div></td>
+                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 rounded w-16 ml-auto"></div></td>
+                    </tr>
+                  ))
+                ) : filteredMatieres.length === 0 ? (
                   <tr>
-                    <th>Nom de la matière</th>
-                    <th>Coefficient</th>
-                    <th style={{ textAlign: 'right' }}>Actions</th>
+                    <td colSpan="2" className="py-12 text-center text-gray-400">
+                      <p className="text-base font-medium text-gray-500">Aucune matiere trouvee</p>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {filteredMatieres.length === 0 ? (
-                    <tr>
-                      <td colSpan="3" className="text-center py-12 text-slate-500">
-                        <BookOpen size={32} className="mx-auto mb-3 opacity-20" />
-                        Aucune matière trouvée.
+                ) : (
+                  filteredMatieres.map((matiere) => (
+                    <tr key={matiere.id_matiere} className="hover:bg-blue-50/50 transition-colors group">
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                            {(matiere.nom || '?').substring(0, 2).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900 text-sm">{matiere.nom}</p>
+                            {(() => {
+                              const token = normalizeSubjectToken(matiere.nom || '');
+                              const levels = [
+                                ...(
+                                  subjectLevelsByToken.get(token)?.levels
+                                  || new Set([String(matiere.niveau || '').toLowerCase()])
+                                ),
+                              ]
+                                .filter(Boolean)
+                                .sort((a, b) => LEVEL_DISPLAY_ORDER.indexOf(a) - LEVEL_DISPLAY_ORDER.indexOf(b));
+
+                              if (selectedLevel === 'all') {
+                                return (
+                                  <p className="text-xs text-gray-500">
+                                    Niveaux: {levels.map((level) => LEVEL_LABELS[level] || level).join(', ')}
+                                  </p>
+                                );
+                              }
+
+                              return (
+                                <p className="text-xs text-gray-500">
+                                  Niveau: {LEVEL_LABELS[String(matiere.niveau || '').toLowerCase()] || matiere.niveau || 'Non assigne'}
+                                </p>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setViewTarget(matiere)}
+                            className="text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 p-2 rounded-lg transition-colors cursor-pointer"
+                            title="Voir"
+                          >
+                            <Eye size={18} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openEditForm(matiere)}
+                            className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-2 rounded-lg transition-colors cursor-pointer"
+                            title="Modifier"
+                          >
+                            <Edit size={18} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => requestDelete(matiere)}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors cursor-pointer"
+                            title="Supprimer"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
-                  ) : (
-                    filteredMatieres.map((matiere, i) => (
-                      <motion.tr 
-                        key={matiere.id_matiere}
-                        custom={i}
-                        initial="hidden"
-                        animate="visible"
-                        variants={tableRowVariants}
-                      >
-                        <td className="font-semibold text-slate-800">{matiere.nom}</td>
-                        <td>
-                          <span className="badge badge-blue bg-blue-50 text-blue-600 border border-blue-100">
-                            x {matiere.coefficient}
-                          </span>
-                        </td>
-                        <td style={{ textAlign: 'right' }}>
-                          <div className="flex justify-end gap-2">
-                            <motion.button 
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              onClick={() => openEditForm(matiere)} 
-                              className="p-2 text-blue-500 hover:bg-blue-50 rounded-md transition-colors"
-                              title="Modifier"
-                            >
-                              <Edit size={16} />
-                            </motion.button>
-                            <motion.button 
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              onClick={() => setDeleteTarget(matiere)} 
-                              className="p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors"
-                              title="Supprimer"
-                            >
-                              <Trash2 size={16} />
-                            </motion.button>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      {/* Modal: Create Matiere */}
-      <AnimatePresence>
-        {showForm && (
-          <motion.div 
-            initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
-            animate={{ opacity: 1, backdropFilter: "blur(4px)" }}
-            exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
-            className="logout-modal-backdrop"
-          >
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              transition={{ type: "spring", bounce: 0.3 }}
-              className="card w-full max-w-lg p-6"
-            >
-              <h3 className="text-xl font-bold text-slate-800 mb-4 border-b border-slate-100 pb-3">Nouvelle Matière</h3>
-              
-              {formError && (
-                <div className="p-3 mb-4 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg flex items-center gap-2">
-                  <AlertCircle size={16} /> {formError}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                <div className="form-group">
-                  <label className="form-label">Nom de la matière</label>
-                  <input
-                    type="text"
-                    value={formData.nom}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, nom: e.target.value }))}
-                    required
-                    placeholder="Ex: Mathématiques"
-                    className="form-input"
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label className="form-label">Coefficient</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={formData.coefficient}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, coefficient: e.target.value }))}
-                    required
-                    className="form-input"
-                  />
-                </div>
-
-                <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
-                  <button type="button" onClick={closeCreateForm} className="btn btn-outline" disabled={isSaving}>
-                    Annuler
-                  </button>
-                  <button type="submit" className="btn btn-primary" disabled={isSaving}>
-                    {isSaving ? 'Création...' : 'Créer la matière'}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Modal: Edit Matiere */}
-      <AnimatePresence>
-        {editTarget && (
-          <motion.div 
-            initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
-            animate={{ opacity: 1, backdropFilter: "blur(4px)" }}
-            exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
-            className="logout-modal-backdrop"
-          >
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              transition={{ type: "spring", bounce: 0.3 }}
-              className="card w-full max-w-lg p-6"
-            >
-              <h3 className="text-xl font-bold text-slate-800 mb-4 border-b border-slate-100 pb-3">Modifier Matière</h3>
-              
-              {editFormError && (
-                <div className="p-3 mb-4 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg flex items-center gap-2">
-                  <AlertCircle size={16} /> {editFormError}
-                </div>
-              )}
-
-              <form onSubmit={handleEditSubmit} className="flex flex-col gap-4">
-                <div className="form-group">
-                  <label className="form-label">Nom de la matière</label>
-                  <input
-                    type="text"
-                    value={editFormData.nom}
-                    onChange={(e) => setEditFormData((prev) => ({ ...prev, nom: e.target.value }))}
-                    required
-                    className="form-input"
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label className="form-label">Coefficient</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={editFormData.coefficient}
-                    onChange={(e) => setEditFormData((prev) => ({ ...prev, coefficient: e.target.value }))}
-                    required
-                    className="form-input"
-                  />
-                </div>
-
-                <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
-                  <button type="button" onClick={() => setEditTarget(null)} className="btn btn-outline" disabled={isSavingEdit}>
-                    Annuler
-                  </button>
-                  <button type="submit" className="btn btn-primary" disabled={isSavingEdit}>
-                    {isSavingEdit ? 'Enregistrement...' : 'Enregistrer'}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Modal: Delete Confirmation */}
-      <AnimatePresence>
-        {deleteTarget && (
-          <motion.div 
-            initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
-            animate={{ opacity: 1, backdropFilter: "blur(4px)" }}
-            exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
-            className="logout-modal-backdrop"
-          >
-            <motion.div 
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              transition={{ type: "spring", bounce: 0.4 }}
-              className="logout-modal-card card"
-            >
-              <div className="logout-modal-icon">
-                <Trash2 size={36} color="#ef4444" />
+      {viewTarget && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-900">Voir Matiere</h3>
+              <button
+                type="button"
+                onClick={() => setViewTarget(null)}
+                className="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium"
+              >
+                Fermer
+              </button>
+            </div>
+            <div className="p-6 space-y-5">
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Nom de la matiere</p>
+                <p className="mt-1 text-base font-bold text-gray-900">{viewTarget.nom}</p>
               </div>
-              <h3 className="text-xl font-bold mb-2">Confirmer la suppression</h3>
-              <p className="text-slate-500 mb-6">
-                Voulez-vous vraiment supprimer la matière <strong className="text-slate-800">{deleteTarget.nom}</strong> ? Cette action est irréversible.
+
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Niveaux</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {(() => {
+                    const token = normalizeSubjectToken(viewTarget.nom || '');
+                    const levels = [
+                      ...(
+                        subjectLevelsByToken.get(token)?.levels
+                          || new Set([String(viewTarget.niveau || '').toLowerCase()])
+                      ),
+                    ].filter(Boolean);
+
+                    return levels.map((level) => (
+                      <span
+                        key={`${token}-${level}`}
+                        className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100"
+                      >
+                        {LEVEL_LABELS[level] || level}
+                      </span>
+                    ));
+                  })()}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
+                <Trash2 size={32} />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Confirmer la suppression</h3>
+              <p className="text-gray-500 mb-6">
+                Voulez-vous vraiment supprimer la matiere <strong className="text-gray-900">{deleteTarget.nom}</strong> ? Cette action est irréversible.
               </p>
 
-              <div className="flex gap-3 w-full">
+              <div className="flex gap-3 justify-center">
                 <button
                   type="button"
                   onClick={() => setDeleteTarget(null)}
                   disabled={isDeleting}
-                  className="btn btn-outline flex-1"
+                  className="px-5 py-2.5 rounded-xl font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
                 >
                   Annuler
                 </button>
@@ -453,16 +591,169 @@ export default function AdminMatieres({ userRole = ROLE.ADMIN }) {
                   type="button"
                   onClick={handleDelete}
                   disabled={isDeleting}
-                  className="btn btn-danger flex-1"
+                  className="px-5 py-2.5 rounded-xl font-medium text-white bg-red-600 hover:bg-red-700 transition-colors disabled:opacity-50"
                 >
                   {isDeleting ? 'Suppression...' : 'Supprimer'}
                 </button>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editTarget && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-900">Modifier Matiere</h3>
+              <button
+                type="button"
+                onClick={() => setEditTarget(null)}
+                className="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium"
+              >
+                Fermer
+              </button>
+            </div>
+            <div className="p-6">
+              {editFormError && <p className="text-red-600 text-sm mb-4">{editFormError}</p>}
+
+              <form onSubmit={handleEditSubmit} className="grid grid-cols-1 sm:grid-cols-6 gap-4">
+                <div className="sm:col-span-3">
+                  <label className="text-sm font-medium text-gray-700">Nom de la matiere</label>
+                  <input
+                    type="text"
+                    value={editFormData.nom}
+                    onChange={(e) => setEditFormData((prev) => ({ ...prev, nom: e.target.value }))}
+                    required
+                    className="mt-1 w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="text-sm font-medium text-gray-700">Niveau assigne</label>
+                  <select
+                    value={editFormData.niveau}
+                    onChange={(e) => setEditFormData((prev) => ({ ...prev, niveau: e.target.value }))}
+                    required
+                    className="mt-1 w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  >
+                    <option value="general">General</option>
+                    <option value="maternelle">Maternelle</option>
+                    <option value="primaire">Primaire</option>
+                    <option value="college">College</option>
+                    <option value="lycee">Lycee</option>
+                  </select>
+                </div>
+                <div className="sm:col-span-1">
+                  <label className="text-sm font-medium text-gray-700">Coefficient</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="10"
+                    value={editFormData.coefficient}
+                    onChange={(e) => setEditFormData((prev) => ({ ...prev, coefficient: e.target.value }))}
+                    required
+                    className="mt-1 w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  />
+                </div>
+
+                <div className="sm:col-span-6 flex justify-end gap-3 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditTarget(null)}
+                    disabled={isSavingEdit}
+                    className="px-5 py-2.5 rounded-xl font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSavingEdit}
+                    className="px-5 py-2.5 rounded-xl font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  >
+                    {isSavingEdit ? 'Enregistrement...' : 'Enregistrer'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showForm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-900">Nouvelle Matiere</h3>
+              <button
+                type="button"
+                onClick={closeCreateForm}
+                className="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium"
+              >
+                Fermer
+              </button>
+            </div>
+            <div className="p-6">
+              {formError && <p className="text-red-600 text-sm mb-4">{formError}</p>}
+
+              <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-6 gap-4">
+                <div className="sm:col-span-3">
+                  <label className="text-sm font-medium text-gray-700">Nom de la matiere</label>
+                  <input
+                    type="text"
+                    value={formData.nom}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, nom: e.target.value }))}
+                    required
+                    className="mt-1 w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="text-sm font-medium text-gray-700">Niveau assigne</label>
+                  <select
+                    value={formData.niveau}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, niveau: e.target.value }))}
+                    required
+                    className="mt-1 w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  >
+                    <option value="general">General</option>
+                    <option value="maternelle">Maternelle</option>
+                    <option value="primaire">Primaire</option>
+                    <option value="college">College</option>
+                    <option value="lycee">Lycee</option>
+                  </select>
+                </div>
+                <div className="sm:col-span-1">
+                  <label className="text-sm font-medium text-gray-700">Coefficient</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="10"
+                    value={formData.coefficient}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, coefficient: e.target.value }))}
+                    required
+                    className="mt-1 w-full px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  />
+                </div>
+
+                <div className="sm:col-span-6 flex justify-end gap-3 mt-2">
+                  <button
+                    type="button"
+                    onClick={closeCreateForm}
+                    className="px-5 py-2.5 rounded-xl font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+                  >
+                    Enregistrer
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-

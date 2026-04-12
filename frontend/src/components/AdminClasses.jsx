@@ -1,22 +1,17 @@
 ﻿import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, Plus, Edit, Trash2, Eye, GraduationCap, Users, User, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import AdminClassForm from './AdminClassForm';
-import { ROLE } from '../constants/roles';
+import { FiSearch as Search, FiPlus as Plus, FiEdit2 as Edit, FiTrash2 as Trash2, FiEye as Eye } from 'react-icons/fi';
+import { BiSolidUserDetail } from 'react-icons/bi';
 
-export default function AdminClasses({ onCreateClass, userRole = ROLE.ADMIN }) {
+export default function AdminClasses({ onCreateClass, onEditClass, userRole = 'admin' }) {
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  
   const [classDetailTarget, setClassDetailTarget] = useState(null);
-  const [editTarget, setEditTarget] = useState(null);
 
-  const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000';
+  const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
   const fetchClasses = async () => {
     setLoading(true);
@@ -44,19 +39,30 @@ export default function AdminClasses({ onCreateClass, userRole = ROLE.ADMIN }) {
     });
   };
 
-  const requestDelete = (classe) => setDeleteTarget(classe);
-  const handleEditClass = (classe) => setEditTarget(classe);
-  
+  const requestDelete = (classe) => {
+    setDeleteTarget(classe);
+  };
+
   const handleCreateClass = () => {
-    if (typeof onCreateClass === 'function') onCreateClass();
+    if (typeof onCreateClass === 'function') {
+      onCreateClass();
+    }
+  };
+
+  const handleEditClass = (classe) => {
+    if (typeof onEditClass === 'function') {
+      onEditClass(classe);
+    }
   };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
+
     setIsDeleting(true);
 
     try {
       await ensureCsrfCookie();
+
       await axios.delete(`${apiBaseUrl}/api/admin/classes/${deleteTarget.id_classe}`, {
         withCredentials: true,
         withXSRFToken: true,
@@ -72,306 +78,277 @@ export default function AdminClasses({ onCreateClass, userRole = ROLE.ADMIN }) {
     }
   };
 
+  // Normalized search
   const normalizedSearch = searchTerm.trim().toLowerCase();
   const filteredClasses = classes.filter((cls) => {
     if (!normalizedSearch) return true;
+
     return [cls.nom, cls.niveau, cls.students_count, cls.professeurs_count]
       .filter((value) => value !== null && value !== undefined)
       .some((value) => String(value).toLowerCase().includes(normalizedSearch));
   });
 
-  // Table row waterfall animation
-  const tableRowVariants = {
-    hidden: { opacity: 0, y: 10 },
-    visible: (i) => ({
-      opacity: 1,
-      y: 0,
-      transition: { delay: i * 0.05, type: 'spring', stiffness: 100 }
-    })
-  };
-
   return (
-    <div className="layout-content">
-      {/* Header Section */}
-      <header className="flex justify-between items-center mb-8">
+    <div className="dashboard-content bg-gray-50/50 min-h-screen">
+      <header className="content-header flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Gestion des Classes</h1>
-          <p className="text-slate-500 text-sm mt-1">Gérez les classes, les effectifs et les professeurs assignés.</p>
+         
+          <h1 className="mt-1 flex items-center gap-3 text-4xl lg:text-5xl font-extrabold italic tracking-tight text-slate-900">
+            <BiSolidUserDetail className="text-blue-600" />
+            Gestion des Classes
+          </h1>
         </div>
-        {userRole === ROLE.ADMIN && (
-          <motion.button
-            whileHover={{ scale: 1.02, y: -2 }}
-            whileTap={{ scale: 0.98 }}
-            className="btn btn-primary shadow-[0_4px_14px_rgba(59,130,246,0.25)]"
+        {userRole === 'admin' && (
+          <button 
             onClick={handleCreateClass}
+            className="flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-slate-200 active:scale-95"
           >
-            <Plus size={18} /> Créer une Classe
-          </motion.button>
+            <Plus size={20} strokeWidth={3} /> Créer une Classe
+          </button>
         )}
       </header>
 
-      {/* Main Card Panel */}
-      <div className="card">
-        <div className="card-header border-b border-slate-100 pb-4 mb-4">
-          <h3 className="flex items-center gap-2">
-            Toutes les classes <span className="badge badge-blue">{filteredClasses.length}</span>
-          </h3>
-          
-          <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 transition-all focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-400">
-            <Search size={16} className="text-slate-400 mr-2" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Rechercher une classe..."
-              className="bg-transparent border-none outline-none text-sm text-slate-700 w-64 placeholder-slate-400"
-            />
-          </div>
-        </div>
-
-        <div className="card-body p-0">
-          {loading ? (
-            <div className="p-12 flex justify-center items-center">
-              <span className="loading-spinner border-blue-500"></span>
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white">
+            
+            
+            <div className="relative group w-full md:w-80">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={18} />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Rechercher une classe..."
+                className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
+              />
             </div>
-          ) : (
-            <div className="table-wrapper">
-              <table className="table">
-                <thead>
+          </div>
+
+        {loading ? (
+          <div className="p-12 text-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-slate-500 font-semibold italic">Chargement des données...</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="table w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50/50">
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Détails Classe</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Niveau Scolaire</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">Professeurs</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center">Effectif</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {filteredClasses.length === 0 ? (
                   <tr>
-                    <th>Nom</th>
-                    <th>Niveau</th>
-                    <th>Professeurs</th>
-                    <th>Effectif</th>
-                    <th>Détails</th>
-                    {userRole === ROLE.ADMIN && <th style={{ textAlign: 'right' }}>Actions</th>}
+                    <td colSpan={5} className="px-6 py-12 text-center text-slate-400 italic">
+                      Aucune classe ne correspond à votre recherche.
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {filteredClasses.length === 0 ? (
-                    <tr>
-                      <td colSpan={userRole === ROLE.ADMIN ? 6 : 5} className="text-center py-12 text-slate-500">
-                        <GraduationCap size={32} className="mx-auto mb-3 opacity-20" />
-                        Aucune classe trouvée.
+                ) : (
+                  filteredClasses.map(cls => (
+                    <tr key={cls.id_classe} className="hover:bg-slate-50/80 transition-colors group">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 font-black text-sm group-hover:scale-110 transition-transform">
+                            {cls.nom.substring(0, 2).toUpperCase()}
+                          </div>
+                          <div>
+                            <div className="font-bold text-slate-900">{cls.nom}</div>
+                            <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter italic">ID: #{cls.id_classe}</div>
+                          </div>
+                        </div>
                       </td>
-                    </tr>
-                  ) : (
-                    filteredClasses.map((cls, i) => (
-                      <motion.tr 
-                        key={cls.id_classe}
-                        custom={i}
-                        initial="hidden"
-                        animate="visible"
-                        variants={tableRowVariants}
-                      >
-                        <td className="font-semibold text-slate-800">{cls.nom}</td>
-                        <td className="text-slate-500 text-sm">{cls.niveau}</td>
-                        <td>
-                          <span className="badge bg-slate-100 text-slate-700 border border-slate-200">
-                            {cls.professeurs_count || 0} profs
-                          </span>
-                        </td>
-                        <td>
-                          <span className="badge badge-blue bg-blue-50 text-blue-600 border border-blue-100">
-                            {cls.students_count || 0} élèves
-                          </span>
-                        </td>
-                        <td>
-                          <motion.button 
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => setClassDetailTarget(cls)} 
-                            className="p-2 text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
+                      <td className="px-6 py-4">
+                        <span className="px-3 py-1 bg-white border border-slate-200 text-slate-600 rounded-full text-xs font-bold shadow-sm">
+                          {cls.niveau}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 text-xs font-black">
+                          {cls.professeurs_count || 0}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className="inline-flex items-center justify-center px-3 py-1 rounded-lg bg-emerald-50 text-emerald-600 text-xs font-black">
+                          {cls.students_count || 0}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => setClassDetailTarget(cls)}
+                            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                             title="Voir les détails"
                           >
                             <Eye size={18} />
-                          </motion.button>
-                        </td>
-                        {userRole === ROLE.ADMIN && (
-                          <td style={{ textAlign: 'right' }}>
-                            <div className="flex justify-end gap-2">
-                              <motion.button 
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={() => handleEditClass(cls)} 
-                                className="p-2 text-blue-500 hover:bg-blue-50 rounded-md transition-colors"
+                          </button>
+                          {userRole === 'admin' && (
+                            <>
+                              <button
+                                onClick={() => handleEditClass(cls)}
+                                className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
                                 title="Modifier"
                               >
-                                <Edit size={16} />
-                              </motion.button>
-                              <motion.button 
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={() => requestDelete(cls)} 
-                                className="p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                                <Edit size={18} />
+                              </button>
+                              <button
+                                onClick={() => requestDelete(cls)}
+                                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                                 title="Supprimer"
                               >
-                                <Trash2 size={16} />
-                              </motion.button>
-                            </div>
-                          </td>
-                        )}
-                      </motion.tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+                                <Trash2 size={18} />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {/* ===== MODALS ===== */}
+      {/* Delete Confirmation Modal */}
+      {deleteTarget && userRole === 'admin' && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setDeleteTarget(null)}></div>
+          <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 animate-in zoom-in duration-200">
+            <div className="w-20 h-20 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Trash2 size={40} strokeWidth={2.5} />
+            </div>
+            <h3 className="text-2xl font-black text-slate-900 text-center mb-2">Confirmer la suppression</h3>
+            <p className="text-slate-500 text-center px-4 leading-relaxed">
+              Voulez-vous vraiment supprimer la classe <strong className="text-slate-900 font-extrabold">{deleteTarget.nom}</strong> ? Cette action est irréversible.
+            </p>
 
-      {/* 1. Delete Confirmation Modal */}
-      <AnimatePresence>
-        {deleteTarget && userRole === ROLE.ADMIN && (
-          <motion.div 
-            initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
-            animate={{ opacity: 1, backdropFilter: "blur(4px)" }}
-            exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
-            className="logout-modal-backdrop"
-          >
-            <motion.div 
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              transition={{ type: "spring", bounce: 0.4 }}
-              className="logout-modal-card card"
-            >
-              <div className="logout-modal-icon">
-                <Trash2 size={36} color="#ef4444" />
+            <div className="flex gap-3 mt-8">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                disabled={isDeleting}
+                className="flex-1 px-6 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl font-bold transition-all"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="flex-1 px-6 py-3.5 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-bold transition-all shadow-lg shadow-red-200 active:scale-95"
+              >
+                {isDeleting ? 'Suppression...' : 'Supprimer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Detail Modal */}
+      {classDetailTarget && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setClassDetailTarget(null)}></div>
+          <div className="relative bg-white rounded-[2rem] shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-in slide-in-from-bottom-8 duration-300">
+            {/* Modal Header */}
+            <div className="px-8 pt-8 pb-6 border-b border-slate-100 bg-gradient-to-br from-blue-50/50 to-white">
+              <div className="flex items-center justify-between mb-2">
+                <span className="px-3 py-1 bg-blue-600 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full">Détails Classe</span>
+                <button onClick={() => setClassDetailTarget(null)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                  <Plus size={24} className="rotate-45 text-slate-400" />
+                </button>
               </div>
-              <h3 className="text-xl font-bold mb-2">Confirmer la suppression</h3>
-              <p className="text-slate-500 mb-6">
-                Voulez-vous vraiment supprimer la classe <strong className="text-slate-800">{deleteTarget.nom}</strong> ?
+              <h2 className="text-4xl font-black text-slate-900 mt-2">{classDetailTarget.nom}</h2>
+              <p className="text-slate-500 font-semibold italic flex items-center gap-2 mt-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                Niveau Scolaire: {classDetailTarget.niveau}
               </p>
+            </div>
 
-              <div className="flex gap-3 w-full">
-                <button type="button" onClick={() => setDeleteTarget(null)} disabled={isDeleting} className="btn btn-outline flex-1">
-                  Annuler
-                </button>
-                <button type="button" onClick={handleDelete} disabled={isDeleting} className="btn btn-danger flex-1">
-                  {isDeleting ? 'Suppression...' : 'Supprimer'}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* 2. Class Details Modal (Upgraded UI) */}
-      <AnimatePresence>
-        {classDetailTarget && (
-          <motion.div 
-            initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
-            animate={{ opacity: 1, backdropFilter: "blur(4px)" }}
-            exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
-            className="logout-modal-backdrop"
-          >
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              transition={{ type: "spring", bounce: 0.3 }}
-              className="card w-full max-w-2xl p-0 overflow-hidden"
-            >
-              <div className="flex justify-between items-center p-6 border-b border-slate-100 bg-slate-50">
-                <div>
-                  <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                    <GraduationCap className="text-blue-600" /> {classDetailTarget.nom}
-                  </h3>
-                  <p className="text-sm text-slate-500 mt-1">Niveau : <span className="font-semibold">{classDetailTarget.niveau}</span></p>
+            {/* Modal Body */}
+            <div className="p-8 overflow-y-auto custom-scrollbar">
+              <div className="grid grid-cols-2 gap-4 mb-8">
+                <div className="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100">
+                  <div className="text-[10px] font-black uppercase tracking-wider text-indigo-400 mb-1">Corps Enseignant</div>
+                  <div className="text-2xl font-black text-indigo-600">{classDetailTarget.professeurs_count || 0}</div>
                 </div>
-                <button onClick={() => setClassDetailTarget(null)} className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded-full transition-colors">
-                  <X size={20} />
-                </button>
+                <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100">
+                  <div className="text-[10px] font-black uppercase tracking-wider text-emerald-400 mb-1">Nombre d'élèves</div>
+                  <div className="text-2xl font-black text-emerald-600">{classDetailTarget.students_count || 0}</div>
+                </div>
               </div>
 
-              <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 max-h-[60vh] overflow-y-auto">
-                {/* Professors List */}
+              <div className="space-y-6">
                 <div>
-                  <h4 className="flex items-center gap-2 font-bold text-slate-700 mb-4 border-b border-slate-100 pb-2">
-                    <Users size={18} className="text-slate-400" /> 
-                    Professeurs <span className="badge badge-gray">{classDetailTarget.professeurs_count || 0}</span>
+                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-indigo-400"></span>
+                    Professeurs Affectés
                   </h4>
-                  
                   {(classDetailTarget.professeurs_details || []).length === 0 ? (
-                    <p className="text-sm text-slate-500 italic">Aucun professeur affecté.</p>
+                    <div className="p-4 rounded-xl border border-dashed border-slate-200 text-center text-slate-400 text-sm">
+                      Aucun professeur affecté à cette classe.
+                    </div>
                   ) : (
-                    <ul className="flex flex-col gap-2">
-                      {classDetailTarget.professeurs_details.map((prof) => (
-                        <li key={prof.id} className="flex flex-col p-3 rounded-lg border border-slate-100 bg-slate-50 text-sm">
-                          <span className="font-semibold text-slate-800">{prof.name || 'Professeur'}</span>
-                          {prof.telephone && <span className="text-slate-500 text-xs mt-1">?? {prof.telephone}</span>}
-                        </li>
+                    <div className="space-y-2">
+                      {(classDetailTarget.professeurs_details || []).map((prof) => (
+                        <div key={prof.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100 group">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs uppercase">
+                              {prof.name.charAt(0)}
+                            </div>
+                            <span className="font-bold text-slate-700">{prof.name}</span>
+                          </div>
+                          {prof.telephone && <span className="text-xs font-bold text-slate-400 group-hover:text-indigo-500">{prof.telephone}</span>}
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   )}
                 </div>
 
-                {/* Students List */}
                 <div>
-                  <h4 className="flex items-center gap-2 font-bold text-slate-700 mb-4 border-b border-slate-100 pb-2">
-                    <User size={18} className="text-slate-400" /> 
-                    Effectifs <span className="badge badge-blue">{classDetailTarget.students_count || 0}</span>
+                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                    Liste des Étudiants
                   </h4>
-                  
                   {(classDetailTarget.effectif_details || []).length === 0 ? (
-                    <p className="text-sm text-slate-500 italic">Aucun élève inscrit.</p>
+                    <div className="p-4 rounded-xl border border-dashed border-slate-200 text-center text-slate-400 text-sm">
+                      Aucun élève inscrit dans cette classe.
+                    </div>
                   ) : (
-                    <ul className="flex flex-col gap-2">
-                      {classDetailTarget.effectif_details.map((etudiant) => (
-                        <li key={etudiant.id} className="flex justify-between items-center p-3 rounded-lg border border-slate-100 bg-white text-sm">
-                          <span className="font-medium text-slate-700">{etudiant.name || 'Élève'}</span>
-                          {etudiant.matricule && <span className="text-xs text-slate-400 font-mono">{etudiant.matricule}</span>}
-                        </li>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {(classDetailTarget.effectif_details || []).map((student) => (
+                        <div key={student.id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                          <div className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center font-bold text-xs text-slate-400 uppercase">
+                            {student.name.charAt(0)}
+                          </div>
+                          <div className="overflow-hidden">
+                            <div className="font-bold text-slate-700 text-sm truncate">{student.name}</div>
+                            {student.matricule && <div className="text-[10px] font-black text-slate-300 uppercase tracking-tighter">MAT-#{student.matricule}</div>}
+                          </div>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   )}
                 </div>
               </div>
-              
-              <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end">
-                <button type="button" onClick={() => setClassDetailTarget(null)} className="btn btn-outline">
-                  Fermer
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </div>
 
-      {/* 3. Edit Class Form Wrapper */}
-      <AnimatePresence>
-        {editTarget && (
-          <motion.div 
-            initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
-            animate={{ opacity: 1, backdropFilter: "blur(4px)" }}
-            exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
-            className="logout-modal-backdrop"
-          >
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              transition={{ type: "spring", bounce: 0.3 }}
-              className="card w-full max-w-4xl p-0 overflow-hidden max-h-[90vh] overflow-y-auto"
-            >
-              <AdminClassForm
-                mode="edit"
-                classToEdit={editTarget}
-                isModal={true}
-                onBack={() => setEditTarget(null)}
-                onSuccess={() => {
-                  setEditTarget(null);
-                  fetchClasses();
-                }}
-              />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            {/* Modal Footer */}
+            <div className="p-6 bg-slate-50 border-t border-slate-100">
+              <button
+                onClick={() => setClassDetailTarget(null)}
+                className="w-full px-6 py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-black text-sm transition-all shadow-lg active:scale-[0.98]"
+              >
+                FERMER
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

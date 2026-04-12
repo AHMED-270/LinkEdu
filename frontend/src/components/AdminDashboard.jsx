@@ -1,8 +1,7 @@
 ﻿import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Bell, LayoutDashboard, Users, GraduationCap, Settings, LogOut, DoorOpen, BookOpen } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-
+import { FiBell as Bell, FiHelpCircle as HelpCircle, FiGrid as LayoutDashboard, FiUsers as Users, FiBookOpen as GraduationCap, FiSettings as Settings, FiLogOut as LogOut, FiUser as UserCircle, FiLogOut as DoorOpen, FiBookOpen as BookOpen, FiUserCheck as UserCheck } from 'react-icons/fi';
+import './AdminDashboard.css';
 import AdminDashboardHome from './AdminDashboardHome';
 import AdminUsers from './AdminUsers';
 import AdminClasses from './AdminClasses';
@@ -11,7 +10,7 @@ import AdminUserForm from './AdminUserForm';
 import AdminClassForm from './AdminClassForm';
 import AdminMatieres from './AdminMatieres';
 import AdminSettings from './AdminSettings';
-import { ROLE, getRoleDisplayLabel } from '../constants/roles';
+import AdminAccountActivations from './AdminAccountActivations';
 
 const ADMIN_AVATAR_STORAGE_KEY = 'linkedu_admin_avatar';
 const SUBPROJECT_STORAGE_KEY = 'linkedu_subproject_settings';
@@ -23,22 +22,29 @@ const defaultSubproject = {
   coordinator: '',
 };
 
-export default function AdminDashboard({ onLogout, userRole = ROLE.ADMIN, user = null }) {
+export default function AdminDashboard({ onLogout, userRole = 'admin', user = null }) {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [currentView, setCurrentView] = useState('home');
-  const [showCreateUserModal, setShowCreateUserModal] = useState(false);
-  const [showCreateClassModal, setShowCreateClassModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [editingClass, setEditingClass] = useState(null);
   const [avatarUrl, setAvatarUrl] = useState('');
   const [subproject, setSubproject] = useState(defaultSubproject);
-  
   const headerAvatar = user?.profilePhoto || avatarUrl;
   const displayName = user?.name || 'Utilisateur';
-  const displayRole = getRoleDisplayLabel(userRole);
+  const displayRole = userRole === 'directeur' ? 'DIRECTION' : 'SUPER ADMIN';
 
   useEffect(() => {
-    const loadAvatar = () => setAvatarUrl(localStorage.getItem(ADMIN_AVATAR_STORAGE_KEY) || '');
-    const handleStorage = (e) => { if (e.key === ADMIN_AVATAR_STORAGE_KEY) loadAvatar(); };
+    const loadAvatar = () => {
+      const savedAvatar = localStorage.getItem(ADMIN_AVATAR_STORAGE_KEY) || '';
+      setAvatarUrl(savedAvatar);
+    };
+
+    const handleStorage = (event) => {
+      if (event.key === ADMIN_AVATAR_STORAGE_KEY) {
+        loadAvatar();
+      }
+    };
 
     loadAvatar();
     window.addEventListener('storage', handleStorage);
@@ -54,17 +60,23 @@ export default function AdminDashboard({ onLogout, userRole = ROLE.ADMIN, user =
     const loadSubproject = () => {
       try {
         const raw = localStorage.getItem(SUBPROJECT_STORAGE_KEY);
-        if (raw) {
-          setSubproject({ ...defaultSubproject, ...JSON.parse(raw) });
-        } else {
+        if (!raw) {
           setSubproject(defaultSubproject);
+          return;
         }
+
+        const parsed = JSON.parse(raw);
+        setSubproject({ ...defaultSubproject, ...parsed });
       } catch (error) {
         setSubproject(defaultSubproject);
       }
     };
 
-    const handleStorage = (e) => { if (e.key === SUBPROJECT_STORAGE_KEY) loadSubproject(); };
+    const handleStorage = (event) => {
+      if (event.key === SUBPROJECT_STORAGE_KEY) {
+        loadSubproject();
+      }
+    };
 
     loadSubproject();
     window.addEventListener('storage', handleStorage);
@@ -76,17 +88,42 @@ export default function AdminDashboard({ onLogout, userRole = ROLE.ADMIN, user =
     };
   }, []);
 
+  const openCreateUserForm = () => {
+    setEditingUser(null);
+    setCurrentView('user-create');
+  };
+
+  const openEditUserForm = (userToEdit) => {
+    setEditingUser(userToEdit || null);
+    setCurrentView('user-edit');
+  };
+
+  const openCreateClassForm = () => {
+    setEditingClass(null);
+    setCurrentView('class-create');
+  };
+
+  const openEditClassForm = (classe) => {
+    setEditingClass(classe || null);
+    setCurrentView('class-edit');
+  };
+
   const handleLogoutConfirm = async () => {
     setIsLoggingOut(true);
     try {
-      const browserHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
-      const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://' + browserHost + ':8000';
-      const token = localStorage.getItem('linkedu_token');
-      await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', { withCredentials: true, withXSRFToken: true });
+      const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+      
+      await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', {
+        withCredentials: true,
+        withXSRFToken: true,
+      });
+
       await axios.post(apiBaseUrl + '/api/admin/logout', {}, {
         withCredentials: true,
         withXSRFToken: true,
-        headers: { Accept: 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) }
+        headers: {
+          Accept: 'application/json',
+        }
       });
     } catch (error) {
       console.error("Erreur de déconnexion", error);
@@ -97,181 +134,191 @@ export default function AdminDashboard({ onLogout, userRole = ROLE.ADMIN, user =
     }
   };
 
-  // Define navigation items for easy filtering and staggered animation
-  const navItems = [
-    { id: 'home', label: 'Tableau de bord', icon: LayoutDashboard, roles: [ROLE.ADMIN, ROLE.DIRECTEUR, ROLE.SECRETAIRE] },
-    { id: 'users', label: 'Utilisateurs', icon: Users, roles: [ROLE.ADMIN] },
-    { id: 'classes', label: 'Classes', icon: GraduationCap, roles: [ROLE.ADMIN, ROLE.DIRECTEUR, ROLE.SECRETAIRE] },
-    { id: 'matieres', label: 'Matières', icon: BookOpen, roles: [ROLE.ADMIN] },
-    { id: 'settings', label: 'Paramètres', icon: Settings, roles: [ROLE.ADMIN, ROLE.DIRECTEUR, ROLE.SECRETAIRE] },
-  ].filter(item => item.roles.includes(userRole));
-
-  // Framer Motion Variants
-  const navItemVariants = {
-    hidden: { opacity: 0, x: -20 },
-    visible: (i) => ({ opacity: 1, x: 0, transition: { delay: i * 0.05 + 0.1, type: 'spring' } })
-  };
-
-  const pageVariants = {
-    initial: { opacity: 0, y: 15, scale: 0.99 },
-    in: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.4, ease: "easeOut" } },
-    out: { opacity: 0, y: -15, scale: 0.99, transition: { duration: 0.3, ease: "easeIn" } }
-  };
-
   return (
-    <div className="layout">
-      {/* ===== GLOBAL MODALS ===== */}
-      <AnimatePresence>
-        {showCreateUserModal && userRole === ROLE.ADMIN && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="logout-modal-backdrop">
-            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="logout-modal-card p-0 overflow-hidden max-w-4xl w-[90vw] max-h-[90vh] overflow-y-auto">
-              <AdminUserForm
-                mode="create"
-                isModal={true}
-                onBack={() => setShowCreateUserModal(false)}
-                onSuccess={() => { setShowCreateUserModal(false); setCurrentView('users'); }}
-              />
-            </motion.div>
-          </motion.div>
-        )}
-
-        {showCreateClassModal && userRole === ROLE.ADMIN && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="logout-modal-backdrop">
-            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="logout-modal-card p-0 overflow-hidden max-w-4xl w-[90vw] max-h-[90vh] overflow-y-auto">
-              <AdminClassForm
-                mode="create"
-                isModal={true}
-                onBack={() => setShowCreateClassModal(false)}
-                onSuccess={() => { setShowCreateClassModal(false); setCurrentView('classes'); }}
-              />
-            </motion.div>
-          </motion.div>
-        )}
-
-        {showLogoutModal && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="logout-modal-backdrop">
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="logout-modal-card">
-              <div className="logout-modal-icon"><DoorOpen size={40} color="#EF4444" /></div>
-              <h3>Êtes-vous sûr de vouloir vous déconnecter ?</h3>
-              <p>Vous devrez saisir à nouveau vos identifiants pour accéder à ce panneau.</p>
-              <div className="logout-modal-actions mt-6">
-                <button className="btn btn-outline flex-1" onClick={() => setShowLogoutModal(false)} disabled={isLoggingOut}>Annuler</button>
-                <button className="btn btn-danger flex-1" onClick={handleLogoutConfirm} disabled={isLoggingOut}>
-                  {isLoggingOut ? 'Déconnexion...' : 'Oui, déconnecter'}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ===== SIDEBAR ===== */}
-      <motion.aside 
-        initial={{ x: -260 }} 
-        animate={{ x: 0 }} 
-        transition={{ type: "spring", damping: 20 }}
-        className="sidebar fixed top-0 left-0 h-screen z-50 pt-0" style={{ top: 0, height: "100vh" }}
-      >
-        <div className="p-6 pb-4 mb-2 border-b border-slate-100 bg-slate-50/50">
-          <h2 className="text-xl font-extrabold text-blue-600 tracking-tight flex items-center gap-2">
-            <span className="text-2xl">??</span> {subproject.displayName}
-          </h2>
-          <div className="mt-3">
-            <span className="badge badge-blue">{subproject.schoolYear}</span>
-            <p className="text-xs text-slate-500 mt-2 font-medium">{subproject.tagline}</p>
+    <div className="admin-layout">
+      {showLogoutModal && (
+        <div className="logout-modal-backdrop">
+          <div className="logout-modal-card">
+            <div className="logout-modal-icon">
+              <DoorOpen size={48} color="#f43f5e" />
+            </div>
+            <h3>Êtes-vous sûr de vouloir vous déconnecter ?</h3>
+            <p>Vous devrez saisir à nouveau vos identifiants pour accéder à ce panneau.</p>
+            <div className="logout-modal-actions">
+              <button 
+                className="btn-cancel" 
+                onClick={() => setShowLogoutModal(false)}
+                disabled={isLoggingOut}
+              >
+                Annuler
+              </button>
+              <button 
+                className="btn-confirm-logout" 
+                onClick={handleLogoutConfirm}
+                disabled={isLoggingOut}
+              >
+                {isLoggingOut ? 'Déconnexion...' : 'Oui, me déconnecter'}
+              </button>
+            </div>
           </div>
         </div>
+      )}
 
-        <nav className="sidebar-nav px-4 mt-4">
-          {navItems.map((item, i) => {
-            const Icon = item.icon;
-            const isActive = currentView === item.id;
-            return (
-              <motion.a
-                key={item.id}
-                href="#"
-                custom={i}
-                initial="hidden"
-                animate="visible"
-                variants={navItemVariants}
-                className={`sidebar-link ${isActive ? 'active' : ''}`}
-                onClick={(e) => { e.preventDefault(); setCurrentView(item.id); }}
-              >
-                <Icon size={20} className="sidebar-icon" />
-                <span>{item.label}</span>
-                {isActive && <motion.div layoutId="activeDot" className="active-dot" />}
-              </motion.a>
-            );
-          })}
-        </nav>
+      <aside className="admin-sidebar">
+        <div className="sidebar-top">
+          <div className="sidebar-logo">
+            <h2>{subproject.displayName || defaultSubproject.displayName}</h2>
+          </div>
 
-        <div className="sidebar-footer">
-          <button className="sidebar-logout" onClick={() => setShowLogoutModal(true)}>
-            <LogOut size={20} className="sidebar-icon" />
+          <div className="sidebar-section">
+            <h3 className="section-title">Admin Console</h3>
+            <p className="section-subtitle">{subproject.schoolYear || defaultSubproject.schoolYear}</p>
+            <p className="section-subtitle" style={{ textTransform: 'none', letterSpacing: 'normal', marginTop: '8px' }}>
+              {subproject.tagline || defaultSubproject.tagline}
+            </p>
+          </div>
+
+          <nav className="sidebar-nav">
+            <a href="#" className={'nav-item ' + (currentView === 'home' ? 'active' : '')} onClick={(e) => {e.preventDefault(); setCurrentView('home');}}>
+              <LayoutDashboard size={20} />
+              <span>Dashboard</span>
+            </a>
+            {userRole === 'admin' && (
+              <a href="#" className={'nav-item ' + (currentView === 'users' ? 'active' : '')} onClick={(e) => {e.preventDefault(); setCurrentView('users');}}>
+                <Users size={20} />
+                <span>Cadre academique</span>
+              </a>
+            )}
+            {userRole === 'admin' && (
+              <a href="#" className={'nav-item ' + (currentView === 'activations' ? 'active' : '')} onClick={(e) => {e.preventDefault(); setCurrentView('activations');}}>
+                <UserCheck size={20} />
+                <span>Activations</span>
+              </a>
+            )}
+              <a href="#" className={'nav-item ' + (['classes', 'class-create', 'class-edit'].includes(currentView) ? 'active' : '')} onClick={(e) => {e.preventDefault(); setCurrentView('classes');}}>
+              <GraduationCap size={20} />
+              <span>Classes</span>
+            </a>
+            {userRole === 'admin' && (
+              <a href="#" className={'nav-item ' + (currentView === 'matieres' ? 'active' : '')} onClick={(e) => {e.preventDefault(); setCurrentView('matieres');}}>
+                <BookOpen size={20} />
+                <span>Matieres</span>
+              </a>
+            )}
+            <a href="#" className={'nav-item ' + (currentView === 'profile' ? 'active' : '')} onClick={(e) => {e.preventDefault(); setCurrentView('profile');}}>
+              <Settings size={20} />
+              <span>Parametres</span>
+            </a>
+          </nav>
+        </div>
+
+        <div className="sidebar-bottom">
+          <button className="logout-btn" onClick={() => setShowLogoutModal(true)}>
+            <LogOut size={20} />
             <span>Se déconnecter</span>
           </button>
         </div>
-      </motion.aside>
+      </aside>
 
-      {/* ===== MAIN CONTENT ===== */}
-      <main className="layout-main ml-[260px]">
-        {/* Header */}
-        <header className="header" style={{ left: '260px', width: 'calc(100% - 260px)' }}>
-          <div className="flex-1"></div> {/* Spacer for layout balance */}
-          
+      <main className="admin-main">
+        <header className="admin-header">
           <div className="header-actions">
-            <motion.button 
-              whileHover={{ scale: 1.05 }} 
-              whileTap={{ scale: 0.95 }} 
-              className="icon-btn"
-            >
-              <motion.div whileHover={{ rotate: [0, -15, 15, -15, 15, 0] }} transition={{ duration: 0.5 }}>
-                <Bell size={20} />
-              </motion.div>
-              <span className="notification-dot"></span>
-            </motion.button>
-            
-            <div className="h-8 w-px bg-slate-200 mx-2"></div>
-            
-            <motion.button 
-              whileHover={{ y: -2 }}
-              onClick={() => setCurrentView('profile')} 
-              className="header-profile"
-            >
-              <div className="header-profile-info">
-                <span className="header-profile-name">{displayName}</span>
-                <span className="header-profile-role">{displayRole}</span>
+            <button className="icon-btn">
+              <Bell size={20} />
+              <span className="notif-dot"></span>
+            </button>
+            <div className="header-divider"></div>
+            <div className="user-profile" onClick={() => setCurrentView('profile')} style={{ cursor: 'pointer' }}>
+              <div className="user-info">
+                <span className="user-name">{displayName}</span>
+                <span className="user-role">{displayRole}</span>
               </div>
-              <div className="header-profile-avatar overflow-hidden bg-slate-100 flex items-center justify-center border-2 border-white shadow-sm">
+              <div className="avatar">
                 {headerAvatar ? (
-                  <img src={headerAvatar} alt="Profile" className="w-full h-full object-cover" />
+                  <img src={headerAvatar} alt="Photo de profil admin" className="avatar-image" />
                 ) : (
-                  <span className="text-sm font-bold text-blue-600">{displayName.charAt(0)}</span>
+                  <UserCircle size={36} strokeWidth={1.5} color="#0056b3" />
                 )}
               </div>
-            </motion.button>
+            </div>
           </div>
         </header>
 
-        {/* Page Content with Transitions */}
-        <div className="layout-content min-h-[calc(100vh-70px)] pt-24 px-8 pb-12 overflow-x-hidden">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentView}
-              variants={pageVariants}
-              initial="initial"
-              animate="in"
-              exit="out"
-              className="w-full h-full"
-            >
-              {currentView === 'home' && <AdminDashboardHome />}
-              {currentView === 'users' && userRole === ROLE.ADMIN && <AdminUsers onCreateUser={() => setShowCreateUserModal(true)} />}
-              {currentView === 'classes' && <AdminClasses userRole={userRole} onCreateClass={() => setShowCreateClassModal(true)} />}
-              {currentView === 'matieres' && userRole === ROLE.ADMIN && <AdminMatieres userRole={userRole} />}
-              {currentView === 'settings' && <AdminSettings />}
-              {currentView === 'profile' && <AdminProfile />}
-            </motion.div>
-          </AnimatePresence>
+        <div className="dashboard-scroll" style={{ background: '#f8fafc', minHeight: 'calc(100vh - 64px)' }}>
+          {currentView === 'home' && <AdminDashboardHome />}
+          {currentView === 'users' && userRole === 'admin' && (
+            <AdminUsers
+              onCreateUser={openCreateUserForm}
+              onEditUser={openEditUserForm}
+            />
+          )}
+          {currentView === 'user-create' && userRole === 'admin' && (
+            <AdminUserForm
+              mode="create"
+              userToEdit={null}
+              isModal={false}
+              onBack={() => setCurrentView('users')}
+              onSuccess={() => {
+                setCurrentView('users');
+              }}
+            />
+          )}
+          {currentView === 'user-edit' && userRole === 'admin' && editingUser && (
+            <AdminUserForm
+              mode="edit"
+              userToEdit={editingUser}
+              isModal={false}
+              onBack={() => {
+                setEditingUser(null);
+                setCurrentView('users');
+              }}
+              onSuccess={() => {
+                setEditingUser(null);
+                setCurrentView('users');
+              }}
+            />
+          )}
+          {currentView === 'activations' && userRole === 'admin' && (
+            <AdminAccountActivations />
+          )}
+          {currentView === 'classes' && (
+            <AdminClasses
+              userRole={userRole}
+              onCreateClass={openCreateClassForm}
+              onEditClass={openEditClassForm}
+            />
+          )}
+          {currentView === 'class-create' && userRole === 'admin' && (
+            <AdminClassForm
+              mode="create"
+              classToEdit={null}
+              isModal={false}
+              onBack={() => setCurrentView('classes')}
+              onSuccess={() => {
+                setCurrentView('classes');
+              }}
+            />
+          )}
+          {currentView === 'class-edit' && userRole === 'admin' && editingClass && (
+            <AdminClassForm
+              mode="edit"
+              classToEdit={editingClass}
+              isModal={false}
+              onBack={() => {
+                setEditingClass(null);
+                setCurrentView('classes');
+              }}
+              onSuccess={() => {
+                setEditingClass(null);
+                setCurrentView('classes');
+              }}
+            />
+          )}
+          {currentView === 'matieres' && userRole === 'admin' && (
+            <AdminMatieres userRole={userRole} />
+          )}
+          {currentView === 'settings' && <AdminSettings />}
+          {currentView === 'profile' && <AdminProfile />}
         </div>
       </main>
     </div>

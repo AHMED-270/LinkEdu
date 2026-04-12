@@ -50,6 +50,16 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        $user = Auth::user();
+        if (($user?->account_status ?? 'active') !== 'active') {
+            Auth::logout();
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'email' => 'Compte en attente d activation par l administration.',
+            ]);
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 

@@ -21,6 +21,13 @@ class Professeur extends Model
         'id_professeur',
         'specialite',
         'telephone',
+        'matiere_enseignement',
+        'matieres_enseignement',
+        'niveau_enseignement',
+    ];
+
+    protected $casts = [
+        'matieres_enseignement' => 'array',
     ];
 
     public function user(): BelongsTo

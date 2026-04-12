@@ -221,3 +221,28 @@
   .annonce-item { flex-direction: column; }
   .annonce-actions { margin-top: var(--space-2); }
 }
+
+/* Flat table style (no cards, no row shadows) */
+.annonces-table-flat {
+  background: transparent;
+}
+
+.annonces-table-flat thead th {
+  background: transparent;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.annonces-table-flat tbody tr {
+  background: transparent;
+  box-shadow: none;
+}
+
+.annonces-table-flat tbody td {
+  background: transparent;
+  border-bottom: 1px solid #f3f4f6;
+  box-shadow: none;
+}
+
+.annonces-table-flat tbody tr:hover td {
+  background: transparent;
+}

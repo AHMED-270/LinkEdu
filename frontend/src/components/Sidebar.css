@@ -4,9 +4,9 @@
   top: var(--header-height, 64px); 
   left: 0;
   bottom: 0;
-  width: var(--sidebar-width, 260px);
+  width: 260px;
   background: white;
-  border-right: 1px solid var(--border-color);
+  border-right: 1px solid #F3F4F6;
   display: flex;
   flex-direction: column;
   z-index: 90;
@@ -22,17 +22,12 @@
   gap: 12px;
   padding: 24px;
   margin-bottom: 8px;
-  border-bottom: 1px solid rgba(0,0,0,0.03);
-}
-
-.sidebar-avatar-wrapper {
-  position: relative;
 }
 
 .sidebar-avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px; /* Slightly squarer, more modern radius */
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
   object-fit: cover;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
@@ -44,20 +39,7 @@
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 1rem;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-}
-
-.online-indicator {
-  position: absolute;
-  bottom: -2px;
-  right: -2px;
-  width: 12px;
-  height: 12px;
-  background-color: var(--accent-green);
-  border: 2px solid white;
-  border-radius: 50%;
-  animation: pulseGlow 2s infinite; /* Uses the animation from Layout.css */
+  font-size: 0.95rem;
 }
 
 .sidebar-user-info {
@@ -86,8 +68,12 @@
   display: flex;
   flex-direction: column;
   padding: 0 16px;
-  gap: 6px;
-  margin-top: 12px;
+  gap: 4px;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 16px;
 }
 
 .sidebar-link {
@@ -96,11 +82,11 @@
   gap: 12px;
   padding: 12px 16px;
   border-radius: 8px;
-  color: var(--text-secondary);
+  color: #4B5563;
   text-decoration: none;
-  font-size: 0.9rem;
-  font-weight: 600;
-  transition: all var(--transition-bounce); /* Springy transition */
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
   position: relative;
   overflow: hidden; /* Important for the hover effect */
 }
@@ -112,9 +98,8 @@
 
 /* Hover State */
 .sidebar-link:hover {
-  background: var(--gray-50);
-  color: var(--text-primary);
-  transform: translateX(4px); /* Slight nudge on hover */
+  background: #F9FAFB;
+  color: #111827;
 }
 
 .sidebar-link:hover .sidebar-icon {
@@ -125,19 +110,17 @@
 /* Active State - Refining your pseudo-element approach */
 .sidebar-link.active {
   background: transparent;
-  color: var(--primary-600);
-  font-weight: 700;
+  color: #2563EB;
 }
 
 .sidebar-link.active::before {
   content: '';
   position: absolute;
-  left: 0; /* Align with the inner padding edge */
-  top: 50%;
-  transform: translateY(-50%);
-  height: 60%;
-  width: 4px;
-  background: var(--primary-600);
+  left: -16px; /* Touch the edge of nav container */
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #2563EB;
   border-radius: 0 4px 4px 0;
   box-shadow: 2px 0 8px rgba(37, 99, 235, 0.4);
 }
@@ -145,11 +128,11 @@
 .sidebar-link.active::after {
   content: '';
   position: absolute;
-  left: 0; 
-  right: 0;
+  left: -8px; 
+  right: -8px;
   top: 0;
   bottom: 0;
-  background: linear-gradient(90deg, var(--primary-50) 0%, rgba(239, 246, 255, 0) 100%);
+  background: #EFF6FF; /* very light blue bg */
   border-radius: 8px;
   z-index: -1;
 }
@@ -173,10 +156,8 @@
   gap: 12px;
   padding: 12px 16px;
   border-radius: 8px;
-  color: var(--accent-red);
-  background: transparent;
-  border: 1px solid transparent;
-  font-size: 0.9rem;
+  color: #DC2626;
+  font-size: 0.875rem;
   font-weight: 600;
   transition: all var(--transition-bounce);
   cursor: pointer;
@@ -184,9 +165,6 @@
 
 .sidebar-logout:hover {
   background: #FEF2F2;
-  border-color: #FECACA;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1);
 }
 
 .sidebar-logout .sidebar-icon {
@@ -196,6 +174,87 @@
 
 .sidebar-logout:hover .sidebar-icon {
   transform: translateX(4px);
+}
+
+/* Secretaire sidebar visual refresh */
+.secretaire-sidebar {
+  background:
+    radial-gradient(circle at 20% 8%, rgba(37, 99, 235, 0.12), transparent 40%),
+    linear-gradient(180deg, #ffffff 0%, #f6f9ff 55%, #f2f7ff 100%);
+  border-right: 1px solid #dbe7ff;
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.9);
+}
+
+.secretaire-sidebar-profile {
+  margin-top: 16px;
+  border-color: #d8e6ff;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+}
+
+.secretaire-sidebar .sidebar-avatar-fallback {
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  border-color: #bfdbfe;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
+}
+
+.secretaire-sidebar .sidebar-name {
+  font-size: 0.92rem;
+  letter-spacing: 0.01em;
+}
+
+.secretaire-sidebar .sidebar-role {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.68rem;
+}
+
+.secretaire-sidebar-section-title {
+  margin: 4px 16px 8px;
+  padding: 0 6px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.secretaire-sidebar-nav {
+  padding-top: 0;
+}
+
+.secretaire-sidebar-link {
+  border-radius: 12px;
+  border: 1px solid transparent;
+  font-weight: 700;
+}
+
+.secretaire-sidebar-link:hover {
+  background: linear-gradient(90deg, #f7fbff 0%, #eff6ff 100%);
+  border-color: #dbeafe;
+}
+
+.secretaire-sidebar-link.active {
+  background: linear-gradient(90deg, #eef4ff 0%, #e5efff 100%);
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+  box-shadow: 0 5px 12px rgba(37, 99, 235, 0.14);
+}
+
+.secretaire-sidebar-link.active::before {
+  left: -14px;
+  width: 4px;
+  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+.secretaire-sidebar .sidebar-footer {
+  border-top: 1px solid #dbeafe;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0%, rgba(239, 246, 255, 0.55) 100%);
+}
+
+.secretaire-sidebar .sidebar-logout {
+  border-color: #fecaca;
+  background: linear-gradient(180deg, #fff8f8 0%, #fff1f2 100%);
 }
 
 /* ===== LOGOUT MODAL ===== */

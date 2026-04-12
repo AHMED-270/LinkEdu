@@ -1,0 +1,138 @@
+import { NavLink, useNavigate } from 'react-router-dom';
+import { FiGrid, FiUsers, FiCreditCard, FiBookOpen, FiCalendar, FiMessageCircle, FiAlertCircle, FiLogOut } from 'react-icons/fi';
+import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import axios from 'axios';
+import './SecretaireSidebar.css';
+
+const navItems = [
+  { path: '/secretaire/dashboard', label: 'Tableau de bord', icon: FiGrid },
+  { path: '/secretaire/etudiants', label: 'Etudiants', icon: FiUsers },
+  { path: '/secretaire/paiements', label: 'Paiements', icon: FiCreditCard },
+  { path: '/secretaire/classes', label: 'Classes', icon: FiBookOpen },
+  { path: '/secretaire/absences', label: 'Absences', icon: FiCalendar },
+  { path: '/secretaire/annonces', label: 'Annonces', icon: FiMessageCircle },   
+  { path: '/secretaire/reclamations', label: 'Reclamations', icon: FiAlertCircle },
+];
+
+export default function SecretaireSidebar() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogoutConfirm = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+
+    try {
+      const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+      await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', {
+        withCredentials: true,
+        withXSRFToken: true,
+      });
+      await axios.post(apiBaseUrl + '/api/admin/logout', {}, {
+        withCredentials: true,
+        withXSRFToken: true,
+        headers: { Accept: 'application/json' },
+      });
+    } catch {
+      // Continue even if API request fails
+    } finally {
+      logout();
+      setIsLoggingOut(false);
+      setShowLogoutModal(false);
+      navigate('/login', { replace: true });
+    }
+  };
+  const initials = (user?.name || 'S').trim().charAt(0).toUpperCase();
+
+  return (
+      <>
+      {showLogoutModal && (
+        <div className="logout-modal-backdrop">
+          <div className="logout-modal-card">
+            <div className="logout-modal-icon">
+              <FiLogOut size={48} color="#f43f5e" />
+            </div>
+            <h3>Êtes-vous sûr de vouloir vous déconnecter ?</h3>
+            <p>Vous devrez saisir à nouveau vos identifiants pour accéder à ce panneau.</p>
+            <div className="logout-modal-actions">
+              <button
+                className="btn-cancel"
+                onClick={() => setShowLogoutModal(false)}
+                disabled={isLoggingOut}
+              >
+                Annuler
+              </button>
+              <button
+                className="btn-confirm-logout"
+                onClick={handleLogoutConfirm}
+                disabled={isLoggingOut}
+              >
+                {isLoggingOut ? 'Déconnexion...' : 'Oui, me déconnecter'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <aside className="fixed bottom-0 left-0 top-16 z-[90] w-[260px] border-r border-slate-200 bg-white">
+        <div className="flex h-full flex-col px-3 py-4">
+          
+
+          <div className="mx-2 mb-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <div className="flex items-center gap-3">
+              {user?.profilePhoto ? (
+                <img src={user.profilePhoto} alt="Profil" className="h-11 w-11 rounded-full object-cover ring-2 ring-blue-100" />
+              ) : (
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white ring-2 ring-blue-100">
+                  {initials}
+                </div>
+              )}
+              <div className="min-w-0">
+                <div className="truncate text-sm font-bold text-slate-900">{user?.name || 'Secretaire'}</div>
+                <span className="mt-1 inline-flex rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700">
+                  {user?.role || 'secretaire'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Navigation</div>
+
+          <nav className="flex flex-col gap-1 px-2">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={({ isActive }) =>
+                    `group flex items-center gap-3 rounded-xl border-l-2 px-3 py-2.5 text-sm font-semibold transition-all duration-200 ${
+                      isActive
+                        ? 'border-blue-500 bg-blue-50 text-blue-700'
+                        : 'border-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    }`
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      <Icon
+                        size={18}
+                        className={isActive ? 'text-blue-600' : 'text-slate-400 transition-colors group-hover:text-blue-600'}
+                      />
+                      <span>{item.label}</span>
+                    </>
+                  )}
+                </NavLink>
+              );
+            })}
+          </nav>
+
+       
+        </div>
+      </aside>
+      </>
+  );
+}

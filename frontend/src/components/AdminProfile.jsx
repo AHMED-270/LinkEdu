@@ -1,8 +1,8 @@
 ﻿import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { User, Mail, Lock, Save, Camera, Trash2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { FiUser as User, FiMail as Mail, FiLock as Lock, FiSave as Save, FiCamera as Camera, FiTrash2 as Trash2 } from 'react-icons/fi';
+import { BiSolidUserDetail } from 'react-icons/bi';
 import { useAuth } from '../context/AuthContext';
-import { motion, AnimatePresence } from 'framer-motion';
 
 const ADMIN_AVATAR_STORAGE_KEY = 'linkedu_admin_avatar';
 
@@ -15,7 +15,8 @@ export default function AdminProfile() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [statusMsg, setStatusMsg] = useState({ type: '', text: '' });
+  const [message, setMessage] = useState(null);
+  const [error, setError] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState('');
 
   const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000';
@@ -55,12 +56,12 @@ export default function AdminProfile() {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      setStatusMsg({ type: 'error', text: 'Veuillez choisir une image valide.' });
+      setError('Veuillez choisir une image valide.');
       return;
     }
 
     if (file.size > 2 * 1024 * 1024) {
-      setStatusMsg({ type: 'error', text: 'La photo ne doit pas dépasser 2 MB.' });
+      setError('La photo ne doit pas depasser 2 MB.');
       return;
     }
 
@@ -68,14 +69,15 @@ export default function AdminProfile() {
     reader.onload = () => {
       const result = typeof reader.result === 'string' ? reader.result : '';
       if (!result) {
-        setStatusMsg({ type: 'error', text: 'Impossible de lire la photo sélectionnée.' });
+        setError('Impossible de lire la photo selectionnee.');
         return;
       }
 
       localStorage.setItem(ADMIN_AVATAR_STORAGE_KEY, result);
       setAvatarPreview(result);
       updateAuthenticatedUser({ profilePhoto: result });
-      setStatusMsg({ type: 'success', text: 'Photo de profil mise à jour avec succès.' });
+      setError(null);
+      setMessage('Photo de profil mise a jour.');
       notifyAvatarUpdate();
     };
     reader.readAsDataURL(file);
@@ -85,15 +87,16 @@ export default function AdminProfile() {
     localStorage.removeItem(ADMIN_AVATAR_STORAGE_KEY);
     setAvatarPreview('');
     updateAuthenticatedUser({ profilePhoto: null });
-    setStatusMsg({ type: 'success', text: 'Photo de profil supprimée.' });
+    setError(null);
+    setMessage('Photo de profil supprimee.');
     notifyAvatarUpdate();
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
-    setStatusMsg({ type: '', text: '' });
-    
+    setMessage(null);
+    setError(null);
     try {
       await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', {
         withCredentials: true,
@@ -105,196 +108,130 @@ export default function AdminProfile() {
         withXSRFToken: true,
         headers: { Accept: 'application/json' }
       });
-      
       updateAuthenticatedUser({ name: formData.name, email: formData.email });
-      setStatusMsg({ type: 'success', text: res.data.message || 'Profil mis à jour.' });
-      setFormData(prev => ({ ...prev, password: '' }));
+      setMessage(res.data.message);
+      setFormData(prev => ({ ...prev, password: '' })); // clear password field
     } catch (err) {
-      setStatusMsg({ 
-        type: 'error', 
-        text: err.response?.data?.message || 'Erreur lors de la mise à jour du profil.' 
-      });
+      setError(err.response?.data?.message || 'Erreur lors de la mise à jour.');
     } finally {
       setSaving(false);
     }
   };
 
-  // Staggered animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100 } }
-  };
-
   return (
-    <div className="layout-content">
-      {/* Header */}
-      <header className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">Mon Profil</h1>
-          <p className="text-slate-500 text-sm mt-1">Gérez vos informations personnelles et votre sécurité.</p>
-        </div>
+    <div className="dashboard-content">
+      <header className="content-header">
+        <h1 className="mt-1 flex items-center gap-2 text-4xl lg:text-5xl font-extrabold italic tracking-tight text-slate-900">
+          <BiSolidUserDetail className="text-blue-600" />
+          Mon Profil
+        </h1>
+        <p>Gérez vos informations personnelles et votre mot de passe.</p>
       </header>
 
-      {/* Main Card */}
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
-        className="card p-8 max-w-2xl mx-auto"
-      >
+      <div className="card-panel" style={{ maxWidth: '600px', margin: '0 auto', padding: '30px' }}>
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-12">
-            <span className="loading-spinner border-blue-500 mb-4"></span>
-            <p className="text-slate-500 font-medium">Chargement du profil...</p>
-          </div>
+          <p>Chargement...</p>
         ) : (
-          <motion.form 
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            onSubmit={handleSubmit} 
-            className="flex flex-col gap-6"
-          >
-            {/* Animated Status Message */}
-            <AnimatePresence>
-              {statusMsg.text && (
-                <motion.div 
-                  initial={{ opacity: 0, y: -10, height: 0 }}
-                  animate={{ opacity: 1, y: 0, height: 'auto' }}
-                  exit={{ opacity: 0, y: -10, height: 0 }}
-                  className="overflow-hidden"
-                >
-                  <div className={`p-4 rounded-xl flex items-center gap-3 font-medium text-sm border mb-2 ${
-                    statusMsg.type === 'error' 
-                      ? 'bg-red-50 text-red-600 border-red-100' 
-                      : 'bg-emerald-50 text-emerald-700 border-emerald-100'
-                  }`}>
-                    {statusMsg.type === 'error' ? <AlertCircle size={20} /> : <CheckCircle2 size={20} />}
-                    {statusMsg.text}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {message && <div style={{ padding: '10px', backgroundColor: '#dcfce7', color: '#166534', borderRadius: '8px' }}>{message}</div>}
+            {error && <div style={{ padding: '10px', backgroundColor: '#fee2e2', color: '#9f1239', borderRadius: '8px' }}>{error}</div>}
 
-            {/* Avatar Section */}
-            <motion.div variants={itemVariants} className="p-6 border border-slate-100 rounded-2xl bg-slate-50">
-              <label className="flex items-center gap-2 mb-4 font-semibold text-slate-700">
-                <Camera size={18} className="text-slate-400" /> Photo de Profil
+            <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', fontWeight: '500', color: '#475569' }}>
+                <Camera size={18} /> Photo de Profil
               </label>
-              
-              <div className="flex items-center gap-6 flex-wrap">
-                {/* Avatar Preview */}
-                <motion.div 
-                  whileHover={{ scale: 1.05 }}
-                  className="w-24 h-24 rounded-full overflow-hidden bg-white border-4 border-white shadow-md flex items-center justify-center flex-shrink-0 relative group"
-                >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+                <div style={{ width: '84px', height: '84px', borderRadius: '9999px', overflow: 'hidden', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {avatarPreview ? (
-                    <img src={avatarPreview} alt="Profil admin" className="w-full h-full object-cover" />
+                    <img src={avatarPreview} alt="Profil admin" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
-                    <User size={36} className="text-slate-300" />
+                    <User size={32} color="#64748b" />
                   )}
-                  {/* Subtle hover overlay to hint at clicking */}
-                  <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                </motion.div>
+                </div>
 
-                {/* Avatar Actions */}
-                <div className="flex gap-3 flex-wrap">
-                  <motion.label 
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="btn btn-primary cursor-pointer shadow-sm"
-                  >
-                    Changer de photo
-                    <input type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
-                  </motion.label>
-                  
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <label style={{ padding: '9px 12px', borderRadius: '8px', background: '#0f172a', color: '#fff', cursor: 'pointer', fontWeight: '500' }}>
+                    Choisir une photo
+                    <input type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: 'none' }} />
+                  </label>
                   {avatarPreview && (
-                    <motion.button 
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      type="button" 
-                      onClick={removeAvatar} 
-                      className="btn btn-outline text-red-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200"
-                    >
+                    <button type="button" onClick={removeAvatar} style={{ padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#fff', color: '#334155', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Trash2 size={16} /> Supprimer
-                    </motion.button>
+                    </button>
                   )}
                 </div>
               </div>
-            </motion.div>
+            </div>
             
-            {/* Identity Fields */}
-            <div className="grid-2">
-              <motion.div variants={itemVariants} className="form-group">
-                <label className="form-label flex items-center gap-2">
-                  <User size={16} className="text-slate-400" /> Nom Complet
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  required
-                  className="form-input"
-                />
-              </motion.div>
-
-              <motion.div variants={itemVariants} className="form-group">
-                <label className="form-label flex items-center gap-2">
-                  <Mail size={16} className="text-slate-400" /> Adresse Email
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  required
-                  className="form-input"
-                />
-              </motion.div>
+            <div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', fontWeight: '500', color: '#475569' }}>
+                <User size={18} /> Nom / Prénom
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                required
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }}
+              />
             </div>
 
-            {/* Security Section */}
-            <motion.div variants={itemVariants} className="form-group pt-6 border-t border-slate-100 mt-2">
-              <label className="form-label flex items-center gap-2">
-                <Lock size={16} className="text-slate-400" /> Nouveau Mot de Passe
+            <div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', fontWeight: '500', color: '#475569' }}>
+                <Mail size={18} /> Adresse Email
               </label>
-              <p className="text-xs text-slate-500 mb-3">Laissez vide si vous ne souhaitez pas le changer.</p>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                required
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }}
+              />
+            </div>
+
+            <div style={{ paddingTop: '10px', borderTop: '1px solid #e2e8f0' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', fontWeight: '500', color: '#475569' }}>
+                <Lock size={18} /> Nouveau Mot de Passe
+              </label>
+              <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '10px' }}>Laissez vide si vous ne souhaitez pas le changer.</p>
               <input
                 type="password"
                 name="password"
                 value={formData.password}
                 onChange={handleInputChange}
-                placeholder="••••••••"
-                className="form-input w-full md:w-1/2"
+                placeholder="Nouveau mot de passe"
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }}
               />
-            </motion.div>
+            </div>
 
-            {/* Submit Action */}
-            <motion.div variants={itemVariants} className="pt-4">
-              <motion.button 
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                type="submit" 
-                disabled={saving}
-                className="btn btn-primary w-full md:w-auto px-8 py-3 text-base shadow-[0_4px_14px_rgba(59,130,246,0.3)]"
-              >
-                {saving ? (
-                  <><span className="loading-spinner w-5 h-5 border-white mr-2"></span> Enregistrement...</>
-                ) : (
-                  <><Save size={18} /> Enregistrer les modifications</>
-                )}
-              </motion.button>
-            </motion.div>
-
-          </motion.form>
+            <button 
+              type="submit" 
+              disabled={saving}
+              style={{ 
+                marginTop: '15px', 
+                padding: '12px', 
+                background: '#3b82f6', 
+                color: 'white', 
+                borderRadius: '8px', 
+                border: 'none', 
+                cursor: saving ? 'not-allowed' : 'pointer', 
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                fontSize: '1rem',
+                opacity: saving ? 0.7 : 1
+              }}
+            >
+              <Save size={20} />
+              {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
+            </button>
+          </form>
         )}
-      </motion.div>
+      </div>
     </div>
   );
 }
