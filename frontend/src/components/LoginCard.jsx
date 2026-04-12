@@ -70,7 +70,10 @@ export default function LoginCard({ onLoginSuccess }) {
       }
 
       if (setAuthenticatedUser) {
-        setAuthenticatedUser(connectedUser);
+        setAuthenticatedUser({
+          ...connectedUser,
+          ...(authToken ? { token: authToken } : {}),
+        });
       }
       
       if (onLoginSuccess && typeof onLoginSuccess === 'function') {
@@ -86,7 +89,9 @@ export default function LoginCard({ onLoginSuccess }) {
     } catch (err) {
       const status = err?.response?.status;
       if (status === 422 || status === 401) {
-        setLoginFeedback('E-mail ou mot de passe incorrect.');
+        const apiMessage = err?.response?.data?.errors?.email?.[0]
+          || err?.response?.data?.message;
+        setLoginFeedback(apiMessage || 'E-mail ou mot de passe incorrect.');
         setLoginFeedbackType('error');
       } else if (status === 403) {
         // Just in case backend somehow returns 403

@@ -1,334 +1,471 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { Pencil, Trash2 } from 'lucide-react';
+import { BiMessageSquareDetail, BiSearchAlt2 } from 'react-icons/bi';
 import './DirectoryReclamations.css';
 
-const DirectoryReclamations = () => {
+const defaultClaimForm = {
+  sujet: '',
+  description: '',
+  cible: 'parent',
+  etudiant_nom: '',
+  professeur_nom: '',
+  secretaire_id: '',
+};
+
+function formatStatusLabel(status) {
+  if (!status) return 'Nouveau';
+
+  const normalized = String(status).toLowerCase();
+  if (normalized === 'en cours' || normalized === 'en_cours') return 'En cours';
+  if (normalized === 'resolu' || normalized === 'résolu') return 'Resolu';
+  return 'Nouveau';
+}
+
+function getStatusBadgeClass(status) {
+  const normalized = String(status || '').toLowerCase();
+  if (normalized === 'en cours' || normalized === 'en_cours') return 'is-encours';
+  if (normalized === 'resolu' || normalized === 'résolu') return 'is-resolu';
+  return 'is-nouveau';
+}
+
+function getClaimDate(claim) {
+  const rawDate = claim?.date_reclamation || claim?.date_soumission || claim?.created_at;
+  if (!rawDate) return '-';
+
+  const parsedDate = new Date(rawDate);
+  if (Number.isNaN(parsedDate.getTime())) return '-';
+
+  return parsedDate.toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+}
+
+function DirectoryReclamations() {
   const browserHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
   const apiBaseUrl = import.meta.env.VITE_API_URL ?? `http://${browserHost}:8000`;
   const token = localStorage.getItem('linkedu_token');
 
   const [reclamations, setReclamations] = useState([]);
+  const [secretaires, setSecretaires] = useState([]);
+  const [etudiants, setEtudiants] = useState([]);
+  const [professeurs, setProfesseurs] = useState([]);
+
   const [loading, setLoading] = useState(true);
-  const [isAdding, setIsAdding] = useState(false);
-  const [addFeedback, setAddFeedback] = useState('');
-  const [addFeedbackType, setAddFeedbackType] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [newClaim, setNewClaim] = useState({ sujet: '', description: '' });
-  const [isEditing, setIsEditing] = useState(false);
-  const [editTarget, setEditTarget] = useState(null);
-  const [editClaim, setEditClaim] = useState({ sujet: '', description: '' });
-  const [isSavingEdit, setIsSavingEdit] = useState(false);
-  const [actionFeedback, setActionFeedback] = useState({ type: '', msg: '' });
+  const [editingId, setEditingId] = useState(null);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [actionFeedback, setActionFeedback] = useState({ type: '', text: '' });
+  const [formData, setFormData] = useState(defaultClaimForm);
+  const [searchSujet, setSearchSujet] = useState('');
+
+  const axiosAuthConfig = useMemo(() => ({
+    withCredentials: true,
+    withXSRFToken: true,
+    headers: {
+      Accept: 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  }), [token]);
 
   useEffect(() => {
     fetchReclamations();
+    fetchSecretaires();
+    fetchEtudiants();
+    fetchProfesseurs();
   }, []);
 
-  const fetchReclamations = () => {
-    setLoading(true);
-    axios.get(apiBaseUrl + '/api/directeur/reclamations', {
-      headers: {
-        Authorization: token ? 'Bearer ' + token : undefined,
-        Accept: 'application/json',
-      }
-    })
-    .then(response => {
-      setReclamations(response.data);
+  const fetchReclamations = async () => {
+    try {
+      setLoading(true);
+      setErrorMsg('');
+
+      const response = await axios.get(`${apiBaseUrl}/api/directeur/reclamations`, axiosAuthConfig);
+      const items = Array.isArray(response.data)
+        ? response.data
+        : (response.data?.reclamations || []);
+
+      setReclamations(items);
+    } catch (error) {
+      console.error('Erreur lors du chargement des reclamations', error);
+      setReclamations([]);
+      setErrorMsg(error?.response?.data?.message || 'Erreur lors du chargement des reclamations.');
+    } finally {
       setLoading(false);
-    })
-    .catch(error => {
-      console.error("Erreur lors du chargement des réclamations", error);
-      setLoading(false);
-    });
+    }
   };
 
-  const handleCreateReclamation = async () => {
-    const sujet = newClaim.sujet.trim();
-    const description = newClaim.description.trim();
+  const fetchSecretaires = async () => {
+    try {
+      const response = await axios.get(`${apiBaseUrl}/api/directeur/secretaires`, axiosAuthConfig);
+      setSecretaires(response.data?.secretaires || []);
+    } catch (error) {
+      console.error('Erreur lors du chargement des secretaire(s)', error);
+      setSecretaires([]);
+    }
+  };
+
+  const fetchEtudiants = async () => {
+    try {
+      const response = await axios.get(`${apiBaseUrl}/api/directeur/etudiants`, axiosAuthConfig);
+      setEtudiants(response.data?.students || []);
+    } catch (error) {
+      console.error('Erreur lors du chargement des etudiants', error);
+      setEtudiants([]);
+    }
+  };
+
+  const fetchProfesseurs = async () => {
+    try {
+      const response = await axios.get(`${apiBaseUrl}/api/directeur/professeurs`, axiosAuthConfig);
+      const items = Array.isArray(response.data) ? response.data : (response.data?.professeurs || []);
+      setProfesseurs(items);
+    } catch (error) {
+      console.error('Erreur lors du chargement des professeurs', error);
+      setProfesseurs([]);
+    }
+  };
+
+  const resetForm = () => {
+    setEditingId(null);
+    setFormData(defaultClaimForm);
+  };
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCibleChange = (event) => {
+    const nextCible = event.target.value;
+    setFormData((prev) => ({
+      ...prev,
+      cible: nextCible,
+      etudiant_nom: '',
+      professeur_nom: '',
+      secretaire_id: '',
+    }));
+  };
+
+  const validateForm = () => {
+    const sujet = formData.sujet.trim();
+    const description = formData.description.trim();
 
     if (!sujet || !description) {
-      setAddFeedbackType('error');
-      setAddFeedback('Veuillez remplir le sujet et la description.');
+      return 'Veuillez remplir le sujet et la description.';
+    }
+
+    if (editingId !== null) {
+      return '';
+    }
+
+    if (formData.cible === 'parent' && !formData.etudiant_nom.trim()) {
+      return 'Veuillez saisir le nom de l etudiant lie au parent cible.';
+    }
+
+    if (formData.cible === 'directeur' && !formData.professeur_nom.trim()) {
+      return 'Veuillez saisir le nom du professeur cible.';
+    }
+
+    if (formData.cible === 'secretaire' && !formData.secretaire_id) {
+      return 'Veuillez selectionner la secretaire ciblee.';
+    }
+
+    return '';
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    const validationError = validateForm();
+    if (validationError) {
+      setActionFeedback({ type: 'error', text: validationError });
       return;
     }
 
-    setIsSubmitting(true);
-    setAddFeedback('');
-    setAddFeedbackType('');
+    const payload = {
+      sujet: formData.sujet.trim(),
+      description: formData.description.trim(),
+      cible: formData.cible,
+      etudiant_nom: formData.cible === 'parent' ? formData.etudiant_nom.trim() : undefined,
+      professeur_nom: formData.cible === 'directeur' ? formData.professeur_nom.trim() : undefined,
+      secretaire_id: formData.cible === 'secretaire' ? Number(formData.secretaire_id) : undefined,
+    };
 
     try {
-      await axios.post(
-        apiBaseUrl + '/api/directeur/reclamations',
-        { sujet, description },
-        {
-          withCredentials: true,
-          headers: {
-            Authorization: token ? 'Bearer ' + token : undefined,
-            Accept: 'application/json',
-          },
-        }
-      );
+      setIsSubmitting(true);
+      setActionFeedback({ type: '', text: '' });
 
-      setAddFeedbackType('success');
-      setAddFeedback('Reclamation ajoutee avec succes.');
-      setNewClaim({ sujet: '', description: '' });
-      fetchReclamations();
-      setTimeout(() => {
-        setIsAdding(false);
-        setAddFeedback('');
-        setAddFeedbackType('');
-      }, 900);
+      if (editingId !== null) {
+        await axios.put(
+          `${apiBaseUrl}/api/directeur/reclamations/${editingId}`,
+          {
+            sujet: payload.sujet,
+            description: payload.description,
+          },
+          axiosAuthConfig,
+        );
+      } else {
+        await axios.post(`${apiBaseUrl}/api/directeur/reclamations`, payload, axiosAuthConfig);
+      }
+
+      await fetchReclamations();
+      setActionFeedback({
+        type: 'success',
+        text: editingId !== null ? 'Reclamation modifiee avec succes.' : 'Reclamation ajoutee avec succes.',
+      });
+      resetForm();
     } catch (error) {
-      setAddFeedbackType('error');
-      setAddFeedback(error?.response?.data?.message || "Erreur lors de l'ajout de la reclamation.");
+      setActionFeedback({
+        type: 'error',
+        text: error?.response?.data?.message || 'Erreur lors de l enregistrement de la reclamation.',
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const filteredClaims = reclamations;
+  const handleEdit = (claim) => {
+    const rawCible = String(claim?.cible || '').toLowerCase();
+    const normalizedCible = ['parent', 'directeur', 'secretaire'].includes(rawCible)
+      ? rawCible
+      : 'parent';
 
-  const getStatusLabel = (status) => {
-    switch (status) {
-      case 'Nouveau': return 'Nouveau';
-      case 'En cours': return 'En cours';
-      case 'Resolu':
-      case 'Résolu': return 'Résolu';
-      default: return status;
-    }
-  };
-
-  const getStatusBadgeClass = (status) => {
-    const s = String(status).toLowerCase();
-    if (s === 'nouveau') return 'badge-nouveau';
-    if (s === 'en cours' || s === 'en_cours') return 'badge-encours';
-    if (s === 'résolu' || s === 'resolu') return 'badge-resolu';
-    return 'badge-nouveau';
-  };
-
-  const openEditModal = (claim) => {
-    setEditTarget(claim);
-    setEditClaim({
+    setEditingId(claim.id_reclamation);
+    setFormData({
       sujet: claim.sujet || '',
       description: claim.description || '',
+      cible: normalizedCible,
+      etudiant_nom: '',
+      professeur_nom: '',
+      secretaire_id: '',
     });
-    setIsEditing(true);
+    setActionFeedback({ type: '', text: '' });
   };
 
-  const closeEditModal = () => {
-    setIsEditing(false);
-    setEditTarget(null);
-    setEditClaim({ sujet: '', description: '' });
-  };
-
-  const handleUpdateReclamation = async () => {
-    if (!editTarget?.id_reclamation) return;
-
-    const sujet = editClaim.sujet.trim();
-    const description = editClaim.description.trim();
-
-    if (!sujet || !description) {
-      setActionFeedback({ type: 'error', msg: 'Sujet et description sont obligatoires.' });
-      return;
-    }
-
-    setIsSavingEdit(true);
-    setActionFeedback({ type: '', msg: '' });
-
-    try {
-      await axios.put(
-        apiBaseUrl + `/api/directeur/reclamations/${editTarget.id_reclamation}`,
-        { sujet, description },
-        {
-          withCredentials: true,
-          headers: {
-            Authorization: token ? 'Bearer ' + token : undefined,
-            Accept: 'application/json',
-          },
-        }
-      );
-
-      setActionFeedback({ type: 'success', msg: 'Reclamation modifiee avec succes.' });
-      fetchReclamations();
-      setTimeout(() => {
-        closeEditModal();
-        setActionFeedback({ type: '', msg: '' });
-      }, 800);
-    } catch (error) {
-      setActionFeedback({ type: 'error', msg: error?.response?.data?.message || 'Erreur lors de la modification.' });
-    } finally {
-      setIsSavingEdit(false);
-    }
-  };
-
-  const handleDeleteReclamation = async (claimId) => {
+  const handleDelete = async (claimId) => {
     const confirmed = window.confirm('Voulez-vous vraiment supprimer cette reclamation ?');
     if (!confirmed) return;
 
     try {
-      await axios.delete(apiBaseUrl + `/api/directeur/reclamations/${claimId}`, {
-        withCredentials: true,
-        headers: {
-          Authorization: token ? 'Bearer ' + token : undefined,
-          Accept: 'application/json',
-        },
-      });
+      await axios.delete(`${apiBaseUrl}/api/directeur/reclamations/${claimId}`, axiosAuthConfig);
+      await fetchReclamations();
+      setActionFeedback({ type: 'success', text: 'Reclamation supprimee avec succes.' });
 
-      setActionFeedback({ type: 'success', msg: 'Reclamation supprimee avec succes.' });
-      fetchReclamations();
-      setTimeout(() => setActionFeedback({ type: '', msg: '' }), 2500);
+      if (editingId === claimId) {
+        resetForm();
+      }
     } catch (error) {
-      setActionFeedback({ type: 'error', msg: error?.response?.data?.message || 'Erreur lors de la suppression.' });
+      setActionFeedback({
+        type: 'error',
+        text: error?.response?.data?.message || 'Erreur lors de la suppression de la reclamation.',
+      });
     }
   };
 
+  const filteredReclamations = useMemo(() => {
+    const term = searchSujet.trim().toLowerCase();
+    if (!term) return reclamations;
+
+    return reclamations.filter((claim) => String(claim.sujet || '').toLowerCase().includes(term));
+  }, [reclamations, searchSujet]);
+
   return (
-    <div className="directory-reclamations">
-      <div className="reclamations-header">
-        <h2>Boîte de Réception - Réclamations</h2>
-        <button
-          type="button"
-          className="add-claim-btn"
-          onClick={() => {
-            setIsAdding(true);
-            setAddFeedback('');
-            setAddFeedbackType('');
-            setNewClaim({ sujet: '', description: '' });
-          }}
-        >
-          <i className="fa-solid fa-plus"></i> Ajouter réclamation
-        </button>
-        
-      </div>
-
-      <div className="claims-list">
-        {actionFeedback.msg && (
-          <div className={`add-claim-feedback ${actionFeedback.type === 'error' ? 'is-error' : 'is-success'}`}>
-            {actionFeedback.msg}
+    <div className="director-claims-page">
+      <div className="director-claims-grid">
+        <section className="director-claims-table-card">
+          <div className="director-claims-card-header">
+            <div className="claims-header-main">
+              <h2 className="claims-title-with-icon">
+                <BiMessageSquareDetail />
+                <span>Gestion des reclamations</span>
+              </h2>
+              <p>Les reclamations sont affichees dans un tableau. Utilisez le formulaire a droite pour ajouter ou modifier.</p>
+            </div>
+            <div className="claims-search-wrap">
+              <BiSearchAlt2 className="claims-search-icon" />
+              <input
+                type="text"
+                className="claims-search-input"
+                placeholder="Rechercher une reclamation par sujet"
+                value={searchSujet}
+                onChange={(event) => setSearchSujet(event.target.value)}
+              />
+            </div>
           </div>
-        )}
 
-        {isAdding && (
-          <div className="add-claim-modal" role="dialog" aria-modal="true">
-            <div className="add-claim-backdrop" onClick={() => setIsAdding(false)}></div>
-            <div className="add-claim-panel">
-              <div className="add-claim-header">
-                <h3>Nouvelle réclamation</h3>
-                <button type="button" className="add-claim-back" onClick={() => setIsAdding(false)}>
-                  Fermer
-                </button>
-              </div>
-              <div className="add-claim-body">
-                <label className="add-claim-label">Sujet</label>
+          {errorMsg && <div className="claim-feedback is-error">{errorMsg}</div>}
+          {actionFeedback.text && (
+            <div className={`claim-feedback ${actionFeedback.type === 'error' ? 'is-error' : 'is-success'}`}>
+              {actionFeedback.text}
+            </div>
+          )}
+
+          <div className="director-claims-table-wrap">
+            <table className="director-claims-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Sujet</th>
+                  <th>Cible</th>
+                  <th>Statut</th>
+                  <th>Description</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan="6" className="claims-empty">Chargement des reclamations...</td>
+                  </tr>
+                ) : filteredReclamations.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="claims-empty">Aucune reclamation trouvee.</td>
+                  </tr>
+                ) : (
+                  filteredReclamations.map((claim) => (
+                    <tr key={claim.id_reclamation}>
+                      <td>{getClaimDate(claim)}</td>
+                      <td className="claim-subject-cell">{claim.sujet || '-'}</td>
+                      <td>{claim.cible_label || claim.cible || '-'}</td>
+                      <td>
+                        <span className={`claim-status-badge ${getStatusBadgeClass(claim.statut)}`}>
+                          {formatStatusLabel(claim.statut)}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="claim-description-preview">{claim.description || '-'}</div>
+                      </td>
+                      <td>
+                        <div className="claim-row-actions">
+                          <button
+                            className="btn-edit-claim"
+                            onClick={() => handleEdit(claim)}
+                            title="Modifier"
+                            aria-label="Modifier"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                          <button
+                            className="btn-delete-claim"
+                            onClick={() => handleDelete(claim.id_reclamation)}
+                            title="Supprimer"
+                            aria-label="Supprimer"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <aside className="director-claims-form-card">
+          <h3>{editingId !== null ? 'Modifier reclamation' : 'Nouvelle reclamation'}</h3>
+          <form onSubmit={handleSubmit} className="director-claim-form">
+            <div className="claim-form-group">
+              <label>Sujet</label>
+              <input type="text" name="sujet" value={formData.sujet} onChange={handleChange} required />
+            </div>
+
+            <div className="claim-form-group">
+              <label>Description</label>
+              <textarea name="description" rows="5" value={formData.description} onChange={handleChange} required></textarea>
+            </div>
+
+            <div className="claim-form-group">
+              <label>Cible</label>
+              <select
+                name="cible"
+                value={formData.cible}
+                onChange={handleCibleChange}
+                disabled={editingId !== null}
+              >
+                <option value="parent">Parent</option>
+                <option value="directeur">Professeur</option>
+                <option value="secretaire">Secretaire</option>
+              </select>
+            </div>
+
+            {editingId === null && formData.cible === 'parent' && (
+              <div className="claim-form-group">
+                <label>Nom de l etudiant (lie au parent)</label>
                 <input
-                  className="add-claim-input"
                   type="text"
-                  placeholder="Ex: Absence justifiée"
-                  value={newClaim.sujet}
-                  onChange={(e) => setNewClaim((prev) => ({ ...prev, sujet: e.target.value }))}
+                  name="etudiant_nom"
+                  list="director-claim-etudiants"
+                  placeholder="Ex: Yassine Amrani"
+                  value={formData.etudiant_nom}
+                  onChange={handleChange}
                 />
-                <label className="add-claim-label">Description</label>
-                <textarea
-                  className="add-claim-textarea"
-                  rows={4}
-                  placeholder="Détaillez la réclamation..."
-                  value={newClaim.description}
-                  onChange={(e) => setNewClaim((prev) => ({ ...prev, description: e.target.value }))}
-                ></textarea>
-                {addFeedback && <div className={`add-claim-feedback ${addFeedbackType === 'error' ? 'is-error' : 'is-success'}`}>{addFeedback}</div>}
-                <button type="button" className="add-claim-submit" onClick={handleCreateReclamation} disabled={isSubmitting}>
-                  {isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
-                </button>
+                <datalist id="director-claim-etudiants">
+                  {etudiants.map((etu) => {
+                    const label = `${etu.prenom || ''} ${etu.nom || ''}`.trim() || etu.name;
+                    return <option key={etu.id_etudiant} value={label} />;
+                  })}
+                </datalist>
               </div>
-            </div>
-          </div>
-        )}
+            )}
 
-        {isEditing && (
-          <div className="add-claim-modal" role="dialog" aria-modal="true">
-            <div className="add-claim-backdrop" onClick={closeEditModal}></div>
-            <div className="add-claim-panel">
-              <div className="add-claim-header">
-                <h3>Modifier réclamation</h3>
-                <button type="button" className="add-claim-back" onClick={closeEditModal}>
-                  Fermer
-                </button>
-              </div>
-              <div className="add-claim-body">
-                <label className="add-claim-label">Sujet</label>
+            {editingId === null && formData.cible === 'directeur' && (
+              <div className="claim-form-group">
+                <label>Nom du professeur cible</label>
                 <input
-                  className="add-claim-input"
                   type="text"
-                  value={editClaim.sujet}
-                  onChange={(e) => setEditClaim((prev) => ({ ...prev, sujet: e.target.value }))}
+                  name="professeur_nom"
+                  list="director-claim-professeurs"
+                  placeholder="Ex: Karim Lahlou"
+                  value={formData.professeur_nom}
+                  onChange={handleChange}
                 />
-                <label className="add-claim-label">Description</label>
-                <textarea
-                  className="add-claim-textarea"
-                  rows={4}
-                  value={editClaim.description}
-                  onChange={(e) => setEditClaim((prev) => ({ ...prev, description: e.target.value }))}
-                ></textarea>
-                <button type="button" className="add-claim-submit" onClick={handleUpdateReclamation} disabled={isSavingEdit}>
-                  {isSavingEdit ? 'Enregistrement...' : 'Modifier'}
-                </button>
+                <datalist id="director-claim-professeurs">
+                  {professeurs.map((prof) => {
+                    const label = `${prof.prenom || ''} ${prof.nom || ''}`.trim() || prof.name;
+                    return <option key={prof.id_professeur || prof.id} value={label} />;
+                  })}
+                </datalist>
               </div>
-            </div>
-          </div>
-        )}
+            )}
 
-        {loading ? (
-          <div className="empty-state">Chargement des réclamations...</div>
-        ) : filteredClaims.length > 0 ? (
-          filteredClaims.map(claim => (
-            <div key={claim.id_reclamation} className="claim-card">
-              <div className="claim-header">
-                <div className="claim-meta">
-                  <span className={`claim-badge ${getStatusBadgeClass(claim.statut)}`}>
-                    {getStatusLabel(claim.statut)}
-                  </span>
-                  <span className="claim-date">
-                    <i className="fa-regular fa-clock"></i> {new Date(claim.date_reclamation).toLocaleDateString('fr-FR')}
-                  </span>
-                </div>
-                <div className="claim-actions">
-                  <button className="action-btn edit" title="Modifier" onClick={() => openEditModal(claim)}>
-                    <Pencil size={14} />
-                    <span>Modifier</span>
-                  </button>
-                  <button className="action-btn delete" title="Supprimer" onClick={() => handleDeleteReclamation(claim.id_reclamation)}>
-                    <Trash2 size={14} />
-                    <span>Supprimer</span>
-                  </button>
-                </div>
+            {editingId === null && formData.cible === 'secretaire' && (
+              <div className="claim-form-group">
+                <label>Secretaire ciblee</label>
+                <select
+                  name="secretaire_id"
+                  value={formData.secretaire_id}
+                  onChange={handleChange}
+                >
+                  <option value="">Selectionner une secretaire</option>
+                  {secretaires.map((sec) => (
+                    <option key={sec.id_secretaire} value={String(sec.id_secretaire)}>
+                      {`${sec.prenom || ''} ${sec.nom || ''}`.trim() || sec.email}
+                    </option>
+                  ))}
+                </select>
               </div>
-              
-              <div className="claim-body">
-                <div className="claim-sender">
-                  <div className="sender-avatar">
-                    <i className="fa-solid fa-user"></i>
-                  </div>
-                  <span className="sender-name">Utilisateur ID: {claim.id_parent || claim.id_professeur || claim.id_etudiant || 'Inconnu'}</span>
-                </div>
-                
-                <h3 className="claim-subject">{claim.sujet}</h3>
-                <p className="claim-excerpt">
-                  {claim.description}
-                </p>
-              </div>
+            )}
+
+            <div className="claim-form-actions">
+              {editingId !== null && (
+                <button type="button" className="btn-cancel-claim" onClick={resetForm}>Annuler</button>
+              )}
+              <button type="submit" className="btn-save-claim" disabled={isSubmitting}>
+                {isSubmitting
+                  ? 'Enregistrement...'
+                  : (editingId !== null ? 'Mettre a jour' : 'Envoyer la reclamation')}
+              </button>
             </div>
-          ))
-        ) : (
-          <div className="empty-state">
-            <i className="fa-regular fa-folder-open" style={{fontSize: '3rem', marginBottom: '1rem', color: '#ccc'}}></i>
-            <p>Aucune réclamation trouvée pour ce filtre.</p>
-          </div>
-        )}
+          </form>
+        </aside>
       </div>
     </div>
   );
-};
+}
 
 export default DirectoryReclamations;
-

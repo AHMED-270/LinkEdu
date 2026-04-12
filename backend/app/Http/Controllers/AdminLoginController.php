@@ -19,9 +19,19 @@ class AdminLoginController extends Controller
             "password" => ["required", "string"],
         ]);
 
-        $user = User::where("email", $validated["email"])->first();
+        $normalizedEmail = mb_strtolower(trim((string) $validated["email"]));
 
-        if (! $user || ! Hash::check($validated["password"], $user->password)) {
+        // Un meme email peut exister sur plusieurs roles (professeur/parent/directeur).
+        // On selectionne le compte dont le mot de passe correspond.
+        $user = User::query()
+            ->whereRaw('LOWER(email) = ?', [$normalizedEmail])
+            ->orderByDesc('id')
+            ->get()
+            ->first(function (User $candidate) use ($validated) {
+                return Hash::check($validated["password"], (string) $candidate->password);
+            });
+
+        if (! $user) {
             throw ValidationException::withMessages([
                 "email" => ["Les identifiants ne correspondent pas à nos enregistrements."],
             ]);

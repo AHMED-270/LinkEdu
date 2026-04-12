@@ -48,13 +48,14 @@ export default function Notes() {
     navigate('/login', { replace: true });
   };
 
-  const loadNotes = async (classId, matiereId) => {
+  const loadNotes = async (classId, matiereId, evaluationTypeValue = evaluationType) => {
     setLoading(true);
     setStatusMsg({ type: '', text: '' });
     try {
       const data = await professorGet('/api/professeur/notes', {
         class_id: classId,
         matiere_id: matiereId,
+        evaluation_type: evaluationTypeValue,
       });
       
       setClasses(data.classes || []);
@@ -62,11 +63,12 @@ export default function Notes() {
       setShowMatiereField(Boolean(data.showMatiereField ?? (data.matieres || []).length > 1));
       setStudents((data.students || []).map((student) => ({
         ...student,
-        appreciation: getDynamicAppreciation(student.note),
+        appreciation: student.appreciation || getDynamicAppreciation(student.note),
       })));
 
       if (data.selectedClassId) setSelectedClass(String(data.selectedClassId));
       if (data.selectedMatiereId) setSelectedMatiere(String(data.selectedMatiereId));
+      if (data.selectedEvaluationType) setEvaluationType(String(data.selectedEvaluationType));
     } catch (error) {
       const status = error?.response?.status;
       if (status === 401) {
@@ -83,20 +85,26 @@ export default function Notes() {
   };
 
   useEffect(() => {
-    loadNotes('', '');
+    loadNotes('', '', evaluationType);
   }, []);
 
   const handleClassChange = (e) => {
     const value = e.target.value;
     setSelectedClass(value);
     setSelectedMatiere('');
-    loadNotes(value, '');
+    loadNotes(value, '', evaluationType);
   };
 
   const handleMatiereChange = (e) => {
     const value = e.target.value;
     setSelectedMatiere(value);
-    loadNotes(selectedClass, value);
+    loadNotes(selectedClass, value, evaluationType);
+  };
+
+  const handleEvaluationTypeChange = (e) => {
+    const value = e.target.value;
+    setEvaluationType(value);
+    loadNotes(selectedClass, selectedMatiere, value);
   };
 
   const updateNote = (id, value) => {
@@ -135,7 +143,7 @@ export default function Notes() {
         })),
       });
 
-      await loadNotes(selectedClass, selectedMatiere);
+      await loadNotes(selectedClass, selectedMatiere, evaluationType);
       setStatusMsg({ type: 'success', text: 'Les notes ont été enregistrées avec succès.' });
       setTimeout(() => setStatusMsg({ type: '', text: '' }), 3500);
     } catch (error) {
@@ -423,13 +431,13 @@ export default function Notes() {
             <select
               className="form-select min-w-[220px] !px-4 !py-2.5 rounded-xl border border-slate-300 bg-white shadow-sm"
               value={evaluationType}
-              onChange={(e) => setEvaluationType(e.target.value)}
+              onChange={handleEvaluationTypeChange}
             >
               <option value="Contrôle 1">Contrôle 1</option>
               <option value="Contrôle 2">Contrôle 2</option>
               <option value="Contrôle 3">Contrôle 3</option>
               <option value="Contrôle 4">Contrôle 4</option>
-              <option value="TP et Participation">TP / Participation</option>
+              <option value="TP / Participation">TP / Participation</option>
               <option value="Projet / Exposé">Projet / Exposé</option>
             </select>
 

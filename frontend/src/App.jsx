@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
 import AdminDashboard from './components/AdminDashboard';
+import DirecteurDashboard from './components/DirecteurDashboard';
 import Dashboard from './pages/Dashboard';
 import Devoirs from './pages/Devoirs';
 import Ressources from './pages/Ressources';
@@ -26,7 +27,8 @@ import './App.css';
 
 const getHomeRouteByRole = (role) => {
   const normalizedRole = String(role || '').toLowerCase();
-  if (normalizedRole === 'admin' || normalizedRole === 'directeur') return '/admin';
+    if (normalizedRole === 'admin') return '/admin';
+    if (normalizedRole === 'directeur') return '/directeur';
   if (normalizedRole === 'professeur') return '/dashboard';
   if (normalizedRole === 'secretaire') return '/secretaire/dashboard';
   return '/login';
@@ -67,12 +69,21 @@ const AppRoutes = () => {
       <Route
         path="/admin"
         element={
-          <ProtectedRoute allowedRoles={['admin', 'directeur']}>
-            <AdminDashboard onLogout={logout} userRole={user?.role || 'admin'} user={user} />
-          </ProtectedRoute>
-        }
-      />
-      
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminDashboard onLogout={logout} userRole={user?.role || 'admin'} user={user} />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/directeur/*"
+          element={
+            <ProtectedRoute allowedRoles={['directeur']}>
+              <DirecteurDashboard onLogout={logout} user={user} />
+            </ProtectedRoute>
+          }
+        />
+
       {/* Professeur routes */}
       <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['professeur']}><Layout title="Tableau de Bord"><Dashboard /></Layout></ProtectedRoute>} />
       <Route path="/devoirs" element={<ProtectedRoute allowedRoles={['professeur']}><Layout title="Devoirs & Ressources"><Devoirs /></Layout></ProtectedRoute>} />

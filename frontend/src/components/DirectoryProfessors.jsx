@@ -1,15 +1,18 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
-import AdminUserForm from './AdminUserForm';
+import { BiSearchAlt2, BiUserVoice } from 'react-icons/bi';
 import { ROLE, getPortalLabelByRole } from '../constants/roles';
 
 axios.defaults.withCredentials = true;
 
 function DirectoryProfessors({ userRole = ROLE.DIRECTEUR }) {
-  const [isAdding, setIsAdding] = useState(false);
   const [professors, setProfessors] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [niveauFilter, setNiveauFilter] = useState('');
+  const [matiereFilter, setMatiereFilter] = useState('');
+  const [nameFilter, setNameFilter] = useState('');
   const portalLabel = getPortalLabelByRole(userRole);
+  const token = localStorage.getItem('linkedu_token');
 
   useEffect(() => {
     fetchProfessors();
@@ -19,54 +22,105 @@ function DirectoryProfessors({ userRole = ROLE.DIRECTEUR }) {
     try {
       setLoading(true);
       const host = window.location.hostname;
-      const response = await axios.get(`http://${host}:8000/api/directeur/professeurs`);
+      const response = await axios.get(`http://${host}:8000/api/directeur/professeurs`, {
+        withCredentials: true,
+        headers: {
+          Accept: 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
       setProfessors(response.data);
     } catch (error) {
       console.error("Error fetching professors:", error);
+      setProfessors([]);
     } finally {
       setLoading(false);
     }
   };
 
-  if (isAdding) {
-    return (
-      <div className="prof-page">
-        <div className="prof-breadcrumb">
-          {portalLabel} &gt; <span onClick={() => setIsAdding(false)} style={{cursor: 'pointer', color: '#1d4ed8', textDecoration: 'underline'}}>Professeurs</span> &gt; <span>Ajouter</span>
-        </div>
-        <div style={{ padding: '20px', backgroundColor: '#fff', borderRadius: '8px', marginTop: '20px' }}>
-          <AdminUserForm
-             mode="create"
-             onBack={() => { setIsAdding(false); fetchProfessors(); }}
-             onSuccess={() => { setIsAdding(false); fetchProfessors(); }}
-          />
-        </div>
-      </div>
-    );
-  }
+  const normalizedNiveaux = useMemo(() => {
+    return [...new Set(
+      professors
+        .flatMap((prof) => prof?.niveaux || [])
+        .map((niveau) => String(niveau || '').trim())
+        .filter(Boolean)
+    )].sort((a, b) => a.localeCompare(b, 'fr'));
+  }, [professors]);
+
+  const normalizedMatieres = useMemo(() => {
+    return [...new Set(
+      professors
+        .flatMap((prof) => prof?.matieres || [])
+        .map((matiere) => {
+          const lower = String(matiere || '').trim().toLowerCase();
+          if (['mathématique', 'mathematique', 'maths', 'math'].includes(lower)) {
+            return 'math';
+          }
+          return String(matiere || '').trim();
+        })
+        .filter(Boolean)
+    )].sort((a, b) => a.localeCompare(b, 'fr'));
+  }, [professors]);
+
+  const filteredProfessors = useMemo(() => {
+    const nameTerm = nameFilter.trim().toLowerCase();
+
+    return professors.filter((professeur) => {
+      const niveauOk = !niveauFilter || (professeur?.niveaux || []).includes(niveauFilter);
+      const matiereOk = !matiereFilter || (professeur?.matieres || []).map((matiere) => {
+        const lower = String(matiere || '').trim().toLowerCase();
+        return ['mathématique', 'mathematique', 'maths', 'math'].includes(lower) ? 'math' : String(matiere || '').trim();
+      }).includes(matiereFilter);
+      const fullName = `${professeur?.prenom || ''} ${professeur?.nom || ''} ${professeur?.name || ''}`.toLowerCase();
+      const nameOk = !nameTerm || fullName.includes(nameTerm);
+      return niveauOk && matiereOk && nameOk;
+    });
+  }, [professors, niveauFilter, matiereFilter, nameFilter]);
 
   return (
     <div className="prof-page">
       <div className="prof-breadcrumb">{portalLabel} &gt; <span>Professeurs</span></div>
       <header className="page-dashboard-header">
         <div>
-          <h1>Liste des Professeurs par Classe</h1>
-          <p>Supervisez l'effectif enseignant et l'état d'avancement des programmes.</p>
+          <h1 className="prof-title-with-icon">
+            <BiUserVoice />
+            <span>Liste des Professeurs</span>
+          </h1>
+          <p>Filtrez par niveau et par matiere, avec affichage des matieres multiples.</p>
         </div>
       </header>
 
-      <section className="prof-filters-section">
+      <section className="prof-filters-section" style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: 12 }}>
+        <div className="prof-filter-group">
+          <label>RECHERCHER PAR NOM</label>
+          <div className="prof-name-search-wrap">
+            <BiSearchAlt2 />
+            <input
+              type="text"
+              placeholder="Nom du professeur"
+              value={nameFilter}
+              onChange={(e) => setNameFilter(e.target.value)}
+            />
+          </div>
+        </div>
         <div className="prof-filter-group">
           <label>FILTRER PAR MATIÈRE</label>
-          <select><option>Toutes les matières</option></select>
+          <select value={matiereFilter} onChange={(e) => setMatiereFilter(e.target.value)}>
+            <option value="">Toutes les matières</option>
+            {normalizedMatieres.map((matiere) => (
+              <option key={matiere} value={matiere}>{matiere}</option>
+            ))}
+          </select>
         </div>
         <div className="prof-filter-group">
           <label>FILTRER PAR NIVEAU</label>
-          <select><option>Tous les niveaux</option></select>
+          <select value={niveauFilter} onChange={(e) => setNiveauFilter(e.target.value)}>
+            <option value="">Tous les niveaux</option>
+            {normalizedNiveaux.map((niveau) => (
+              <option key={niveau} value={niveau}>{niveau}</option>
+            ))}
+          </select>
         </div>
-        <button className="prof-filter-btn">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
-        </button>
       </section>
 
       {loading ? (
@@ -77,20 +131,18 @@ function DirectoryProfessors({ userRole = ROLE.DIRECTEUR }) {
             <thead>
               <tr>
                 <th>AVATAR & NOM</th>
-                <th>MATIÈRE</th>
-                <th>CLASSE(S) ASSIGNÉE(S)</th>
-                <th>STATUT</th>
-                <th>AVANCEMENT</th>
-                <th>DERNIÈRE ACTIVITÉ</th>
+                <th>MATIÈRES ENSEIGNÉES</th>
+                <th>NIVEAU</th>
+                <th>CLASSES ENSEIGNÉES</th>
               </tr>
             </thead>
             <tbody>
-              {professors.length === 0 && (
+              {filteredProfessors.length === 0 && (
                 <tr>
-                  <td colSpan="6" style={{textAlign: 'center', padding: '2rem'}}>Aucun professeur trouvé.</td>
+                  <td colSpan="4" style={{textAlign: 'center', padding: '2rem'}}>Aucun professeur trouvé pour ces filtres.</td>
                 </tr>
               )}
-              {professors.map(prof => (
+              {filteredProfessors.map((prof) => (
                 <tr key={prof.id}>
                   <td>
                     <div className="prof-user-info">
@@ -102,34 +154,36 @@ function DirectoryProfessors({ userRole = ROLE.DIRECTEUR }) {
                     </div>
                   </td>
                   <td>
-                    <span className="prof-badge prof-subj-math">{prof.subject}</span>
+                    <div className="prof-classes">
+                      {(prof.matieres || []).length > 0 ? (
+                        (prof.matieres || []).map((matiere, i) => {
+                          const lower = String(matiere || '').trim().toLowerCase();
+                          const displayMatiere = ['mathématique', 'mathematique', 'maths', 'math'].includes(lower) ? 'math' : matiere;
+                          return <span key={i} className="prof-class-tag">{displayMatiere}</span>;
+                        })
+                      ) : (
+                        <span className="prof-class-tag" style={{backgroundColor: '#e2e8f0', color: '#4a5568'}}>Non renseigné</span>
+                      )}
+                    </div>
                   </td>
                   <td>
                     <div className="prof-classes">
-                      {prof.classes && prof.classes.length > 0 ? (
-                        prof.classes.map((cls, i) => <span key={i} className="prof-class-tag">{cls}</span>)
+                      {(prof.niveaux || []).length > 0 ? (
+                        (prof.niveaux || []).map((niveau, i) => <span key={i} className="prof-class-tag">{niveau}</span>)
                       ) : (
                         <span className="prof-class-tag" style={{backgroundColor: '#e2e8f0', color: '#4a5568'}}>Non assigné</span>
                       )}
                     </div>
                   </td>
                   <td>
-                    <div className={`prof-status status-actif`}>
-                      <span className="dot"></span> {prof.status}
-                    </div>
-                  </td>
-                  <td>
-                    <div className="prof-progress-wrapper">
-                      <div className="prof-progress-text">{prof.progress}%</div>  
-                      <div className="prof-progress-bar">
-                         <div className="prof-progress-fill" style={{ width: `${prof.progress}%`, backgroundColor: prof.progress > 70 ? '#10b981' : '#f97316' }}></div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="prof-activity">
-                      <strong>{prof.lastActivityDate}</strong>
-                      <span>{prof.lastActivityDesc}</span>
+                    <div className="prof-classes">
+                      {(prof.classes || []).length > 0 ? (
+                        [...new Map((prof.classes || []).map((cls) => [String(cls.id_classe || cls.nom || ''), cls])).values()].map((cls, i) => (
+                          <span key={i} className="prof-class-tag">{`${cls.nom || ''} ${cls.niveau ? `(${cls.niveau})` : ''}`.trim()}</span>
+                        ))
+                      ) : (
+                        <span className="prof-class-tag" style={{backgroundColor: '#e2e8f0', color: '#4a5568'}}>Aucune classe</span>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -138,41 +192,10 @@ function DirectoryProfessors({ userRole = ROLE.DIRECTEUR }) {
           </table>
 
           <div className="prof-pagination">
-            <span>Affichage de <strong>{professors.length}</strong> professeurs</span>
+            <span>Affichage de <strong>{filteredProfessors.length}</strong> professeur(s)</span>
           </div>
         </section>
       )}
-
-      <section className="prof-kpi-container">
-        <article className="prof-kpi-card kpi-presence">
-          <div className="prof-kpi-top">
-            <span>TAUX DE PRÉSENCE</span>
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#1d4ed8" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-          </div>
-          <h3>94.2%</h3>
-          <span className="kpi-trend trend-up">↗ +2.1% ce mois</span>
-        </article>
-
-        <article className="prof-kpi-card kpi-progression">
-          <div className="prof-kpi-top">
-            <span>PROGRESSION MOYENNE</span>
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#f97316" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-          </div>
-          <h3>71%</h3>
-          <div className="prof-progress-bar kpi-bar">
-             <div className="prof-progress-fill" style={{ width: '71%', backgroundColor: '#f97316' }}></div>
-          </div>
-        </article>
-
-        <article className="prof-kpi-card kpi-postes">
-          <div className="prof-kpi-top">
-            <span>EFFECTIF GLOBAL</span>
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#6b7280" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5c-1.1 0-2 .9-2 2v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
-          </div>
-          <h3>{professors.length}</h3>
-          <p className="kpi-subtext">Professeurs Actifs</p>
-        </article>
-      </section>
     </div>
   );
 }

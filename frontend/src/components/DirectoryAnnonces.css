@@ -1,139 +1,379 @@
-.directory-annonces-container {
-  padding: 20px;
+.director-annonces-page {
+  background: transparent;
+  min-height: auto;
+  padding: 0;
 }
 
-.annonces-header {
+.director-annonces-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
+  gap: 16px;
+}
+
+.director-annonces-table-card,
+.director-annonces-form-card {
+  background: #ffffff;
+  border: 1px solid #e5eaf3;
+  border-radius: 16px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);
+}
+
+.director-annonces-table-card {
+  padding: 16px;
+}
+
+.director-annonces-card-header {
   display: flex;
+  align-items: flex-end;
   justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.annonces-header-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.annonces-title-with-icon {
+  margin: 0;
+  display: flex;
   align-items: center;
-  margin-bottom: 20px;
-}
-
-.btn-new-annonce {
-  background-color: #4CAF50;
-  color: white;
-  padding: 10px 15px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.annonces-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.annonce-card {
-  border: 1px solid #ddd;
-  padding: 15px;
-  border-radius: 5px;
-}
-
-.annonce-card-header {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.annonce-badge {
-  padding: 3px 8px;
-  border-radius: 3px;
-  font-size: 0.8em;
-  color: white;
-}
-
-.badge-info { background-color: #2196F3; }
-.badge-important { background-color: #F44336; }
-.badge-nouveau { background-color: #FF9800; }
-
-.annonce-footer {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 10px;
-  align-items: center;
-}
-
-.annonce-actions {
-  display: flex;
   gap: 10px;
 }
 
-.btn-edit-annonce {
-  background-color: #2196F3;
-  color: white;
-  border: none;
-  padding: 5px 10px;
-  border-radius: 3px;
+.annonces-title-with-icon svg {
+  width: 1.8rem;
+  height: 1.8rem;
+  color: #0f172a;
+}
+
+.annonces-search-wrap {
+  position: relative;
+  width: min(340px, 100%);
+}
+
+.annonces-search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  width: 18px;
+  height: 18px;
+}
+
+.annonces-search-input {
+  width: 100%;
+  height: 40px;
+  border: 1px solid #cfd8e6;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #1f2937;
+  padding: 0 12px 0 36px;
+  font-size: 0.9rem;
+}
+
+.annonces-search-input:focus {
+  outline: none;
+  border-color: #475569;
+  box-shadow: 0 0 0 3px rgba(71, 85, 105, 0.15);
+}
+
+.director-annonces-card-header h1 {
+  margin: 0;
+  font-size: 1.9rem;
+  color: #111827;
+}
+
+.director-annonces-card-header p {
+  margin: 8px 0 0;
+  color: #5b6473;
+  font-size: 0.95rem;
+}
+
+.annonce-feedback {
+  margin-bottom: 12px;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+}
+
+.annonce-feedback.is-error {
+  color: #991b1b;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+.annonce-feedback.is-success {
+  color: #14532d;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.director-annonces-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e5eaf3;
+  border-radius: 12px;
+}
+
+.director-annonces-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+.director-annonces-table th {
+  text-align: left;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+  padding: 12px 14px;
+  background: #f8fafc;
+}
+
+.director-annonces-table td {
+  padding: 12px 14px;
+  border-top: 1px solid #eef2f7;
+  color: #1f2937;
+  font-size: 0.9rem;
+  vertical-align: top;
+}
+
+.annonce-title-cell {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.annonce-content-preview {
+  color: #64748b;
+  font-size: 0.82rem;
+  max-width: 340px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.annonce-target-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.annonce-row-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-edit-annonce,
+.btn-delete-annonce {
+  border: 1px solid transparent;
+  border-radius: 8px;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   cursor: pointer;
+}
+
+.btn-edit-annonce {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+.btn-edit-annonce:hover {
+  background: #e2e8f0;
 }
 
 .btn-delete-annonce {
-  background-color: #F44336;
-  color: white;
-  border: none;
-  padding: 5px 10px;
-  border-radius: 3px;
-  cursor: pointer;
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
 }
 
-/* Modal styles */
-.annonce-modal-overlay {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.5);
+.btn-delete-annonce:hover {
+  background: #fecaca;
+}
+
+.annonces-empty {
+  text-align: center;
+  color: #64748b;
+  padding: 24px;
+}
+
+.director-annonces-form-card {
+  padding: 16px;
+  align-self: start;
+  position: sticky;
+  top: 12px;
+}
+
+.director-annonces-form-card h2 {
+  margin: 0 0 14px;
+  color: #0f172a;
+  font-size: 1.2rem;
+}
+
+.director-annonce-form {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.annonce-modal {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  width: 400px;
-  max-width: 90%;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .annonce-form-group {
-  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .annonce-form-group label {
-  display: block;
-  margin-bottom: 5px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+  font-weight: 700;
 }
 
 .annonce-form-group input,
 .annonce-form-group select,
 .annonce-form-group textarea {
   width: 100%;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  border-radius: 10px;
+  border: 1px solid #dbe3ef;
+  background: #f8fafc;
+  color: #1f2937;
+  padding: 10px 11px;
+  font-size: 0.9rem;
 }
 
-.annonce-modal-actions {
+.annonce-form-group textarea {
+  resize: vertical;
+  min-height: 108px;
+}
+
+.annonce-form-group input:focus,
+.annonce-form-group select:focus,
+.annonce-form-group textarea:focus {
+  outline: none;
+  border-color: #475569;
+  box-shadow: 0 0 0 3px rgba(71, 85, 105, 0.15);
+  background: #ffffff;
+}
+
+.annonce-photo-input {
+  width: 100%;
+  min-height: 42px;
+  border-radius: 10px;
+  border: 1px dashed #94a3b8;
+  background: #f8fafc;
+  color: #334155;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.annonce-photo-input input {
+  display: none;
+}
+
+.annonce-photo-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.annonce-photo-preview-wrap {
+  margin-top: 8px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #dbe3ef;
+  background: #f8fafc;
+}
+
+.annonce-photo-preview {
+  display: block;
+  width: 100%;
+  max-height: 165px;
+  object-fit: cover;
+}
+
+.annonce-form-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
+  gap: 8px;
+}
+
+.btn-cancel,
+.btn-save {
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  padding: 10px 14px;
+  cursor: pointer;
 }
 
 .btn-cancel {
-  background: #ccc;
-  border: none;
-  padding: 8px 15px;
-  border-radius: 4px;
-  cursor: pointer;
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.btn-cancel:hover {
+  background: #cbd5e1;
 }
 
 .btn-save {
-  background: #4CAF50;
-  color: white;
-  border: none;
-  padding: 8px 15px;
-  border-radius: 4px;
-  cursor: pointer;
+  background: #111827;
+  color: #ffffff;
+}
+
+.btn-save:hover {
+  background: #0f172a;
+}
+
+@media (max-width: 1100px) {
+  .director-annonces-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .director-annonces-form-card {
+    position: static;
+  }
+
+  .director-annonces-card-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .annonces-search-wrap {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .director-annonces-page {
+    padding: 0;
+  }
+
+  .director-annonces-table-card,
+  .director-annonces-form-card {
+    padding: 14px;
+    border-radius: 12px;
+  }
+
+  .director-annonces-card-header h1 {
+    font-size: 1.45rem;
+  }
 }

@@ -14,9 +14,21 @@ import DirectoryTimetable from './DirectoryTimetable';
 import DirectoryAnnonces from './DirectoryAnnonces';
 import { getRoleDisplayLabel, getRoleLabel } from '../constants/roles';
 
+const AUTH_TOKEN_KEY = 'linkedu_token';
+
+function getStoredToken() {
+  try {
+    return localStorage.getItem(AUTH_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
 function DirecteurDashboard({ user, onLogout }) {
   const [stats, setStats] = useState(null)
-  const [latestDevoirs, setLatestDevoirs] = useState([])
+  const [recentReclamations, setRecentReclamations] = useState([])
+  const [recentClasses, setRecentClasses] = useState([])
+  const [totalSecretaires, setTotalSecretaires] = useState(0)
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(true)
 
@@ -62,26 +74,47 @@ function DirecteurDashboard({ user, onLogout }) {
     navigate(`${basePath}${p}`);
   };
 
-  const [activeTab, setActiveTab] = useState('devoir')
-  const [actionFeedback, setActionFeedback] = useState('')
   const fallbackUserName = `le ${String(getRoleLabel(user?.role) || 'Utilisateur').toLowerCase()}`;
 
   useEffect(() => {
     const loadDashboard = async () => {
       const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000'
+      const token = getStoredToken() ?? user?.token ?? null;
 
       try {
-        const response = await axios.get(`${apiBaseUrl}/api/directeur/dashboard`, {
+        const authConfig = {
           withCredentials: true,
           withXSRFToken: true,
           headers: {
             Accept: 'application/json',
-            ...(user?.token ? { Authorization: `Bearer ${user.token}` } : {}),
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-        })
+        }
 
-        setStats(response.data?.stats ?? null)
-        setLatestDevoirs(response.data?.latest_devoirs ?? [])
+        const [dashboardResponse, reclamationsResponse, classesResponse, secretairesResponse] = await Promise.all([
+          axios.get(`${apiBaseUrl}/api/directeur/dashboard`, authConfig),
+          axios.get(`${apiBaseUrl}/api/directeur/reclamations`, authConfig),
+          axios.get(`${apiBaseUrl}/api/secretaire/classes`, authConfig),
+          axios.get(`${apiBaseUrl}/api/directeur/secretaires`, authConfig),
+        ])
+
+        setStats(dashboardResponse.data?.stats ?? null)
+
+        const recent = Array.isArray(reclamationsResponse.data)
+          ? reclamationsResponse.data
+          : (reclamationsResponse.data?.reclamations || [])
+
+        setRecentReclamations(recent.slice(0, 5))
+
+        const classesList = Array.isArray(classesResponse.data?.classes)
+          ? classesResponse.data.classes
+          : []
+        setRecentClasses(classesList.slice(0, 6))
+
+        const secretairesList = Array.isArray(secretairesResponse.data?.secretaires)
+          ? secretairesResponse.data.secretaires
+          : []
+        setTotalSecretaires(secretairesList.length)
       } catch (requestError) {
         setError(requestError?.response?.data?.message ?? 'Impossible de charger le dashboard directeur.')
       } finally {
@@ -90,21 +123,7 @@ function DirecteurDashboard({ user, onLogout }) {
     }
 
     loadDashboard()
-  }, [user?.token])
-
-  
-  const classesRows = [
-    { name: 'Terminale S1', prof: 'Dr. Sophie Martin', presence: '98%', status: 'high', progress: '85%' },
-    { name: 'Premiere L2', prof: 'M. Jean Dupont', presence: '91%', status: 'medium', progress: '72%' },
-    { name: 'Seconde C3', prof: 'Mme Clara Leroy', presence: '96%', status: 'high', progress: '90%' },
-    { name: '3eme Beta', prof: 'M. Robert Morel', presence: '84%', status: 'low', progress: '45%' }
-  ]
-
-  const reclamations = [
-    { initial: 'ML', name: 'M. Leblanc', role: 'Parent d\'élève (2nde C3)', snippet: 'Problème d\'accès à la plateforme de devoirs depuis la mise à jour de lundi dernier...', time: 'Il y a 2h', isWarn: true },
-    { initial: 'AG', name: 'Mme Gauthier', role: 'Parent d\'élève (Terminale S1)', snippet: 'Contestation d\'une absence notée lors du cours d\'Anglais du 12 juin. Justificatif prêt...', time: 'Il y a 5h', isWarn: false },
-    { initial: 'MK', name: 'M. Karim', role: 'Parent d\'élève (3ème Bêta)', snippet: 'Demande de rendez-vous pour discuter de l\'orientation de fin de cycle...', time: 'Hier', isWarn: false }
-  ]
+  }, [user?.id, user?.role])
 
   return (
     <div className="director-layout">
@@ -146,120 +165,99 @@ function DirecteurDashboard({ user, onLogout }) {
               <header className="page-dashboard-header">
                 <div>
                   <h1>Bonjour, {user?.prenom ?? 'M.'} {user?.nom ?? fallbackUserName}</h1>
-                  <p>Voici le point de situation de l'etablissement pour aujourd'hui.</p>
+                  <p>Resume du jour avec les indicateurs essentiels.</p>
                 </div>
-                <div className="header-actions">
-                    <button className="btn-secondary" onClick={() => alert('Filtre par période en cours de développement.')}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                      Juin 2024
-                    </button>
-                    <button className="btn-primary" onClick={() => alert('Génération du rapport global en cours de développement.')}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                      Rapport Global
-                    </button>
-                  </div>
-                </header>
+              </header>
 
-                <section className="kpi-grid">
+              <section className="kpi-grid">
                 <article className="kpi-card">
-                  <div className="kpi-tag kpi-tag-red">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="17" y1="7" x2="7" y2="17"></line><polyline points="17 17 7 17 7 7"></polyline></svg>
-                    -0.5% vs mois dernier
-                  </div>
-                  <p>Taux d'absence global</p>
-                  <h3>{stats?.absence_rate ?? '0%'}</h3>
+                  <p>Nombre de classes</p>
+                  <h3>{stats?.classes ?? 0}</h3>
                 </article>
                 <article className="kpi-card">
-                  <div className="kpi-tag kpi-tag-green">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
-                    +1.2 pts
-                  </div>
-                  <p>Performance moyenne</p>
-                  <h3>{stats?.performance ?? '0/20'}</h3>
+                  <p>Nombre d'etudiants</p>
+                  <h3>{stats?.etudiants ?? 0}</h3>
                 </article>
                 <article className="kpi-card">
-                  <div className="kpi-tag kpi-tag-urgent">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                    URGENT
-                  </div>
-                  <p>Reclamations non traitees</p>
-                  <h3>{stats?.reclamations ?? 0}</h3>
+                  <p>Nombre de professeurs</p>
+                  <h3>{stats?.professeurs ?? 0}</h3>
                 </article>
                 <article className="kpi-card">
-                  <div className="kpi-folder-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-                  </div>
-                  <p>Dossiers eleves en attente</p>
-                  <h3>{stats?.dossiers_attente ?? 0}</h3>
+                  <p>Nombre de secretaires</p>
+                  <h3>{totalSecretaires}</h3>
                 </article>
               </section>
 
               <div className="dashboard-content-split">
+                <article className="recent-claims-card">
+                  <div className="card-header">
+                    <h2>Reclamations recentes</h2>
+                    <a href="#" onClick={(event) => { event.preventDefault(); setActiveMenu('Reclamations'); }}>Voir toutes</a>
+                  </div>
+                  <div className="claims-list">
+                    {recentReclamations.length === 0 ? (
+                      <p className="director-info">Aucune reclamation recente.</p>
+                    ) : (
+                      recentReclamations.map((claim) => {
+                        const label = String(claim.cible_label || 'Parent');
+                        const initial = label.substring(0, 2).toUpperCase();
+                        const claimDate = claim.date_reclamation
+                          ? new Date(claim.date_reclamation).toLocaleDateString('fr-FR')
+                          : '-';
+
+                        return (
+                          <div className="claim-item" key={claim.id_reclamation}>
+                            <div className="claim-avatar">{initial}</div>
+                            <div className="claim-content">
+                              <div className="claim-head">
+                                <strong>{claim.sujet || 'Sans sujet'}</strong>
+                                <span>{label}</span>
+                              </div>
+                              <p>{claim.description || 'Aucun detail'}</p>
+                              <div className="claim-footer">
+                                <span className="claim-time">{claimDate}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </article>
+
                 <article className="classes-overview-card">
                   <div className="card-header">
-                    <h2>Vue d'ensemble par Classe</h2>
-                      <a href="#" onClick={(e) => { e.preventDefault(); setActiveMenu('Liste des Classes'); }}>Voir tout le catalogue</a>
+                    <h2>Liste des classes</h2>
+                    <a href="#" onClick={(event) => { event.preventDefault(); setActiveMenu('Liste des Classes'); }}>Voir toutes</a>
                   </div>
                   <div className="table-wrapper">
                     <table>
                       <thead>
                         <tr>
                           <th>CLASSE</th>
-                          <th>PROFESSEUR PRINCIPAL</th>
-                          <th>TAUX DE PRESENCE</th>
-                          <th>AVANCEMENT</th>
+                          <th>ETUDIANTS</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {classesRows.map((row, i) => (
-                          <tr key={i}>
-                            <td><strong>{row.name}</strong></td>
-                            <td>{row.prof}</td>
-                            <td>
-                              <span className={`presence-dot presence-${row.status}`}></span>
-                              {row.presence}
-                            </td>
-                            <td>
-                              <div className="progress-bar-wrap">
-                                <div className="progress-bg"><div className={`progress-fill bg-${row.status}`} style={{ width: row.progress }}></div></div>
-                                <span>{row.progress} du programme</span>
-                              </div>
+                        {recentClasses.length === 0 ? (
+                          <tr>
+                            <td colSpan="2" style={{ textAlign: 'center', padding: '1rem 0', color: '#64748b' }}>
+                              Aucune classe disponible.
                             </td>
                           </tr>
-                        ))}
+                        ) : (
+                          recentClasses.map((classe) => (
+                            <tr key={classe.id_classe}>
+                              <td><strong>{classe.nom || '-'}</strong></td>
+                              <td>{classe.total_etudiants ?? 0}</td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>
                 </article>
-
-                <article className="recent-claims-card">
-                  <div className="card-header">
-                    <h2>Reclamations Recentes</h2>
-                    <button className="icon-btn-small">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
-                    </button>
-                  </div>
-                  <div className="claims-list">
-                    {reclamations.map((claim, i) => (
-                      <div className="claim-item" key={i}>
-                        <div className={`claim-avatar ${claim.isWarn ? 'is-warn' : ''}`}>{claim.initial}</div>
-                        <div className="claim-content">
-                          <div className="claim-head">
-                            <strong>{claim.name}</strong>
-                            <span>{claim.role}</span>
-                          </div>
-                          <p>{claim.snippet}</p>
-                          <div className="claim-footer">
-                            <span className="claim-time">{claim.time}</span>
-                            <button className="btn-traiter">TRAITER</button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <a href="#" className="view-all-link">Voir toutes les reclamations</a>
-                </article>
-              </div>
+                </div>
             </div>
           )}
 
