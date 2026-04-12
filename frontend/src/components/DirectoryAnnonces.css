@@ -1,0 +1,139 @@
+.directory-annonces-container {
+  padding: 20px;
+}
+
+.annonces-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.btn-new-annonce {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.annonces-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.annonce-card {
+  border: 1px solid #ddd;
+  padding: 15px;
+  border-radius: 5px;
+}
+
+.annonce-card-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.annonce-badge {
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 0.8em;
+  color: white;
+}
+
+.badge-info { background-color: #2196F3; }
+.badge-important { background-color: #F44336; }
+.badge-nouveau { background-color: #FF9800; }
+
+.annonce-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  align-items: center;
+}
+
+.annonce-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-edit-annonce {
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.btn-delete-annonce {
+  background-color: #F44336;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+/* Modal styles */
+.annonce-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.annonce-modal {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 400px;
+  max-width: 90%;
+}
+
+.annonce-form-group {
+  margin-bottom: 15px;
+}
+
+.annonce-form-group label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.annonce-form-group input,
+.annonce-form-group select,
+.annonce-form-group textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.annonce-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.btn-cancel {
+  background: #ccc;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-save {
+  background: #4CAF50;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+}

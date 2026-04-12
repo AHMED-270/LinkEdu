@@ -1,0 +1,107 @@
+﻿import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { LayoutDashboard, Calendar, Users, Star, FileText, MessageCircle, Settings, LogOut } from "lucide-react";
+import "./ProfesseurDashboard.css";
+
+export default function ProfesseurDashboard({ user, onLogout }) {
+  const [activeMenu, setActiveMenu] = useState("Emploi du temps");
+  const [schedule, setSchedule] = useState([]);
+  
+  useEffect(() => {
+    const fetchSchedule = async () => {
+      try {
+        const apiBaseUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+        const response = await axios.get(`${apiBaseUrl}/api/professeur/emploi-du-temps`, {
+          withCredentials: true
+        });
+        setSchedule(response.data.lundi || []);
+      } catch (error) {
+        console.error("Erreur chargement emploi du temps", error);
+        // Fallback for visual in case API fails
+        setSchedule([
+          { time: "08:00", subject: "Physique Chimie", class: "2BAC-G1", room: "Salle A12" },
+          { time: "09:30", subject: "Mathématiques", class: "1BAC-G3", room: "Salle B04" },
+          { time: "11:00", empty: true },
+          { time: "14:00", subject: "SVT", class: "TCS-G2", room: "Labo 2" }
+        ]);
+      }
+    };
+    fetchSchedule();
+  }, []);
+
+  const menuItems = [
+    { name: "Tableau de bord", icon: <LayoutDashboard size={20} /> },
+    { name: "Emploi du temps", icon: <Calendar size={20} /> },
+    { name: "Mes Classes", icon: <Users size={20} /> },
+    { name: "Notes & Absences", icon: <Star size={20} /> },
+    { name: "Devoirs & Ressources", icon: <FileText size={20} /> },
+    { name: "Annonces", icon: <MessageCircle size={20} /> },
+    { name: "Paramètres", icon: <Settings size={20} /> }
+  ];
+
+  return (
+    <div className="prof-layout">
+      <aside className="prof-sidebar">
+        <div className="prof-profile">
+          <img src="https://i.pravatar.cc/150?u=abdelhadi" alt="Profile" className="prof-avatar" />
+          <div className="prof-info">
+            <h2>ABDELHADI</h2>
+            <p>professeur</p>
+          </div>
+        </div>
+        
+        <nav className="prof-nav">
+          {menuItems.map(item => (
+            <button
+              key={item.name}
+              className={`prof-nav-item ${activeMenu === item.name ? "active" : ""}`}
+              onClick={() => setActiveMenu(item.name)}
+            >
+              <span className="nav-icon">{item.icon}</span>
+              <span className="nav-text">{item.name}</span>
+            </button>
+          ))}
+          
+          <button className="prof-nav-item logout-btn" onClick={onLogout}>
+            <span className="nav-icon"><LogOut size={20} /></span>
+            <span className="nav-text">Se déconnecter</span>
+          </button>
+        </nav>
+      </aside>
+
+      <main className="prof-content">
+        {activeMenu === "Emploi du temps" && (
+          <div className="schedule-view">
+            <h1 className="schedule-title">Emploi du Temps</h1>
+            <p className="schedule-subtitle">Semaine du 24 au 29 Mars 2026</p>
+            
+            <div className="schedule-table">
+              <div className="schedule-header">
+                <div className="time-col"></div>
+                <div className="day-col">Lundi</div>
+              </div>
+              
+              {schedule.map((slot, index) => (
+                <div key={index} className="schedule-row">
+                  <div className="time-cell">{slot.time}</div>
+                  <div className="content-cell">
+                    {!slot.empty && (
+                      <div className="course-card">
+                        <div className="course-accent"></div>
+                        <div className="course-details">
+                          <h3 className="course-subject">{slot.subject}</h3>
+                          <p className="course-class">{slot.class}</p>
+                          <p className="course-room">{slot.room}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}

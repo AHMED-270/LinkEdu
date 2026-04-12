@@ -16,7 +16,17 @@ class Matiere extends Model
 
     protected $fillable = [
         'nom',
+        'niveau',
         'coefficient',
+        'coefficients_by_level',
+        'coefficients_by_niveau_code',
+        'lycee_niveau_code',
+        'lycee_filiere',
+    ];
+
+    protected $casts = [
+        'coefficients_by_level' => 'array',
+        'coefficients_by_niveau_code' => 'array',
     ];
 
     public function lecons(): HasMany

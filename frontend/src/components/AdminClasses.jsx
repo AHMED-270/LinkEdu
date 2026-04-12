@@ -2,7 +2,6 @@
 import axios from 'axios';
 import { FiSearch as Search, FiPlus as Plus, FiEdit2 as Edit, FiTrash2 as Trash2, FiEye as Eye } from 'react-icons/fi';
 import { BiSolidUserDetail } from 'react-icons/bi';
-import AdminClassForm from './AdminClassForm';
 
 export default function AdminClasses({ onCreateClass, onEditClass, userRole = 'admin' }) {
   const [classes, setClasses] = useState([]);
@@ -11,7 +10,6 @@ export default function AdminClasses({ onCreateClass, onEditClass, userRole = 'a
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [classDetailTarget, setClassDetailTarget] = useState(null);
-  const [editTarget, setEditTarget] = useState(null);
 
   const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
@@ -52,7 +50,9 @@ export default function AdminClasses({ onCreateClass, onEditClass, userRole = 'a
   };
 
   const handleEditClass = (classe) => {
-    setEditTarget(classe);
+    if (typeof onEditClass === 'function') {
+      onEditClass(classe);
+    }
   };
 
   const handleDelete = async () => {
@@ -349,23 +349,6 @@ export default function AdminClasses({ onCreateClass, onEditClass, userRole = 'a
         </div>
       )}
 
-      {editTarget && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setEditTarget(null)}></div>
-          <div className="relative bg-[#f1f5f9] rounded-[2rem] shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-in zoom-in duration-200">
-            <AdminClassForm
-              mode="edit"
-              classToEdit={editTarget}
-              isModal={true}
-              onBack={() => setEditTarget(null)}
-              onSuccess={() => {
-                setEditTarget(null);
-                fetchClasses();
-              }}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

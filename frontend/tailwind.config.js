@@ -1,4 +1,10 @@
 /** @type {import('tailwindcss').Config} */
+<<<<<<<<< Temporary merge branch 1
+module.exports = {
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  theme: {
+    extend: {},
+=========
 export default {
   content: [
     "./index.html",
@@ -27,6 +33,7 @@ export default {
   },
   corePlugins: {
     preflight: false, // Prevents conflicts with existing CSS resets
+>>>>>>>>> Temporary merge branch 2
   },
-  plugins: [],
-}
+  plugins: [],  
+};

@@ -1,0 +1,1 @@
+<?php $u = App\Models\User::create(['name'=>'Directeur Test', 'nom'=>'Directeur', 'prenom'=>'Test', 'email'=>'directeur@linkedu.com', 'password'=>Illuminate\Support\Facades\Hash::make('Directeur@2026'), 'role'=>'directeur']); Illuminate\Support\Facades\DB::table('directeurs')->insert(['id_directeur'=>$u->id, 'created_at'=>now(), 'updated_at'=>now()]);

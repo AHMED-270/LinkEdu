@@ -11,7 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+<<<<<<<<< Temporary merge branch 1
+        if (! Schema::hasTable('classes')) {
+=========
         if (!Schema::hasTable('classes')) {
+>>>>>>>>> Temporary merge branch 2
             Schema::create('classes', function (Blueprint $table) {
                 $table->id();
                 $table->timestamps();

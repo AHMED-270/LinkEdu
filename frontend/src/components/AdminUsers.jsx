@@ -15,7 +15,6 @@ import {
   FiChevronRight as ChevronRight,
 } from 'react-icons/fi';
 import { BiSolidUserDetail } from 'react-icons/bi';
-import AdminUserForm from './AdminUserForm';
 
 export default function AdminUsers({ onCreateUser, onEditUser }) {
   const [users, setUsers] = useState([]);
@@ -26,7 +25,6 @@ export default function AdminUsers({ onCreateUser, onEditUser }) {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [activatingUserId, setActivatingUserId] = useState(null);
-  const [editTarget, setEditTarget] = useState(null);
   const [viewTarget, setViewTarget] = useState(null);
   const [notification, setNotification] = useState(null);
 
@@ -79,7 +77,9 @@ export default function AdminUsers({ onCreateUser, onEditUser }) {
   };
 
   const handleEditUser = (user) => {
-    setEditTarget(user);
+    if (typeof onEditUser === 'function') {
+      onEditUser(user);
+    }
   };
 
   const handleDelete = async () => {
@@ -492,22 +492,6 @@ export default function AdminUsers({ onCreateUser, onEditUser }) {
         </div>
       )}
 
-      {editTarget && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <AdminUserForm
-              mode="edit"
-              userToEdit={editTarget}
-              isModal={true}
-              onBack={() => setEditTarget(null)}
-              onSuccess={() => {
-                setEditTarget(null);
-                fetchData();
-              }}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

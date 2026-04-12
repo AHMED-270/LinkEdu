@@ -3,3 +3,31 @@
   border: 1px solid #e2e8f0;
   border-radius: 12px;
 }
+
+/* Form inputs: more visible background, rounded border and clear focus */
+.form-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db; /* gray-300 */
+  background-color: #ffffff; /* keep password inputs white */
+  color: #0f172a;
+  font-size: 0.9375rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-input::placeholder {
+  color: #94a3b8; /* muted placeholder */
+}
+
+.form-input:focus {
+  border-color: #2563eb; /* blue-600 */
+  box-shadow: 0 0 0 4px rgba(37,99,235,0.08);
+}
+
+.form-input[disabled], .form-input:disabled {
+  background-color: #e2e8f0;
+  cursor: not-allowed;
+  opacity: 0.95;
+}

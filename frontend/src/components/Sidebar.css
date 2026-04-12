@@ -1,21 +1,40 @@
+/* ===== SIDEBAR CONTAINER ===== */
 .sidebar {
   position: fixed;
-  top: 64px; /* header height */
+  top: var(--header-height, 64px); 
   left: 0;
   bottom: 0;
+<<<<<<<<< Temporary merge branch 1
+  width: var(--sidebar-width, 260px);
+  background: white;
+  border-right: 1px solid var(--border-color);
+=========
   width: 260px;
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   border-right: 1px solid #e2e8f0;
+>>>>>>>>> Temporary merge branch 2
   display: flex;
   flex-direction: column;
   z-index: 90;
   overflow-y: auto;
+  /* Add a subtle shadow to separate it from the main content */
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.02);
 }
 
+/* ===== USER PROFILE ===== */
 .sidebar-profile {
   display: flex;
   align-items: center;
   gap: 12px;
+  padding: 24px;
+  margin-bottom: 8px;
+}
+
+.sidebar-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px; /* Slightly squarer, more modern radius */
+=========
   padding: 20px;
   margin: 12px 14px 10px;
   border: 1px solid #dbe4ef;
@@ -28,19 +47,37 @@
   width: 46px;
   height: 46px;
   border-radius: 999px;
+>>>>>>>>> Temporary merge branch 2
   object-fit: cover;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
 .sidebar-avatar-fallback {
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 1rem;
+<<<<<<<<< Temporary merge branch 1
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+.online-indicator {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 12px;
+  height: 12px;
+  background-color: var(--accent-green);
+  border: 2px solid white;
+  border-radius: 50%;
+  animation: pulseGlow 2s infinite; /* Uses the animation from Layout.css */
+=========
   box-shadow: none;
   border: 2px solid #dbeafe;
+>>>>>>>>> Temporary merge branch 2
 }
 
 .sidebar-user-info {
@@ -49,20 +86,29 @@
 }
 
 .sidebar-name {
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
 }
 
 .sidebar-role {
   font-size: 0.75rem;
-  color: #6B7280;
-  font-weight: 500;
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
 }
 
+/* ===== NAVIGATION ===== */
 .sidebar-nav {
   display: flex;
   flex-direction: column;
+  padding: 0 16px;
+  gap: 6px;
+  margin-top: 12px;
+=========
   padding: 4px 14px 0;
   gap: 6px;
 }
@@ -72,12 +118,21 @@
   padding: 16px 14px;
   border-top: 1px dashed #d1d5db;
   background: rgba(255, 255, 255, 0.7);
+>>>>>>>>> Temporary merge branch 2
 }
 
 .sidebar-link {
   display: flex;
   align-items: center;
   gap: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all var(--transition-bounce); /* Springy transition */
+=========
   padding: 12px 14px;
   border-radius: 10px;
   border: 1px solid transparent;
@@ -86,71 +141,142 @@
   font-size: 0.875rem;
   font-weight: 600;
   transition: all 0.2s;
+>>>>>>>>> Temporary merge branch 2
   position: relative;
+  overflow: hidden; /* Important for the hover effect */
 }
 
 .sidebar-icon {
-  color: #6B7280;
+  color: #94A3B8;
+  transition: transform var(--transition-bounce), color var(--transition-fast);
 }
 
+/* Hover State */
 .sidebar-link:hover {
+<<<<<<<<< Temporary merge branch 1
+  background: var(--gray-50);
+  color: var(--text-primary);
+  transform: translateX(4px); /* Slight nudge on hover */
+=========
   background: #f8fbff;
   border-color: #dbeafe;
   color: #111827;
 }
 .sidebar-link:hover .sidebar-icon {
   color: #4B5563;
+>>>>>>>>> Temporary merge branch 2
 }
 
+.sidebar-link:hover .sidebar-icon {
+  color: var(--primary-500);
+  transform: scale(1.1) rotate(-5deg);
+}
+
+/* Active State - Refining your pseudo-element approach */
 .sidebar-link.active {
+  background: transparent;
+  color: var(--primary-600);
+  font-weight: 700;
+=========
   background: #eff6ff;
   border-color: #bfdbfe;
   color: #2563EB;
+>>>>>>>>> Temporary merge branch 2
 }
 
-/* Light blue background and blue border line for active state */
 .sidebar-link.active::before {
   content: '';
   position: absolute;
+<<<<<<<<< Temporary merge branch 1
+  left: 0; /* Align with the inner padding edge */
+  top: 50%;
+  transform: translateY(-50%);
+  height: 60%;
+  width: 4px;
+  background: var(--primary-600);
+=========
   left: -14px; /* Touch the edge of nav container */
   top: 0;
   bottom: 0;
   width: 3px;
   background: #2563EB;
+>>>>>>>>> Temporary merge branch 2
   border-radius: 0 4px 4px 0;
+  box-shadow: 2px 0 8px rgba(37, 99, 235, 0.4);
 }
 
 .sidebar-link.active::after {
-  content: none;
+  content: '';
+  position: absolute;
+  left: -8px; 
+  right: -8px;
+  top: 0;
+  bottom: 0;
+  background: #EFF6FF; /* very light blue bg */
+  border-radius: 8px;
+  z-index: -1;
 }
 
 .sidebar-link.active .sidebar-icon {
-  color: #2563EB;
+  color: var(--primary-600);
+}
+
+/* ===== FOOTER / LOGOUT ===== */
+.sidebar-footer {
+  margin-top: auto;
+  padding: 16px;
+  border-top: 1px solid rgba(0,0,0,0.03);
 }
 
 .sidebar-logout {
   width: 100%;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
   padding: 12px 16px;
+  border-radius: 8px;
+  color: var(--accent-red);
+  background: transparent;
+  border: 1px solid transparent;
+  font-size: 0.9rem;
+=========
   border-radius: 10px;
   border: 1px solid #fecaca;
   background: #fff7f7;
   color: #DC2626;
   font-size: 0.875rem;
+>>>>>>>>> Temporary merge branch 2
   font-weight: 600;
-  transition: all 0.2s;
+  transition: all var(--transition-bounce);
+  cursor: pointer;
 }
 
 .sidebar-logout:hover {
+  background: #FEF2F2;
+  border-color: #FECACA;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1);
+=========
   background: #fee2e2;
+>>>>>>>>> Temporary merge branch 2
 }
 
 .sidebar-logout .sidebar-icon {
-  color: #DC2626;
+  color: var(--accent-red);
+  transition: transform var(--transition-bounce);
 }
 
+.sidebar-logout:hover .sidebar-icon {
+  transform: translateX(4px);
+}
+
+/* ===== LOGOUT MODAL ===== */
+/* Note: The Framer Motion implementation in Sidebar.jsx handles the 
+   fade-in and slide-up animations, so the CSS keyframes here are removed 
+   to prevent conflicts, focusing just on styling. */
+
+=========
 /* Secretaire sidebar visual refresh */
 .secretaire-sidebar {
   background:
@@ -233,51 +359,65 @@
 }
 
 /* Logout Modal Styles */
+>>>>>>>>> Temporary merge branch 2
 .logout-modal-backdrop {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(15, 23, 42, 0.7);
-  backdrop-filter: blur(4px);
+  background-color: rgba(15, 23, 42, 0.4);
+  /* Framer motion handles the dynamic backdrop-filter blur */
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 9999;
-  animation: fadeIn 0.2s ease-out;
 }
 
 .logout-modal-card {
   background-color: white;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   width: 100%;
-  max-width: 400px;
-  padding: 32px;
+  max-width: 420px;
+  padding: 40px 32px;
   text-align: center;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  animation: slideUpModal 0.3s ease-out forwards;
+  /* Premium shadow */
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0,0,0,0.05);
 }
 
 .logout-modal-icon {
-  margin-bottom: 20px;
+  margin: 0 auto 24px auto;
+  width: 80px;
+  height: 80px;
+  background: #FEF2F2;
+  border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
+  /* Add a pulse effect to the logout icon wrapper */
+  box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  animation: pulseRed 2s infinite;
+}
+
+@keyframes pulseRed {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }
 
 .logout-modal-card h3 {
-  color: #0f172a;
-  font-size: 1.25rem;
+  color: var(--text-primary);
+  font-size: 1.35rem;
   margin-bottom: 12px;
-  font-weight: 600;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 .logout-modal-card p {
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 0.95rem;
-  margin-bottom: 28px;
-  line-height: 1.5;
+  margin-bottom: 32px;
+  line-height: 1.6;
 }
 
 .logout-modal-actions {
@@ -286,62 +426,8 @@
   gap: 16px;
 }
 
-.btn-cancel {
-  padding: 10px 20px;
-  border-radius: 8px;
-  border: 1px solid #cbd5e1;
-  background-color: white;
-  color: #475569;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-cancel:hover {
-  background-color: #f1f5f9;
-}
-
-.btn-cancel:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-confirm-logout {
-  padding: 10px 20px;
-  border-radius: 8px;
-  border: none;
-  background-color: #f43f5e;
-  color: white;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s, transform 0.1s;
-}
-
-.btn-confirm-logout:hover {
-  background-color: #e11d48;
-}
-
-.btn-confirm-logout:active {
-  transform: scale(0.98);
-}
-
-.btn-confirm-logout:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideUpModal {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.logout-modal-actions .btn {
+  flex: 1;
+  padding: 12px 0; /* Slightly taller buttons for the modal */
+  font-size: 1rem;
 }

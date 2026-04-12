@@ -1,0 +1,216 @@
+export const PROFESSOR_SUBJECT_COEFFICIENTS_BY_LEVEL = {
+  general: {},
+  // Maternelle: evaluation qualitative uniquement (pas de moyenne officielle).
+  maternelle: {
+    Arabe: 0,
+    Francais: 0,
+    Anglais: 0,
+  },
+  primaire: {
+    Arabe: 3,
+    Francais: 3,
+    Math: 3,
+    HG: 2,
+    EI: 2,
+    Anglais: 2,
+    Informatique: 1,
+    EPS: 1,
+  },
+  // College: base 1AC/2AC (SVT et PC passent a 3 en 3AC dans la reference par niveau-code).
+  college: {
+    Arabe: 5,
+    Francais: 5,
+    Math: 4,
+    SVT: 2,
+    PC: 2,
+    HG: 2,
+    EI: 2,
+    Informatique: 1,
+    EPS: 1,
+  },
+  // Lycee: base tronc commun scientifique.
+  lycee: {
+    Math: 5,
+    PC: 5,
+    SVT: 5,
+    Francais: 3,
+    Arabe: 2,
+    Anglais: 2,
+    HG: 2,
+    EI: 2,
+    Informatique: 1,
+    EPS: 1,
+    Philosophie: 2,
+    Comptabilite: 2,
+    "Science de l'ingenieur": 2,
+  },
+};
+
+export const PROFESSOR_SUBJECTS_BY_LEVEL = Object.fromEntries(
+  Object.entries(PROFESSOR_SUBJECT_COEFFICIENTS_BY_LEVEL).map(([level, subjectsMap]) => [
+    level,
+    Object.keys(subjectsMap),
+  ])
+);
+
+// Reference detaillee par niveau scolaire (utile pour 3AC / 1BAC / 2BAC).
+export const OFFICIAL_COEFFICIENTS_BY_NIVEAU_CODE = {
+  ms: { General: { Arabe: 0, Francais: 0, Anglais: 0 } },
+  mm: { General: { Arabe: 0, Francais: 0, Anglais: 0 } },
+  gs: { General: { Arabe: 0, Francais: 0, Anglais: 0 } },
+  '1ap': {
+    General: { Arabe: 3, Francais: 3, Math: 3, HG: 2, EI: 2, Anglais: 2, Informatique: 1, EPS: 1 },
+  },
+  '2ap': {
+    General: { Arabe: 3, Francais: 3, Math: 3, HG: 2, EI: 2, Anglais: 2, Informatique: 1, EPS: 1 },
+  },
+  '3ap': {
+    General: { Arabe: 3, Francais: 3, Math: 3, HG: 2, EI: 2, Anglais: 2, Informatique: 1, EPS: 1 },
+  },
+  '4ap': {
+    General: { Arabe: 3, Francais: 3, Math: 3, HG: 2, EI: 2, Anglais: 2, Informatique: 1, EPS: 1 },
+  },
+  '5ap': {
+    General: { Arabe: 3, Francais: 3, Math: 3, HG: 2, EI: 2, Anglais: 2, Informatique: 1, EPS: 1 },
+  },
+  '6ap': {
+    General: { Arabe: 3, Francais: 3, Math: 3, HG: 2, EI: 2, Anglais: 2, Informatique: 1, EPS: 1 },
+  },
+  '1ac': {
+    General: { Arabe: 5, Francais: 5, Math: 4, SVT: 2, PC: 2, HG: 2, EI: 2, Informatique: 1, EPS: 1 },
+  },
+  '2ac': {
+    General: { Arabe: 5, Francais: 5, Math: 4, SVT: 2, PC: 2, HG: 2, EI: 2, Informatique: 1, EPS: 1 },
+  },
+  '3ac': {
+    General: { Arabe: 5, Francais: 5, Math: 4, SVT: 3, PC: 3, HG: 2, EI: 2, Informatique: 1, EPS: 1 },
+  },
+  tc: {
+    'TC Scientifique': {
+      Math: 5,
+      PC: 5,
+      SVT: 5,
+      Francais: 3,
+      Arabe: 2,
+      Anglais: 2,
+      HG: 2,
+      EI: 2,
+      Informatique: 1,
+      EPS: 1,
+    },
+  },
+  '1bac': {
+    'Sciences Experimentales - SVT': {
+      Math: 5,
+      PC: 5,
+      SVT: 5,
+      Francais: 2,
+      Arabe: 2,
+      Anglais: 2,
+      Philosophie: 2,
+      HG: 2,
+      EI: 2,
+      Informatique: 1,
+      EPS: 1,
+    },
+    'Sciences Experimentales - Physique-Chimie': {
+      Math: 5,
+      PC: 5,
+      SVT: 5,
+      Francais: 2,
+      Arabe: 2,
+      Anglais: 2,
+      Philosophie: 2,
+      HG: 2,
+      EI: 2,
+      Informatique: 1,
+      EPS: 1,
+    },
+    'Sciences Mathematiques A': {
+      Math: 5,
+      PC: 5,
+      SVT: 5,
+      Francais: 2,
+      Arabe: 2,
+      Anglais: 2,
+      Philosophie: 2,
+      HG: 2,
+      EI: 2,
+      Informatique: 1,
+      EPS: 1,
+    },
+    'Sciences Mathematiques B': {
+      Math: 5,
+      PC: 5,
+      SVT: 5,
+      Francais: 2,
+      Arabe: 2,
+      Anglais: 2,
+      Philosophie: 2,
+      HG: 2,
+      EI: 2,
+      Informatique: 1,
+      EPS: 1,
+    },
+  },
+  '2bac': {
+    'Sciences Experimentales - SVT': {
+      Math: 7,
+      PC: 7,
+      SVT: 7,
+      Francais: 2,
+      Arabe: 2,
+      Anglais: 2,
+      Philosophie: 2,
+      HG: 2,
+      EI: 2,
+      Informatique: 2,
+      EPS: 1,
+    },
+    'Sciences Experimentales - Physique-Chimie': {
+      Math: 7,
+      PC: 7,
+      SVT: 7,
+      Francais: 2,
+      Arabe: 2,
+      Anglais: 2,
+      Philosophie: 2,
+      HG: 2,
+      EI: 2,
+      Informatique: 2,
+      EPS: 1,
+    },
+    'Sciences Mathematiques A': {
+      Math: 9,
+      PC: 7,
+      Francais: 2,
+      Arabe: 2,
+      Anglais: 2,
+      Philosophie: 2,
+      HG: 2,
+      EI: 2,
+      Informatique: 2,
+      EPS: 1,
+    },
+    'Sciences Mathematiques B': {
+      Math: 9,
+      PC: 7,
+      Francais: 2,
+      Arabe: 2,
+      Anglais: 2,
+      Philosophie: 2,
+      HG: 2,
+      EI: 2,
+      Informatique: 2,
+      EPS: 1,
+    },
+  },
+};
+
+export const LEVEL_LABELS = {
+  general: 'General',
+  maternelle: 'Maternelle',
+  primaire: 'Primaire',
+  college: 'College',
+  lycee: 'Lycee',
+};

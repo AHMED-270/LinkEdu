@@ -1,0 +1,693 @@
+/* =============================================================
+   PROFESSOR ROLE — BORDERLESS UI OVERRIDES
+   All rules are scoped to body.theme-professeur so they only
+   apply when the professor theme is active.
+   ============================================================= */
+
+/* ── Global nuclear reset: kill ALL borders & outlines ── */
+body.theme-professeur *,
+body.theme-professeur *::before,
+body.theme-professeur *::after {
+  border-color: transparent !important;
+  border-style: none !important;
+  outline: none !important;
+}
+
+/* ── Tailwind border utility overrides ── */
+body.theme-professeur [class*="border-b"],
+body.theme-professeur [class*="border-t"],
+body.theme-professeur [class*="border-l"],
+body.theme-professeur [class*="border-r"],
+body.theme-professeur [class*="border-slate"],
+body.theme-professeur [class*="border-red"],
+body.theme-professeur [class*="border-white"],
+body.theme-professeur [class*="border "] {
+  border: none !important;
+  border-width: 0 !important;
+}
+
+/* ───────────────────────────────────────────────────────────
+   LAYOUT — Header, Sidebar, Main Content Wrapper
+   ─────────────────────────────────────────────────────────── */
+
+/* Header bar — no border, subtle shadow only */
+body.theme-professeur .fixed.top-0,
+body.theme-professeur .header {
+  border: none !important;
+  border-bottom: none !important;
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Sidebar — no border, subtle shadow only */
+body.theme-professeur aside[style],
+body.theme-professeur .sidebar {
+  border: none !important;
+  border-right: none !important;
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Main content glassmorphism card — NO border, NO box-shadow */
+body.theme-professeur .max-w-7xl[style],
+body.theme-professeur .max-w-7xl {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Layout.css layout-content */
+body.theme-professeur .layout-content {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* ───────────────────────────────────────────────────────────
+   SIDEBAR INTERNALS
+   ─────────────────────────────────────────────────────────── */
+
+body.theme-professeur .sidebar-profile {
+  border-bottom: none !important;
+  padding-bottom: 24px;
+  margin-bottom: 8px;
+  background: linear-gradient(180deg, transparent 90%, rgba(0, 0, 0, 0.02) 100%);
+}
+
+body.theme-professeur .sidebar-footer {
+  border-top: none !important;
+  padding-top: 16px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.02) 0%, transparent 10%);
+}
+
+body.theme-professeur .sidebar-logout {
+  border: none !important;
+}
+
+body.theme-professeur .sidebar-logout:hover {
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1);
+}
+
+body.theme-professeur .online-indicator {
+  border: none !important;
+  box-shadow: 0 0 0 2px white;
+}
+
+/* ───────────────────────────────────────────────────────────
+   HEADER INTERNALS
+   ─────────────────────────────────────────────────────────── */
+
+body.theme-professeur .header-profile {
+  border: none !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+body.theme-professeur .header-profile:hover {
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Logout modal */
+body.theme-professeur .header-logout-modal-card {
+  border: none !important;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
+}
+
+body.theme-professeur .header-logout-cancel {
+  border: none !important;
+  background: #f1f5f9;
+}
+
+body.theme-professeur .header-logout-cancel:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+
+body.theme-professeur .header-logout-confirm {
+  border: none !important;
+  background: #fee2e2;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
+}
+
+body.theme-professeur .header-logout-confirm:hover:not(:disabled) {
+  background: #fecaca;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+}
+
+/* ───────────────────────────────────────────────────────────
+   CARDS (global .card, stat-card, dashboard cards)
+   ─────────────────────────────────────────────────────────── */
+
+body.theme-professeur .card {
+  border: 1px solid rgba(0, 0, 0, 0.03) !important;
+  background: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+body.theme-professeur .card:hover {
+  background: rgba(255, 255, 255, 0.8) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+body.theme-professeur .card-header {
+  border-bottom: none !important;
+  background: rgba(0, 0, 0, 0.015);
+  border-radius: 14px 14px 0 0;
+}
+
+body.theme-professeur .stat-card {
+  border: 1px solid rgba(0, 0, 0, 0.03) !important;
+  background: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+body.theme-professeur .stat-card:hover {
+  background: rgba(255, 255, 255, 0.8) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+/* ───────────────────────────────────────────────────────────
+   TABLES
+   ─────────────────────────────────────────────────────────── */
+
+body.theme-professeur .table th {
+  border-bottom: none !important;
+  background: rgba(0, 0, 0, 0.025);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.04);
+}
+
+body.theme-professeur .table td {
+  border-bottom: none !important;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.03);
+}
+
+body.theme-professeur .table tr:last-child td {
+  box-shadow: none;
+}
+
+/* Eleves table */
+body.theme-professeur .eleves-table th,
+body.theme-professeur .eleves-table td {
+  border-bottom: none !important;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.03);
+}
+
+body.theme-professeur .eleves-table tr:last-child td {
+  box-shadow: none;
+}
+
+/* Annonces flat table */
+body.theme-professeur .annonces-table-flat thead th {
+  border-bottom: none !important;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.04);
+}
+
+body.theme-professeur .annonces-table-flat tbody td {
+  border-bottom: none !important;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.02);
+}
+
+/* Notes table */
+body.theme-professeur .notes-table th {
+  border: none !important;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.04);
+}
+
+body.theme-professeur .notes-table td {
+  border: none !important;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.03);
+}
+
+/* Appel table */
+body.theme-professeur .appel-table th {
+  border: none !important;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.04);
+}
+
+body.theme-professeur .appel-table td {
+  border: none !important;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.03);
+}
+
+/* ───────────────────────────────────────────────────────────
+   FORM ELEMENTS (inputs, selects, textareas)
+   ─────────────────────────────────────────────────────────── */
+
+body.theme-professeur .form-input,
+body.theme-professeur .form-select,
+body.theme-professeur .form-textarea,
+body.theme-professeur .input-field,
+body.theme-professeur .filter-select,
+body.theme-professeur .eleves-search,
+body.theme-professeur .notes-input,
+body.theme-professeur .notes-select,
+body.theme-professeur .appel-select,
+body.theme-professeur .appel-date,
+body.theme-professeur .notes-appr {
+  border: none !important;
+  background-color: #f8f9fc !important;
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.2s ease !important;
+}
+
+body.theme-professeur .form-input:hover,
+body.theme-professeur .form-select:hover,
+body.theme-professeur .form-textarea:hover,
+body.theme-professeur .input-field:hover,
+body.theme-professeur .filter-select:hover,
+body.theme-professeur .eleves-search:hover {
+  border: none !important;
+  background-color: #f1f3f8 !important;
+  box-shadow: inset 0 1px 6px rgba(0, 0, 0, 0.07) !important;
+}
+
+body.theme-professeur .form-input:focus,
+body.theme-professeur .form-select:focus,
+body.theme-professeur .form-textarea:focus,
+body.theme-professeur .input-field:focus,
+body.theme-professeur .filter-select:focus,
+body.theme-professeur .eleves-search:focus,
+body.theme-professeur .notes-input:focus {
+  border: none !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(26, 94, 66, 0.12), inset 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+  outline: none !important;
+}
+
+/* Color-coded note inputs — keep inner shadow, no border */
+body.theme-professeur .notes-input.text-green {
+  border: none !important;
+  box-shadow: inset 0 1px 4px rgba(39, 174, 96, 0.15) !important;
+}
+
+body.theme-professeur .notes-input.text-orange {
+  border: none !important;
+  box-shadow: inset 0 1px 4px rgba(242, 153, 74, 0.15) !important;
+}
+
+body.theme-professeur .notes-input.text-red {
+  border: none !important;
+  box-shadow: inset 0 1px 4px rgba(235, 87, 87, 0.15) !important;
+}
+
+/* Disabled inputs */
+body.theme-professeur .form-input[disabled],
+body.theme-professeur .form-input:disabled {
+  border: none !important;
+  background-color: #e8eaef !important;
+  box-shadow: none !important;
+}
+
+/* ───────────────────────────────────────────────────────────
+   BUTTONS
+   ─────────────────────────────────────────────────────────── */
+
+body.theme-professeur .btn {
+  border: none !important;
+}
+
+body.theme-professeur .btn-outline {
+  border: none !important;
+  background: #f1f3f8;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+body.theme-professeur .btn-outline:hover {
+  border: none !important;
+  background: #e2e6ee;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+body.theme-professeur .icon-btn {
+  border: none !important;
+}
+
+/* ───────────────────────────────────────────────────────────
+   DASHBOARD
+   ─────────────────────────────────────────────────────────── */
+
+/* Schedule items */
+body.theme-professeur .dash-schedule-item {
+  border: none !important;
+  background: rgba(0, 0, 0, 0.015);
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+body.theme-professeur .dash-schedule-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+}
+
+body.theme-professeur .dash-schedule-item.now {
+  border: none !important;
+  background: rgba(0, 0, 0, 0.02); /* Neutral tint instead of emerald */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+/* Admin cards */
+body.theme-professeur .dash-admin-card {
+  border: none !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+body.theme-professeur .dash-admin-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+/* Class items */
+body.theme-professeur .dash-class-item {
+  border: none !important;
+  background: rgba(0, 0, 0, 0.015);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+/* Agenda items */
+body.theme-professeur .dash-agenda-item {
+  border-bottom: none !important;
+  padding-bottom: 12px;
+  margin-bottom: 4px;
+  background: linear-gradient(180deg, transparent 92%, rgba(0, 0, 0, 0.025) 100%);
+}
+
+body.theme-professeur .dash-agenda-item:last-child {
+  background: none;
+}
+
+/* ───────────────────────────────────────────────────────────
+   EMPLOI DU TEMPS (Timetable grid)
+   ─────────────────────────────────────────────────────────── */
+
+/* Grid wrapper */
+body.theme-professeur .edt-grid {
+  border: none !important;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+body.theme-professeur .edt-corner {
+  border: none !important;
+}
+
+body.theme-professeur .edt-day-header {
+  border: none !important;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.04);
+}
+
+body.theme-professeur .edt-hour {
+  border: none !important;
+  box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.03), inset 0 -1px 0 rgba(0, 0, 0, 0.03);
+}
+
+body.theme-professeur .edt-cell {
+  border: none !important;
+  box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.02), inset 0 -1px 0 rgba(0, 0, 0, 0.02);
+}
+
+/* Slot left accent — keep as visual separator */
+body.theme-professeur .edt-slot {
+  border-left: 3px solid var(--primary-500) !important;
+  border-left-style: solid !important;
+  border-top: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+}
+
+body.theme-professeur .edt-slot.now {
+  border-left-color: var(--accent-green) !important;
+  border-left-style: solid !important;
+}
+
+/* ───────────────────────────────────────────────────────────
+   PROFESSEUR DASHBOARD (standalone schedule view)
+   ─────────────────────────────────────────────────────────── */
+
+body.theme-professeur .prof-sidebar {
+  border-right: none !important;
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.04);
+}
+
+body.theme-professeur .schedule-grid-wrap {
+  border: none !important;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
+  border-radius: 12px;
+}
+
+body.theme-professeur .sg-header-day {
+  border-bottom: none !important;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.04);
+}
+
+body.theme-professeur .sg-corner {
+  border-bottom: none !important;
+}
+
+body.theme-professeur .sg-time {
+  border-bottom: none !important;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.02);
+}
+
+body.theme-professeur .sg-cell {
+  border-bottom: none !important;
+  border-left: none !important;
+  box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.02), inset 0 -1px 0 rgba(0, 0, 0, 0.02);
+}
+
+/* ───────────────────────────────────────────────────────────
+   ANNONCES
+   ─────────────────────────────────────────────────────────── */
+
+body.theme-professeur .annonce-item {
+  border: none !important;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
+}
+
+body.theme-professeur .annonce-item:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
+}
+
+body.theme-professeur .annonce-item.unread {
+  border: none !important;
+  background: var(--primary-50);
+  box-shadow: 0 1px 8px rgba(26, 94, 66, 0.08);
+}
+
+body.theme-professeur .annonce-icon.blue {
+  border: none !important;
+  box-shadow: 0 1px 4px rgba(45, 156, 219, 0.15);
+}
+
+body.theme-professeur .annonces-tab {
+  border-bottom: 2px solid transparent !important;
+  border-bottom-style: solid !important;
+}
+
+body.theme-professeur .annonces-tab.active {
+  border-bottom: 2px solid var(--primary-500) !important;
+  border-bottom-style: solid !important;
+}
+
+/* Contact list items */
+body.theme-professeur .contact-item {
+  border-bottom: none !important;
+  padding-bottom: 12px;
+  margin-bottom: 4px;
+  background: linear-gradient(180deg, transparent 90%, rgba(0, 0, 0, 0.02) 100%);
+}
+
+body.theme-professeur .contact-item:last-child {
+  background: none;
+}
+
+/* ───────────────────────────────────────────────────────────
+   APPEL (Attendance)
+   ─────────────────────────────────────────────────────────── */
+
+body.theme-professeur .appel-action-btn {
+  border: none !important;
+  background: #f1f5f9;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+body.theme-professeur .appel-action-btn.present:hover {
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(39, 174, 96, 0.2);
+}
+
+body.theme-professeur .appel-action-btn.absent:hover {
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(235, 87, 87, 0.2);
+}
+
+body.theme-professeur .appel-action-btn.present.active {
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
+}
+
+body.theme-professeur .appel-action-btn.absent.active {
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(235, 87, 87, 0.3);
+}
+
+/* ───────────────────────────────────────────────────────────
+   AVANCEMENT (Progress)
+   ─────────────────────────────────────────────────────────── */
+
+body.theme-professeur .progress-item {
+  border: none !important;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
+}
+
+/* ───────────────────────────────────────────────────────────
+   RECLAMATION
+   ─────────────────────────────────────────────────────────── */
+
+body.theme-professeur .reclamation-item {
+  border: none !important;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
+}
+
+body.theme-professeur .reclamation-item:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
+}
+
+body.theme-professeur .file-input-compact {
+  border: none !important;
+  background: #f8f9fc;
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.04);
+}
+
+body.theme-professeur .file-input-compact:hover {
+  border: none !important;
+  background: #f1f3f8;
+  box-shadow: inset 0 0 0 2px rgba(26, 94, 66, 0.15);
+}
+
+body.theme-professeur .rec-meta {
+  border-top: none !important;
+  padding-top: 12px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.025) 0%, transparent 10%);
+}
+
+/* ───────────────────────────────────────────────────────────
+   DEVOIRS (Assignments)
+   ─────────────────────────────────────────────────────────── */
+
+body.theme-professeur .dvr-left-col {
+  border: none !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+body.theme-professeur .upload-zone {
+  border: none !important;
+  background: #f8f9fc;
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.04);
+}
+
+body.theme-professeur .upload-zone:hover {
+  border: none !important;
+  background: var(--primary-50);
+  box-shadow: inset 0 0 0 2px rgba(26, 94, 66, 0.15);
+}
+
+body.theme-professeur .recent-item {
+  border: none !important;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
+}
+
+body.theme-professeur .recent-item:hover {
+  border: none !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
+}
+
+/* ───────────────────────────────────────────────────────────
+   ELEVES (Students) panel
+   ─────────────────────────────────────────────────────────── */
+
+body.theme-professeur .eleves-panel {
+  border: none !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+body.theme-professeur .eleves-search {
+  border: none !important;
+  background: #f8f9fc !important;
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Teacher form inputs */
+body.theme-professeur .teacher-form input,
+body.theme-professeur .teacher-form select,
+body.theme-professeur .teacher-form textarea {
+  border: none !important;
+  background: #f8f9fc;
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+body.theme-professeur .teacher-form button {
+  border: none !important;
+}
+
+/* ───────────────────────────────────────────────────────────
+   PARAMETRES (Settings)
+   ─────────────────────────────────────────────────────────── */
+
+body.theme-professeur .dashboard-content .card-panel {
+  border: none !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* ───────────────────────────────────────────────────────────
+   MODALS (Logout and others)
+   ─────────────────────────────────────────────────────────── */
+
+body.theme-professeur .logout-modal-card {
+  border: none !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.03);
+}
+
+/* ───────────────────────────────────────────────────────────
+   BADGES — remove any stray border
+   ─────────────────────────────────────────────────────────── */
+
+body.theme-professeur .badge,
+body.theme-professeur .badge-blue,
+body.theme-professeur .badge-green,
+body.theme-professeur .badge-orange,
+body.theme-professeur .badge-red,
+body.theme-professeur .badge-now,
+body.theme-professeur .meta-badge {
+  border: none !important;
+}
+
+/* ───────────────────────────────────────────────────────────
+   MISC / UTILITY
+   ─────────────────────────────────────────────────────────── */
+
+/* Progress bar */
+body.theme-professeur .progress-bar {
+  border: none !important;
+}
+
+/* Scroll right button */
+body.theme-professeur .scroll-right-btn {
+  border: none !important;
+}
+
+/* View toggle */
+body.theme-professeur .view-toggle,
+body.theme-professeur .toggle-btn,
+body.theme-professeur .edt-view-toggle,
+body.theme-professeur .edt-view-btn {
+  border: none !important;
+}
+
+/* Tab buttons */
+body.theme-professeur .tab-btn {
+  border: none !important;
+}
+
+/* Nav items */
+body.theme-professeur .prof-nav-item {
+  border: none !important;
+}

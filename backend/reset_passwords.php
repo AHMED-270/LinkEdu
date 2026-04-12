@@ -1,0 +1,1 @@
+<?php require 'vendor/autoload.php'; require_once 'bootstrap/app.php'; app()->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); App\Models\User::query()->update(['password' => Illuminate\Support\Facades\Hash::make('password')]); echo 'Passwords reset for all users to: password';

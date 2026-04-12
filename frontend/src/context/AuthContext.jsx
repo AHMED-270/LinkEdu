@@ -1,8 +1,9 @@
- import { createContext, useContext, useState, useEffect } from 'react';
+﻿import { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 const STORAGE_KEY = 'linkedu_user';
 const PROFILE_CACHE_KEY = 'linkedu_profile_cache';
+const AUTH_TOKEN_KEY = 'linkedu_token';
 
 const safeStorage = {
   get() {
@@ -22,6 +23,16 @@ const safeStorage = {
   remove() {
     try {
       localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // Ignore storage failures in restricted browser modes.
+    }
+  }
+};
+
+const safeTokenStorage = {
+  remove() {
+    try {
+      localStorage.removeItem(AUTH_TOKEN_KEY);
     } catch {
       // Ignore storage failures in restricted browser modes.
     }
@@ -64,44 +75,22 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const initializeAuth = async () => {
-      const storedUser = safeStorage.get();
+    const storedUser = safeStorage.get();
 
-      if (storedUser) {
-        try {
-          const parsedUser = JSON.parse(storedUser);
-          
-          // Validate session by checking if user still exists on backend
-          try {
-            const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-            const validateResponse = await fetch(apiBaseUrl + '/api/user', {
-              method: 'GET',
-              credentials: 'include',
-              headers: { 'Accept': 'application/json' }
-            });
-            
-            if (validateResponse.ok) {
-              setUser(parsedUser);
-            } else {
-              // Session invalid, clear stale auth
-              safeStorage.remove();
-              setUser(null);
-            }
-          } catch (validationError) {
-            // If validation request fails, most likely DB was reset
-            // Clear stale auth tokens and require re-login
-            safeStorage.remove();
-            setUser(null);
-          }
-        } catch {
-          safeStorage.remove();
-        }
+    if (storedUser) {
+      try {
+        const u = JSON.parse(storedUser);
+        setUser(u);
+        document.body.className = `theme-${u.role}`;
+      } catch {
+        safeStorage.remove();
+        document.body.className = '';
       }
+    } else {
+      document.body.className = '';
+    }
 
-      setLoading(false);
-    };
-
-    initializeAuth();
+    setLoading(false);
   }, []);
 
   const setAuthenticatedUser = (userData) => {
@@ -109,6 +98,7 @@ export function AuthProvider({ children }) {
     const mergedUser = cachedProfile ? { ...userData, ...cachedProfile } : userData;
     setUser(mergedUser);
     safeStorage.set(JSON.stringify(mergedUser));
+    document.body.className = `theme-${mergedUser.role}`;
   };
 
   const updateAuthenticatedUser = (patch) => {
@@ -122,6 +112,7 @@ export function AuthProvider({ children }) {
         profilePhoto: nextUser.profilePhoto ?? null,
       });
       safeStorage.set(JSON.stringify(nextUser));
+      document.body.className = `theme-${nextUser.role}`;
       return nextUser;
     });
   };
@@ -129,6 +120,8 @@ export function AuthProvider({ children }) {
   const logout = () => {
     setUser(null);
     safeStorage.remove();
+    safeTokenStorage.remove();
+    document.body.className = '';
   };
 
   return (

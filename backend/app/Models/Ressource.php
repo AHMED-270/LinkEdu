@@ -17,6 +17,8 @@ class Ressource extends Model
         'fichier',
         'type_ressource',
         'id_professeur',
+        'id_classe',
+        'id_matiere',
     ];
 
     public function professeur(): BelongsTo

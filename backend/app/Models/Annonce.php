@@ -16,18 +16,26 @@ class Annonce extends Model
     protected $fillable = [
         'titre',
         'contenu',
+        'type',
+        'auteur',
+        'date_publication',
+=========
         'cible',
         'date_publication',
         'id_user',
         'photo_path',
+>>>>>>>>> Temporary merge branch 2
     ];
 
     protected $casts = [
         'date_publication' => 'datetime',
     ];
+<<<<<<<<< Temporary merge branch 1
+=========
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'id_user', 'id');
     }
+>>>>>>>>> Temporary merge branch 2
 }

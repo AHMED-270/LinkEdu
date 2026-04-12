@@ -87,7 +87,7 @@ class SecretaireController extends Controller
             'prenom' => ['required', 'string', 'max:255'],
             'date_naissance' => ['required', 'date'],
             'genre' => ['required', 'in:M,F,A'],
-            'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
+            'email' => ['nullable', 'email', 'max:255', \Illuminate\Validation\Rule::unique('users')->where(fn ($query) => $query->where('role', 'etudiant'))],
             'adresse' => ['required', 'string', 'max:500'],
             'id_classe' => ['nullable', 'integer', 'exists:classes,id_classe'],
             'parent_nom' => ['required', 'string', 'max:255'],
@@ -118,7 +118,7 @@ class SecretaireController extends Controller
             'prenom' => ['required', 'string', 'max:255'],
             'date_naissance' => ['required', 'date'],
             'genre' => ['required', 'in:M,F,A'],
-            'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
+            'email' => ['nullable', 'email', 'max:255', \Illuminate\Validation\Rule::unique('users')->where(fn ($query) => $query->where('role', 'etudiant'))],
             'adresse' => ['required', 'string', 'max:500'],
             'id_classe' => ['nullable', 'integer', 'exists:classes,id_classe'],
             'parent_nom' => ['required', 'string', 'max:255'],
@@ -183,13 +183,12 @@ class SecretaireController extends Controller
             }
 
             $parentUser = User::firstOrCreate(
-                ['email' => $parentEmail],
+                ['email' => $parentEmail, 'role' => 'parent_eleve'],
                 [
                     'name' => trim($validated['parent_prenom'] . ' ' . $validated['parent_nom']),
                     'nom' => $validated['parent_nom'],
                     'prenom' => $validated['parent_prenom'],
                     'password' => Hash::make('Parent@2026'),
-                    'role' => 'parent_eleve',
                     'account_status' => 'pending_activation',
                 ]
             );
@@ -243,7 +242,7 @@ class SecretaireController extends Controller
             'prenom' => ['required', 'string', 'max:255'],
             'date_naissance' => ['required', 'date'],
             'genre' => ['required', 'in:M,F,A'],
-            'email' => ['nullable', 'email', 'max:255', 'unique:users,email,' . $etudiant->id_etudiant],
+            'email' => ['nullable', 'email', 'max:255', \Illuminate\Validation\Rule::unique('users')->ignore($etudiant->id_etudiant)->where(fn ($query) => $query->where('role', 'etudiant'))],
             'adresse' => ['required', 'string', 'max:500'],
             'id_classe' => ['nullable', 'integer', 'exists:classes,id_classe'],
             'parent_nom' => ['required', 'string', 'max:255'],
@@ -265,13 +264,12 @@ class SecretaireController extends Controller
                 ?? $this->buildStudentEmailFromParent($parentEmail, $validated['nom'], $validated['prenom']);
 
             $parentUser = User::firstOrCreate(
-                ['email' => $parentEmail],
+                ['email' => $parentEmail, 'role' => 'parent_eleve'],
                 [
                     'name' => trim($validated['parent_prenom'] . ' ' . $validated['parent_nom']),
                     'nom' => $validated['parent_nom'],
                     'prenom' => $validated['parent_prenom'],
                     'password' => Hash::make('Parent@2026'),
-                    'role' => 'parent_eleve',
                     'account_status' => 'pending_activation',
                 ]
             );
@@ -700,15 +698,17 @@ class SecretaireController extends Controller
         ]);
 
         $idParent = $validated['id_parent'] ?? null;
+        $idEtudiant = $validated['id_etudiant'] ?? null;
 
-        if (! $idParent && ! empty($validated['id_etudiant'])) {
-            $etudiant = Etudiant::find($validated['id_etudiant']);
+        if (! $idParent && ! empty($idEtudiant)) {
+            $etudiant = Etudiant::find($idEtudiant);
             if (! $etudiant || ! $etudiant->id_parent) {
                 return response()->json([
                     'message' => 'Aucun parent lie a cet etudiant.',
                 ], 422);
             }
             $idParent = $etudiant->id_parent;
+            $idEtudiant = $etudiant->id_etudiant;
         }
 
         if (! $idParent) {
@@ -719,10 +719,12 @@ class SecretaireController extends Controller
 
         $reclamation = Reclamation::create([
             'id_parent' => $idParent,
+            'id_etudiant' => $idEtudiant,
             'sujet' => $validated['sujet'],
             'message' => $validated['message'],
             'statut' => 'en_attente',
             'date_soumission' => now(),
+            'date_envoi' => now(),
         ]);
 
         return response()->json([
@@ -731,3 +733,5 @@ class SecretaireController extends Controller
         ], 201);
     }
 }
+
+

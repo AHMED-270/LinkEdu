@@ -6,6 +6,7 @@ Route::get('/', function () {
     return response()->json([
         'service' => 'LinkEdu API',
         'status' => 'ok',
+        'debug' => 'my-custom-change',
     ]);
 });
 

@@ -1,5 +1,5 @@
-﻿import { NavLink, useNavigate } from 'react-router-dom';
-import { FiGrid, FiUsers, FiBookOpen, FiCalendar, FiMessageCircle, FiAlertCircle, FiLogOut } from 'react-icons/fi';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { FiGrid, FiUsers, FiCreditCard, FiBookOpen, FiCalendar, FiMessageCircle, FiAlertCircle, FiLogOut } from 'react-icons/fi';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
@@ -8,6 +8,7 @@ import './SecretaireSidebar.css';
 const navItems = [
   { path: '/secretaire/dashboard', label: 'Tableau de bord', icon: FiGrid },
   { path: '/secretaire/etudiants', label: 'Etudiants', icon: FiUsers },
+  { path: '/secretaire/paiements', label: 'Paiements', icon: FiCreditCard },
   { path: '/secretaire/classes', label: 'Classes', icon: FiBookOpen },
   { path: '/secretaire/absences', label: 'Absences', icon: FiCalendar },
   { path: '/secretaire/annonces', label: 'Annonces', icon: FiMessageCircle },   
@@ -129,15 +130,7 @@ export default function SecretaireSidebar() {
             })}
           </nav>
 
-          <div className="mt-auto border-t border-slate-200 pt-4">
-            <button
-              onClick={() => setShowLogoutModal(true)}
-              className="flex w-full items-center gap-3 rounded-xl border-l-2 border-transparent px-3 py-2.5 text-sm font-semibold text-red-600 transition-all hover:bg-red-50 hover:text-red-700"
-            >
-              <FiLogOut size={18} />
-              <span>Déconnexion</span>
-            </button>
-          </div>
+       
         </div>
       </aside>
       </>

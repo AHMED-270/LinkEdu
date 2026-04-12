@@ -1,0 +1,9 @@
+{
+  "name": "LinkEdu",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "serve:api": "php backend/artisan serve --host=127.0.0.1 --port=8000"
+  }
+}
