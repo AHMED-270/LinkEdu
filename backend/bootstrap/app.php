@@ -29,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/admin/login',
             'api/admin/logout',
             'api/directeur/login',
+            'api/forgot-password',
         ]);
 
         $middleware->alias([

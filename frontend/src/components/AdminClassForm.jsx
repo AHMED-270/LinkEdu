@@ -269,7 +269,6 @@ export default function AdminClassForm({ mode = 'create', classToEdit = null, on
     const professeurIds = Object.keys(professeurMatieresPayload).map((id) => Number(id));
     if (professeurIds.length === 0) {
       setFormMsg('Veuillez assigner au moins un professeur.');
->>>>>>>>> Temporary merge branch 2
       setSaving(false);
       return;
     }

@@ -54,35 +54,6 @@
 .header-profile {
   display: flex;
   align-items: center;
-<<<<<<<<< Temporary merge branch 1
-  gap: var(--space-3);
-  background: transparent;
-  border: 1px solid transparent;
-  cursor: pointer;
-  padding: 4px 8px 4px 16px;
-  border-radius: var(--radius-full);
-  transition: all var(--transition-bounce);
-}
-
-.header-profile:hover {
-  background: white;
-  border-color: var(--border-color);
-  box-shadow: var(--shadow-sm);
-  transform: translateY(-1px);
-=========
-  gap: 10px;
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
-  border-radius: 9999px;
-  padding: 4px 12px 4px 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.header-profile:hover {
-  background: #e5e7eb;
-  border-color: #9ca3af;
->>>>>>>>> Temporary merge branch 2
 }
 
 .header-profile-info {
@@ -256,19 +227,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-<<<<<<<<< Temporary merge branch 1
-  background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
-  color: #fff;
+  width: 38px;
+  height: 38px;
+  border-radius: 9999px;
+  background: #dbeafe;
+  color: #1e40af;
   font-weight: 700;
-  font-size: 0.95rem;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+  font-size: 0.85rem;
 }
-=========
-  background: #e5e7eb;
-  color: #6b7280;
-}
-.header-profile-avatar-fallback svg {
-  width: 24px;
-  height: 24px;
-}
->>>>>>>>> Temporary merge branch 2

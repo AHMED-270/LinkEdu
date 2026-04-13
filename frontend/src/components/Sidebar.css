@@ -4,15 +4,6 @@
   top: var(--header-height, 64px); 
   left: 0;
   bottom: 0;
-<<<<<<<<< Temporary merge branch 1
-  width: var(--sidebar-width, 260px);
-  background: white;
-  border-right: 1px solid var(--border-color);
-=========
-  width: 260px;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-  border-right: 1px solid #e2e8f0;
->>>>>>>>> Temporary merge branch 2
   display: flex;
   flex-direction: column;
   z-index: 90;
@@ -34,7 +25,6 @@
   width: 44px;
   height: 44px;
   border-radius: 12px; /* Slightly squarer, more modern radius */
-=========
   padding: 20px;
   margin: 12px 14px 10px;
   border: 1px solid #dbe4ef;
@@ -47,7 +37,6 @@
   width: 46px;
   height: 46px;
   border-radius: 999px;
->>>>>>>>> Temporary merge branch 2
   object-fit: cover;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
@@ -60,24 +49,6 @@
   justify-content: center;
   font-weight: 700;
   font-size: 1rem;
-<<<<<<<<< Temporary merge branch 1
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-}
-
-.online-indicator {
-  position: absolute;
-  bottom: -2px;
-  right: -2px;
-  width: 12px;
-  height: 12px;
-  background-color: var(--accent-green);
-  border: 2px solid white;
-  border-radius: 50%;
-  animation: pulseGlow 2s infinite; /* Uses the animation from Layout.css */
-=========
-  box-shadow: none;
-  border: 2px solid #dbeafe;
->>>>>>>>> Temporary merge branch 2
 }
 
 .sidebar-user-info {
@@ -108,7 +79,6 @@
   padding: 0 16px;
   gap: 6px;
   margin-top: 12px;
-=========
   padding: 4px 14px 0;
   gap: 6px;
 }
@@ -118,7 +88,6 @@
   padding: 16px 14px;
   border-top: 1px dashed #d1d5db;
   background: rgba(255, 255, 255, 0.7);
->>>>>>>>> Temporary merge branch 2
 }
 
 .sidebar-link {
@@ -132,7 +101,6 @@
   font-size: 0.9rem;
   font-weight: 600;
   transition: all var(--transition-bounce); /* Springy transition */
-=========
   padding: 12px 14px;
   border-radius: 10px;
   border: 1px solid transparent;
@@ -141,7 +109,6 @@
   font-size: 0.875rem;
   font-weight: 600;
   transition: all 0.2s;
->>>>>>>>> Temporary merge branch 2
   position: relative;
   overflow: hidden; /* Important for the hover effect */
 }
@@ -153,18 +120,6 @@
 
 /* Hover State */
 .sidebar-link:hover {
-<<<<<<<<< Temporary merge branch 1
-  background: var(--gray-50);
-  color: var(--text-primary);
-  transform: translateX(4px); /* Slight nudge on hover */
-=========
-  background: #f8fbff;
-  border-color: #dbeafe;
-  color: #111827;
-}
-.sidebar-link:hover .sidebar-icon {
-  color: #4B5563;
->>>>>>>>> Temporary merge branch 2
 }
 
 .sidebar-link:hover .sidebar-icon {
@@ -177,30 +132,14 @@
   background: transparent;
   color: var(--primary-600);
   font-weight: 700;
-=========
   background: #eff6ff;
   border-color: #bfdbfe;
   color: #2563EB;
->>>>>>>>> Temporary merge branch 2
 }
 
 .sidebar-link.active::before {
   content: '';
   position: absolute;
-<<<<<<<<< Temporary merge branch 1
-  left: 0; /* Align with the inner padding edge */
-  top: 50%;
-  transform: translateY(-50%);
-  height: 60%;
-  width: 4px;
-  background: var(--primary-600);
-=========
-  left: -14px; /* Touch the edge of nav container */
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: #2563EB;
->>>>>>>>> Temporary merge branch 2
   border-radius: 0 4px 4px 0;
   box-shadow: 2px 0 8px rgba(37, 99, 235, 0.4);
 }
@@ -240,13 +179,11 @@
   background: transparent;
   border: 1px solid transparent;
   font-size: 0.9rem;
-=========
   border-radius: 10px;
   border: 1px solid #fecaca;
   background: #fff7f7;
   color: #DC2626;
   font-size: 0.875rem;
->>>>>>>>> Temporary merge branch 2
   font-weight: 600;
   transition: all var(--transition-bounce);
   cursor: pointer;
@@ -257,9 +194,7 @@
   border-color: #FECACA;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1);
-=========
   background: #fee2e2;
->>>>>>>>> Temporary merge branch 2
 }
 
 .sidebar-logout .sidebar-icon {
@@ -276,7 +211,6 @@
    fade-in and slide-up animations, so the CSS keyframes here are removed 
    to prevent conflicts, focusing just on styling. */
 
-=========
 /* Secretaire sidebar visual refresh */
 .secretaire-sidebar {
   background:
@@ -359,7 +293,6 @@
 }
 
 /* Logout Modal Styles */
->>>>>>>>> Temporary merge branch 2
 .logout-modal-backdrop {
   position: fixed;
   top: 0;

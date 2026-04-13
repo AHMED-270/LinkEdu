@@ -5,16 +5,16 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfessorController;
 use App\Http\Controllers\AdminLoginController;
 use App\Http\Controllers\AdminDashboardController;
-<<<<<<<<< Temporary merge branch 1
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DirecteurLoginController;
 use App\Http\Controllers\DirecteurController;
 use App\Http\Controllers\AnnonceController;
 use App\Http\Controllers\EmploiDuTempsController;
 use App\Http\Controllers\StudentParentController;
-=========
 use App\Http\Controllers\PaiementController;
 use App\Http\Controllers\SecretaireController;
->>>>>>>>> Temporary merge branch 2
+use App\Http\Controllers\ForgotPasswordController;
 
 /*
 |--------------------------------------------------------------------------
@@ -40,20 +40,19 @@ Route::any('/health', function (Request $request) {
 // Unified login endpoint used by frontend LoginCard.
 Route::post('/login', [AuthController::class, 'login']);
 
+// Forgot password endpoint
+Route::post('/forgot-password', [ForgotPasswordController::class, 'forgotPassword']);
+
 // Auth Check (Frontend check)
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
 });
 
-<<<<<<<<< Temporary merge branch 1
-Route::post('/login', [AuthController::class, 'login']);
-=========
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::post('/profile', [ProfileController::class, 'update']);
     Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
 });
->>>>>>>>> Temporary merge branch 2
 
 // Admin routes
 Route::post('/login', [AdminLoginController::class, 'login']);
@@ -124,7 +123,6 @@ Route::middleware(['auth:sanctum', 'role:professeur'])->prefix('professeur')->gr
     Route::post('/reclamations', [ProfessorController::class, 'submitComplaint']);
 });
 
-<<<<<<<<< Temporary merge branch 1
 // Student Module Routes
 Route::middleware(['auth:sanctum', 'role:etudiant'])->prefix('etudiant')->group(function () {
     Route::get('/dashboard', [StudentParentController::class, 'studentDashboard']);
@@ -149,7 +147,8 @@ Route::middleware(['auth:sanctum', 'role:parent'])->prefix('parent')->group(func
     Route::get('/professeurs', [StudentParentController::class, 'parentProfessors']);
     Route::get('/reclamations', [StudentParentController::class, 'parentComplaints']);
     Route::post('/reclamations', [StudentParentController::class, 'submitParentComplaint']);
-=========
+});
+
 // Secretaire Module Routes
 Route::middleware(['auth:sanctum', 'role:secretaire,admin,directeur'])->prefix('secretaire')->group(function () {
     Route::get('/dashboard', [SecretaireController::class, 'dashboard']);
@@ -194,5 +193,4 @@ Route::middleware(['auth:sanctum', 'role:secretaire,admin,directeur'])->prefix('
     Route::delete('/reclamations/{id}', [SecretaireController::class, 'deleteReclamation']);
     Route::put('/reclamations/{id}/status', [SecretaireController::class, 'updateReclamationStatus']);
     Route::get('/parents', [SecretaireController::class, 'listParents']);
->>>>>>>>> Temporary merge branch 2
 });

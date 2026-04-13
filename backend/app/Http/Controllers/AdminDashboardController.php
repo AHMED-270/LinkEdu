@@ -1242,15 +1242,47 @@ class AdminDashboardController extends Controller
         }
 
         $hasMatiereNiveau = Schema::hasColumn('matieres', 'niveau');
+        $hasLyceeNiveauCode = Schema::hasColumn('matieres', 'lycee_niveau_code');
+        $hasLyceeFiliere = Schema::hasColumn('matieres', 'lycee_filiere');
 
         $validationRules = [
             'nom' => 'required|string|max:255',
             'coefficient' => 'required|integer|min:0|max:10',
-        ]);
+        ];
+
+        if ($hasMatiereNiveau) {
+            $validationRules['niveau'] = ['required', 'string', Rule::in(['maternelle', 'primaire', 'college', 'lycee', 'general'])];
+            $validationRules['coefficients_by_level'] = 'nullable|array';
+            $validationRules['coefficients_by_niveau_code'] = 'nullable|array';
+            $validationRules['coefficients_by_niveau_code.*'] = 'nullable|integer|min:0|max:10';
+        }
+
+        if ($hasLyceeNiveauCode) {
+            $validationRules['lycee_niveau_code'] = ['nullable', 'string', Rule::in(['tc', '1bac', '2bac'])];
+        }
+
+        if ($hasLyceeFiliere) {
+            $validationRules['lycee_filiere'] = 'nullable|string|max:255';
+        }
+
+        $validated = $request->validate($validationRules);
+
+        if ($hasMatiereNiveau) {
+            $validated = $this->normalizeMatierePayload($validated, true);
+        }
 
         $existingQuery = Matiere::where('nom', $validated['nom']);
         if ($hasMatiereNiveau) {
             $existingQuery->where('niveau', $validated['niveau']);
+
+            if (($validated['niveau'] ?? null) === 'lycee') {
+                if ($hasLyceeNiveauCode) {
+                    $existingQuery->where('lycee_niveau_code', $validated['lycee_niveau_code'] ?? null);
+                }
+                if ($hasLyceeFiliere) {
+                    $existingQuery->where('lycee_filiere', $validated['lycee_filiere'] ?? null);
+                }
+            }
         }
 
         $existing = $existingQuery->first();
@@ -1275,16 +1307,52 @@ class AdminDashboardController extends Controller
         $matiere = Matiere::findOrFail($id);
 
         $hasMatiereNiveau = Schema::hasColumn('matieres', 'niveau');
+        $hasLyceeNiveauCode = Schema::hasColumn('matieres', 'lycee_niveau_code');
+        $hasLyceeFiliere = Schema::hasColumn('matieres', 'lycee_filiere');
 
         $validationRules = [
             'nom' => 'required|string|max:255',
             'coefficient' => 'required|integer|min:0|max:10',
-        ]);
+        ];
 
-        $existing = Matiere::where('nom', $validated['nom'])
-            ->where('niveau', $validated['niveau'])
-            ->where('id_matiere', '!=', $matiere->id_matiere)
-            ->first();
+        if ($hasMatiereNiveau) {
+            $validationRules['niveau'] = ['required', 'string', Rule::in(['maternelle', 'primaire', 'college', 'lycee', 'general'])];
+            $validationRules['coefficients_by_level'] = 'nullable|array';
+            $validationRules['coefficients_by_niveau_code'] = 'nullable|array';
+            $validationRules['coefficients_by_niveau_code.*'] = 'nullable|integer|min:0|max:10';
+        }
+
+        if ($hasLyceeNiveauCode) {
+            $validationRules['lycee_niveau_code'] = ['nullable', 'string', Rule::in(['tc', '1bac', '2bac'])];
+        }
+
+        if ($hasLyceeFiliere) {
+            $validationRules['lycee_filiere'] = 'nullable|string|max:255';
+        }
+
+        $validated = $request->validate($validationRules);
+
+        if ($hasMatiereNiveau) {
+            $validated = $this->normalizeMatierePayload($validated, false);
+        }
+
+        $existingQuery = Matiere::where('nom', $validated['nom'])
+            ->where('id_matiere', '!=', $matiere->id_matiere);
+
+        if ($hasMatiereNiveau) {
+            $existingQuery->where('niveau', $validated['niveau']);
+
+            if (($validated['niveau'] ?? null) === 'lycee') {
+                if ($hasLyceeNiveauCode) {
+                    $existingQuery->where('lycee_niveau_code', $validated['lycee_niveau_code'] ?? null);
+                }
+                if ($hasLyceeFiliere) {
+                    $existingQuery->where('lycee_filiere', $validated['lycee_filiere'] ?? null);
+                }
+            }
+        }
+
+        $existing = $existingQuery->first();
             
         if ($existing) {
             return response()->json(['message' => 'Cette matiere existe deja pour ce niveau.'], 422);

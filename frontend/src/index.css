@@ -1,22 +1,7 @@
-<<<<<<<<< Temporary merge branch 1
-﻿/* ===== DESIGN SYSTEM — LinkEdu ===== */
-@import '@fontsource/poppins/300.css';
-@import '@fontsource/poppins/400.css';
-@import '@fontsource/poppins/500.css';
-@import '@fontsource/poppins/600.css';
-@import '@fontsource/poppins/700.css';
-=========
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
->>>>>>>>> Temporary merge branch 2
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-<<<<<<<<< Temporary merge branch 1
-=========
-
-/* ===== DESIGN SYSTEM — LinkEdu ===== */
->>>>>>>>> Temporary merge branch 2
 :root {
   /* Default/Admin Theme */
   --primary-color: #1B2A4A;
@@ -556,7 +541,6 @@ button {
   padding: 20px 24px;
 }
 
-=========
 /* ===== UNIFIED DISPLAY TABLES ===== */
 .table-container {
   /* Removed white card wrappers entirely */
@@ -603,4 +587,3 @@ button {
 .table tbody tr:hover td {
   background: rgba(0, 0, 0, 0.015);
 }
->>>>>>>>> Temporary merge branch 2
