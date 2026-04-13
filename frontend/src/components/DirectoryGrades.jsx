@@ -60,7 +60,6 @@ function DirectoryGrades() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
-  const [selectedStudent, setSelectedStudent] = useState(null);
 
   const pageSize = 10;
 
@@ -234,25 +233,6 @@ function DirectoryGrades() {
     doc.save(`notes-examens-${Date.now()}.pdf`);
   };
 
-  const openStudentDetails = (student) => {
-    setSelectedStudent(student);
-  };
-
-  const closeStudentDetails = () => {
-    setSelectedStudent(null);
-  };
-
-  const selectedStudentNumericDetails = useMemo(() => {
-    if (!selectedStudent) return [];
-
-    return (selectedStudent.details || [])
-      .filter((detail) => Number.isFinite(Number(detail.numericValue)))
-      .map((detail) => ({
-        ...detail,
-        numericValue: Number(detail.numericValue),
-      }));
-  }, [selectedStudent]);
-
   return (
     <div className="prof-page">
       <header className="page-dashboard-header">
@@ -383,13 +363,12 @@ function DirectoryGrades() {
                 ))}
                 <th>MOYENNE</th>
                 <th>APPRECIATION</th>
-                <th>DETAIL</th>
               </tr>
             </thead>
             <tbody>
               {paginatedStudents.length === 0 && (
                 <tr>
-                  <td colSpan={columns.length + 4} style={{ textAlign: 'center', padding: '2rem' }}>
+                  <td colSpan={columns.length + 3} style={{ textAlign: 'center', padding: '2rem' }}>
                     {!hasAnyNote ? 'Pas encore de notes.' : 'Aucun eleve correspondant a la recherche.'}
                   </td>
                 </tr>
@@ -421,16 +400,6 @@ function DirectoryGrades() {
                   <td>
                     <span className="dir-notes-appreciation">{student.appreciation || '-'}</span>
                   </td>
-
-                  <td>
-                    <button
-                      type="button"
-                      className="dir-notes-detail-btn"
-                      onClick={() => openStudentDetails(student)}
-                    >
-                      Voir
-                    </button>
-                  </td>
                 </tr>
               ))}
             </tbody>
@@ -459,74 +428,6 @@ function DirectoryGrades() {
           </button>
         </div>
       </footer>
-
-      {selectedStudent && (
-        <div className="dir-notes-modal" role="dialog" aria-modal="true">
-          <div className="dir-notes-modal-backdrop" onClick={closeStudentDetails}></div>
-          <div className="dir-notes-modal-panel">
-            <div className="dir-notes-modal-header">
-              <div>
-                <h3>{selectedStudent.fullName || `${selectedStudent.firstName || ''} ${selectedStudent.lastName || ''}`.trim()}</h3>
-                <p>Moyenne generale: {formatAverage(selectedStudent.average)} / 20</p>
-              </div>
-              <button type="button" onClick={closeStudentDetails}>Fermer</button>
-            </div>
-
-            <div className="dir-notes-modal-body">
-              <h4>Evolution des notes</h4>
-              {selectedStudentNumericDetails.length === 0 ? (
-                <p>Aucune note numerique pour le moment.</p>
-              ) : (
-                <div className="dir-notes-chart">
-                  {selectedStudentNumericDetails.map((detail, index) => (
-                    <div key={`${detail.label}-${index}`} className="dir-notes-chart-item">
-                      <div className="dir-notes-chart-bar-wrap">
-                        <div
-                          className="dir-notes-chart-bar"
-                          style={{ height: `${Math.max(6, Math.min(100, (detail.numericValue / 20) * 100))}%` }}
-                          title={`${detail.label}: ${detail.numericValue}`}
-                        ></div>
-                      </div>
-                      <span>{detail.label}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="prof-table-container" style={{ marginTop: '1rem' }}>
-                <table className="prof-table">
-                  <thead>
-                    <tr>
-                      <th>EVALUATION</th>
-                      <th>NOTE</th>
-                      <th>COEF</th>
-                      <th>PERIODE</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(selectedStudent.details || []).length === 0 ? (
-                      <tr>
-                        <td colSpan="4" style={{ textAlign: 'center', padding: '1rem' }}>Pas encore de notes.</td>
-                      </tr>
-                    ) : (
-                      (selectedStudent.details || []).map((detail, index) => (
-                        <tr key={`${detail.label}-${detail.date}-${index}`}>
-                          <td>{detail.label}</td>
-                          <td>
-                            <span className={`dir-note-pill ${getCellTone(detail.status)}`}>{detail.value || '-'}</span>
-                          </td>
-                          <td>{detail.coefficient ?? 1}</td>
-                          <td>{detail.periodLabel || '-'}</td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

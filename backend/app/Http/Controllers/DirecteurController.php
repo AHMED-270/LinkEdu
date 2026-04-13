@@ -773,6 +773,7 @@ class DirecteurController extends Controller
             ->get($noteColumns);
 
         $notesByStudentAndColumn = [];
+        $notesByStudentAndMatiereAndColumn = [];
 
         foreach ($noteRows as $row) {
             $evaluationType = $this->normalizeStoredEvaluationType(
@@ -803,19 +804,27 @@ class DirecteurController extends Controller
             $coefficient = max(1.0, (float) ($row->matiere_coefficient ?? 1));
 
             $studentId = (int) $row->id_etudiant;
+            $matiereId = (int) $row->id_matiere;
             if (! isset($notesByStudentAndColumn[$studentId])) {
                 $notesByStudentAndColumn[$studentId] = [];
             }
 
-            // Latest row for the same student/column wins.
-            $notesByStudentAndColumn[$studentId][$columnKey] = [
+            if (! isset($notesByStudentAndMatiereAndColumn[$studentId])) {
+                $notesByStudentAndMatiereAndColumn[$studentId] = [];
+            }
+
+            if (! isset($notesByStudentAndMatiereAndColumn[$studentId][$matiereId])) {
+                $notesByStudentAndMatiereAndColumn[$studentId][$matiereId] = [];
+            }
+
+            $notePayload = [
                 'noteId' => (int) $row->id_note,
                 'numericValue' => $numericValue,
                 'displayValue' => $this->formatDisplayNote($numericValue, $specialStatus),
                 'status' => $this->resolveVisualStatus($numericValue, $specialStatus),
                 'specialStatus' => $specialStatus,
                 'coefficient' => $coefficient,
-                'matiereId' => (int) $row->id_matiere,
+                'matiereId' => $matiereId,
                 'matiereNom' => (string) ($row->matiere_nom ?? ''),
                 'evaluationType' => $evaluationType,
                 'periodLabel' => $periodMeta['label'],
@@ -824,16 +833,21 @@ class DirecteurController extends Controller
                 'semester' => $periodMeta['semester'],
                 'date' => isset($row->created_at) ? (string) $row->created_at : '',
             ];
+
+            // Latest row for the same student/column wins.
+            $notesByStudentAndColumn[$studentId][$columnKey] = $notePayload;
+
+            // Latest row for the same student/matiere/column wins.
+            $notesByStudentAndMatiereAndColumn[$studentId][$matiereId][$columnKey] = $notePayload;
         }
 
-        $students = $studentsBase->map(function ($student) use ($notesByStudentAndColumn, $columnDefinitions) {
+        $students = $studentsBase->map(function ($student) use ($notesByStudentAndColumn, $notesByStudentAndMatiereAndColumn, $columnDefinitions) {
             $studentId = (int) $student['id'];
             $studentColumns = $notesByStudentAndColumn[$studentId] ?? [];
+            $studentMatieres = $notesByStudentAndMatiereAndColumn[$studentId] ?? [];
 
             $cells = [];
             $details = [];
-            $weightedSum = 0.0;
-            $totalCoefficient = 0.0;
 
             foreach ($columnDefinitions as $definition) {
                 $columnKey = $definition['key'];
@@ -863,11 +877,6 @@ class DirecteurController extends Controller
                     'periodLabel' => $noteLine['periodLabel'],
                     'date' => $noteLine['date'],
                 ];
-
-                if ($noteLine['numericValue'] !== null && ! in_array($noteLine['specialStatus'], ['ABS', 'AJ'], true)) {
-                    $weightedSum += ((float) $noteLine['numericValue']) * ((float) $noteLine['coefficient']);
-                    $totalCoefficient += (float) $noteLine['coefficient'];
-                }
             }
 
             usort($details, function ($a, $b) {
@@ -878,6 +887,33 @@ class DirecteurController extends Controller
 
                 return strcmp((string) ($a['label'] ?? ''), (string) ($b['label'] ?? ''));
             });
+
+            // Coefficient-based average by subject: first average each subject, then weight by subject coefficient.
+            $weightedSum = 0.0;
+            $totalCoefficient = 0.0;
+
+            foreach ($studentMatieres as $matiereColumns) {
+                $matiereSum = 0.0;
+                $matiereCount = 0;
+                $matiereCoefficient = 1.0;
+
+                foreach ($matiereColumns as $matiereNoteLine) {
+                    $matiereCoefficient = max(1.0, (float) ($matiereNoteLine['coefficient'] ?? 1));
+
+                    if ($matiereNoteLine['numericValue'] === null || in_array($matiereNoteLine['specialStatus'], ['ABS', 'AJ'], true)) {
+                        continue;
+                    }
+
+                    $matiereSum += (float) $matiereNoteLine['numericValue'];
+                    $matiereCount++;
+                }
+
+                if ($matiereCount > 0) {
+                    $matiereAverage = $matiereSum / $matiereCount;
+                    $weightedSum += $matiereAverage * $matiereCoefficient;
+                    $totalCoefficient += $matiereCoefficient;
+                }
+            }
 
             $average = $totalCoefficient > 0
                 ? round($weightedSum / $totalCoefficient, 2)
