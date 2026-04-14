@@ -9,9 +9,34 @@ import {
   X,
   AlertCircle,
   Info,
+  Paperclip,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { professorGet } from '../services/professorApi';
+
+const formatDate = (value) => {
+  if (!value) return '-';
+  const parsed = new Date(value);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toLocaleDateString('fr-FR');
+  }
+
+  const raw = String(value);
+  if (raw.includes('T')) return raw.split('T')[0];
+  if (raw.includes(' ')) return raw.split(' ')[0];
+  return raw;
+};
+
+const formatDateTime = (value) => {
+  if (!value) return '-';
+  const parsed = new Date(value);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toLocaleString('fr-FR');
+  }
+  return String(value);
+};
+
+const hasAttachment = (annonce) => Boolean(annonce?.attachmentUrl || annonce?.photoUrl);
 
 export default function Annonces() {
   const [annonces, setAnnonces] = useState([]);
@@ -25,26 +50,28 @@ export default function Annonces() {
     setError('');
     try {
       const data = await professorGet('/api/professeur/annonces');
-      setAnnonces(data.announcements || []);
+      setAnnonces(data?.announcements || []);
     } catch {
       setError('Impossible de charger les annonces.');
+      setAnnonces([]);
     } finally {
       setLoading(false);
     }
   };
 
-    loadAnnouncements();
+  useEffect(() => {
+    loadAnnonces();
   }, []);
 
   const downloadAttachment = (annonce) => {
-    const attachmentUrl = annonce.attachmentUrl || annonce.photoUrl || annonce.attachment_url || annonce.photo_url;
+    const attachmentUrl = annonce?.attachmentUrl || annonce?.photoUrl;
     if (!attachmentUrl) return;
 
     const link = document.createElement('a');
     link.href = attachmentUrl;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
-    link.download = `annonce-${annonce.id || 'piece-jointe'}`;
+    link.download = `annonce-${annonce?.id || 'piece-jointe'}`;
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -54,46 +81,21 @@ export default function Annonces() {
     const term = searchTitle.trim().toLowerCase();
     if (!term) return annonces;
 
-    return annonces.filter((annonce) =>
-      String(annonce.title || '').toLowerCase().includes(term)
-    );
+    return annonces.filter((annonce) => (
+      String(annonce?.title || '').toLowerCase().includes(term)
+      || String(annonce?.content || '').toLowerCase().includes(term)
+      || String(annonce?.author || '').toLowerCase().includes(term)
+    ));
   }, [annonces, searchTitle]);
-
-  const hasAttachment = (annonce) => {
-    return Boolean(annonce.attachmentUrl || annonce.photoUrl || annonce.attachment_url || annonce.photo_url);
-  };
-
-  const formatDateOnly = (value) => {
-    if (!value) return '-';
-
-    const parsed = new Date(value);
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed.toLocaleDateString('fr-FR');
-    }
-
-    const raw = String(value);
-    if (raw.includes('T')) return raw.split('T')[0];
-    if (raw.includes(' ')) return raw.split(' ')[0];
-    return raw;
-  };
 
   return (
     <div className="layout-content">
-      
-      {/* Header Section */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-<<<<<<< HEAD
-          <h2 className="flex items-center gap-3">
-            <Inbox className="w-8 h-8 text-indigo-600" />
-            Annonces de l'├ëtablissement
-          </h2>
-          <p>T├®l├®chargez chaque annonce en Word ou PDF (mod├¿le scolaire).</p>
-=======
           <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
             <Megaphone className="text-blue-600" size={28} /> Communication Interne
           </h1>
-          <p className="text-slate-500 text-sm mt-1">Affichage en table simple: Voir et Télécharger.</p>
+          <p className="text-slate-500 text-sm mt-1">Affichage des annonces avec consultation et telechargement des pieces jointes.</p>
         </div>
       </header>
 
@@ -105,9 +107,9 @@ export default function Annonces() {
               type="text"
               className="form-input"
               style={{ paddingLeft: '2.5rem' }}
-              placeholder="Rechercher par titre d'annonce..."
+              placeholder="Rechercher par titre, contenu ou auteur..."
               value={searchTitle}
-              onChange={(e) => setSearchTitle(e.target.value)}
+              onChange={(event) => setSearchTitle(event.target.value)}
             />
           </div>
           <span className="text-sm font-semibold text-slate-500">{filteredAnnonces.length} annonce(s)</span>
@@ -126,21 +128,22 @@ export default function Annonces() {
                 <th className="py-3 px-4 font-bold">Titre</th>
                 <th className="py-3 px-4 font-bold">Auteur</th>
                 <th className="py-3 px-4 font-bold">Date</th>
+                <th className="py-3 px-4 font-bold">Piece</th>
                 <th className="py-3 px-4 font-bold text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={4} className="py-12 text-center">
+                  <td colSpan={5} className="py-12 text-center">
                     <span className="loading-spinner border-blue-500" />
                   </td>
                 </tr>
               ) : filteredAnnonces.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="py-12 text-center text-slate-400">
+                  <td colSpan={5} className="py-12 text-center text-slate-400">
                     <Info size={40} className="mx-auto mb-2 opacity-30" />
-                    Aucune annonce trouvée.
+                    Aucune annonce trouvee.
                   </td>
                 </tr>
               ) : (
@@ -148,25 +151,31 @@ export default function Annonces() {
                   <tr key={annonce.id} className="border-b border-slate-100 hover:bg-slate-50/70">
                     <td className="py-3 px-4">
                       <p className="font-semibold text-slate-800">{annonce.title}</p>
+                      <p className="text-xs text-slate-500 mt-1 line-clamp-1">{annonce.content || '-'}</p>
                     </td>
-                    <td className="py-3 px-4 text-sm text-slate-600">{annonce.author || '-'}</td>
-                    <td className="py-3 px-4 text-sm text-slate-600 whitespace-nowrap">{formatDateOnly(annonce.date)}</td>
+                    <td className="py-3 px-4 text-sm text-slate-600 whitespace-nowrap">{annonce.author || '-'}</td>
+                    <td className="py-3 px-4 text-sm text-slate-600 whitespace-nowrap">{formatDate(annonce.date)}</td>
+                    <td className="py-3 px-4 text-sm text-slate-600 whitespace-nowrap">
+                      {hasAttachment(annonce) ? <span className="inline-flex items-center gap-1"><Paperclip size={14} /> Jointe</span> : 'Aucune'}
+                    </td>
                     <td className="py-3 px-4">
                       <div className="flex justify-end gap-2">
                         <button
                           type="button"
                           onClick={() => setSelectedAnnonce(annonce)}
                           className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-white bg-slate-100 text-slate-600 transition-colors hover:bg-slate-600 hover:text-white"
+                          title="Voir"
                         >
-                          <Eye size={14} /> 
+                          <Eye size={14} />
                         </button>
                         <button
                           type="button"
                           disabled={!hasAttachment(annonce)}
                           onClick={() => downloadAttachment(annonce)}
                           className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-white bg-emerald-600 text-white transition-colors hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Telecharger"
                         >
-                          <Download size={14} /> 
+                          <Download size={14} />
                         </button>
                       </div>
                     </td>
@@ -175,70 +184,69 @@ export default function Annonces() {
               )}
             </tbody>
           </table>
->>>>>>> 78db954bb8f9de8159957adfa96a2d298d6c39d8
         </div>
       </div>
 
-      <div className="table-wrapper animate-fade-in bg-white rounded-2xl border border-gray-100 overflow-hidden" style={{ animationDelay: '0.1s' }}>
-        <table className="table w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">Titre</th>
-              <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">Contenu</th>
-              <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">Auteur</th>
-              <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
-              <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">Pi├¿ce</th>
-              <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">T├®l├®chargement</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {loading ? (
-              <tr>
-                <td colSpan="6" className="py-4 px-6">Chargement des annonces...</td>
-              </tr>
-            ) : annonces.length > 0 ? (
-              annonces.map((annonce) => (
-                <tr key={annonce.id} className="hover:bg-blue-50/50 transition-colors group">
-                  <td className="py-4 px-6">{annonce.title}</td>
-                  <td className="py-4 px-6">{annonce.content}</td>
-                  <td className="py-4 px-6">{annonce.author || '-'}</td>
-                  <td className="py-4 px-6">{annonce.date || formatDate(annonce.raw_date)}</td>
-                  <td className="py-4 px-6">{annonce.photo_url ? 'Photo jointe' : 'Aucune'}</td>
-                  <td className="py-4 px-6">
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={() => downloadAnnonceWord(annonce)}
-                      >
-                        Word
-                      </button>
-                      <button
-                        type="button"
-                        className="btn"
-                        onClick={() => downloadAnnoncePdf(annonce)}
-                      >
-                        PDF
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="6" className="py-12 text-center">
-                  <div className="flex flex-col items-center justify-center text-gray-400">
-                    <Inbox className="w-12 h-12 mb-3 text-gray-200" />
-                    <p className="text-base font-medium text-gray-500">Aucune annonce trouv├®e</p>
-                    <p className="text-sm mt-1">Aucune annonce disponible pour le moment.</p>
+      <AnimatePresence>
+        {selectedAnnonce && (
+          <motion.div
+            className="fixed inset-0 z-[110] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelectedAnnonce(null)}
+          >
+            <motion.div
+              className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl border border-slate-100 overflow-hidden"
+              initial={{ opacity: 0, y: 20, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.98 }}
+              transition={{ duration: 0.2 }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-slate-100 bg-slate-50">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-800">{selectedAnnonce.title}</h3>
+                  <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                    <span className="inline-flex items-center gap-1"><User size={12} /> {selectedAnnonce.author || '-'}</span>
+                    <span className="inline-flex items-center gap-1"><Calendar size={12} /> {formatDateTime(selectedAnnonce.date)}</span>
                   </div>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedAnnonce(null)}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+                  title="Fermer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="px-5 py-4">
+                <p className="text-sm text-slate-700 whitespace-pre-wrap">{selectedAnnonce.content || 'Aucun contenu.'}</p>
+              </div>
+
+              <div className="px-5 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setSelectedAnnonce(null)}
+                >
+                  Fermer
+                </button>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => downloadAttachment(selectedAnnonce)}
+                  disabled={!hasAttachment(selectedAnnonce)}
+                >
+                  <Download size={14} /> Telecharger
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
-

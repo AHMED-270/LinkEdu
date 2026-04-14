@@ -176,6 +176,8 @@ Route::middleware(['auth:sanctum', 'role:secretaire,admin,directeur'])->prefix('
     Route::put('/reclamations/{id}', [SecretaireController::class, 'updateReclamation']);
     Route::delete('/reclamations/{id}', [SecretaireController::class, 'deleteReclamation']);
     Route::put('/reclamations/{id}/status', [SecretaireController::class, 'updateReclamationStatus']);
+    Route::get('/demandes', [SecretaireController::class, 'listDemandes']);
+    Route::put('/demandes/{id}/status', [SecretaireController::class, 'updateDemandeStatus']);
     Route::get('/parents', [SecretaireController::class, 'listParents']);
     Route::get('/professeurs', [SecretaireController::class, 'listProfesseurs']);
     Route::get('/secretaires', [SecretaireController::class, 'listSecretaires']);
@@ -248,5 +250,7 @@ Route::middleware(['auth:sanctum', 'role:parent_eleve'])->prefix('parent')->grou
     Route::get('/professeurs', [StudentParentController::class, 'parentProfessors']);
     Route::get('/reclamations', [StudentParentController::class, 'parentComplaints']);
     Route::post('/reclamations', [StudentParentController::class, 'submitParentComplaint']);
+    Route::get('/demandes', [StudentParentController::class, 'parentDemandes']);
+    Route::post('/demandes', [StudentParentController::class, 'submitParentDemande']);
     Route::get('/ressources', [StudentParentController::class, 'parentResources']);
 });

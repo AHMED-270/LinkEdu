@@ -46,10 +46,10 @@ const getStatusMeta = (rawStatus) => {
   };
 };
 
-export default function SecretaireReclamations() {
+export default function SecretaireDemandes() {
   const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000';
 
-  const [reclamations, setReclamations] = useState([]);
+  const [demandes, setDemandes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [updatingId, setUpdatingId] = useState(null);
@@ -58,15 +58,15 @@ export default function SecretaireReclamations() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${apiBaseUrl}/api/secretaire/reclamations`, {
+      const res = await axios.get(`${apiBaseUrl}/api/secretaire/demandes`, {
         withCredentials: true,
         withXSRFToken: true,
       });
-      setReclamations(res.data?.reclamations || []);
+      setDemandes(res.data?.demandes || []);
     } catch (error) {
-      console.error('Erreur lors du chargement des reclamations', error);
-      setReclamations([]);
-      setFeedback({ type: 'error', msg: 'Impossible de charger les reclamations.' });
+      console.error('Erreur lors du chargement des demandes', error);
+      setDemandes([]);
+      setFeedback({ type: 'error', msg: 'Impossible de charger les demandes.' });
     } finally {
       setLoading(false);
     }
@@ -76,27 +76,26 @@ export default function SecretaireReclamations() {
     loadData();
   }, []);
 
-  const filteredReclamations = useMemo(() => {
+  const filteredDemandes = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    if (!term) return reclamations;
+    if (!term) return demandes;
 
-    return reclamations.filter((item) => {
+    return demandes.filter((item) => {
       const parentLabel = `${item.parent_nom || ''} ${item.parent_prenom || ''}`.toLowerCase();
       return (
-        String(item.sujet || '').toLowerCase().includes(term)
+        String(item.type_demande || '').toLowerCase().includes(term)
         || String(item.message || '').toLowerCase().includes(term)
         || parentLabel.includes(term)
         || String(item.parent_email || '').toLowerCase().includes(term)
         || String(item.eleve_nom || '').toLowerCase().includes(term)
         || String(item.classe || '').toLowerCase().includes(term)
-        || String(item.cible_label || '').toLowerCase().includes(term)
         || String(item.statut || '').toLowerCase().includes(term)
       );
     });
-  }, [reclamations, searchTerm]);
+  }, [demandes, searchTerm]);
 
-  const onStatusChange = async (idReclamation, statut) => {
-    setUpdatingId(idReclamation);
+  const onStatusChange = async (idDemande, statut) => {
+    setUpdatingId(idDemande);
     setFeedback({ type: '', msg: '' });
 
     try {
@@ -106,7 +105,7 @@ export default function SecretaireReclamations() {
       });
 
       await axios.put(
-        `${apiBaseUrl}/api/secretaire/reclamations/${idReclamation}/status`,
+        `${apiBaseUrl}/api/secretaire/demandes/${idDemande}/status`,
         { statut },
         {
           withCredentials: true,
@@ -114,8 +113,8 @@ export default function SecretaireReclamations() {
         }
       );
 
-      setReclamations((prev) => prev.map((item) => (
-        item.id_reclamation === idReclamation ? { ...item, statut } : item
+      setDemandes((prev) => prev.map((item) => (
+        item.id_demande === idDemande ? { ...item, statut } : item
       )));
 
       setFeedback({ type: 'success', msg: 'Statut mis a jour avec succes.' });
@@ -137,10 +136,10 @@ export default function SecretaireReclamations() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 tracking-tight flex items-center gap-3">
               <ClipboardList className="w-8 h-8 text-blue-600" />
-              Gestion des reclamations
+              Traitement des demandes parents
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-              Suivez et mettez a jour les reclamations adressees a l administration.
+              Suivez et mettez a jour les demandes administratives envoyees par les parents.
             </p>
           </div>
 
@@ -148,7 +147,7 @@ export default function SecretaireReclamations() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Rechercher par parent, eleve, sujet..."
+              placeholder="Rechercher par parent, eleve, type..."
               className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
@@ -171,27 +170,27 @@ export default function SecretaireReclamations() {
                   <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
                   <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">Parent</th>
                   <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">Eleve / Classe</th>
-                  <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">Sujet</th>
-                  <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">Message</th>
+                  <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">Type de demande</th>
+                  <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">Cause</th>
                   <th className="py-4 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">Statut</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {loading ? (
                   <TableSkeletonRows rowCount={6} colSpan={6} />
-                ) : filteredReclamations.map((item) => {
+                ) : filteredDemandes.map((item) => {
                   const statusMeta = getStatusMeta(item.statut);
-                  const isUpdating = updatingId === item.id_reclamation;
+                  const isUpdating = updatingId === item.id_demande;
 
                   return (
-                    <tr key={item.id_reclamation} className="hover:bg-blue-50/40 transition-colors">
+                    <tr key={item.id_demande} className="hover:bg-blue-50/40 transition-colors">
                       <td className="py-4 px-6 align-top">
                         <div className="text-xs font-semibold text-gray-600">
-                          {item.date_soumission ? new Date(item.date_soumission).toLocaleDateString('fr-FR') : '-'}
+                          {item.date_demande ? new Date(item.date_demande).toLocaleDateString('fr-FR') : '-'}
                         </div>
                         <div className="text-[10px] text-gray-400 mt-1">
-                          {item.date_soumission
-                            ? new Date(item.date_soumission).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+                          {item.date_demande
+                            ? new Date(item.date_demande).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
                             : '-'}
                         </div>
                       </td>
@@ -207,13 +206,14 @@ export default function SecretaireReclamations() {
                       </td>
 
                       <td className="py-4 px-6 align-top">
-                        <p className="text-sm font-semibold text-slate-800 max-w-xs line-clamp-2">{item.sujet || '-'}</p>
-                        <div className="text-[11px] text-slate-500 mt-1">Destinataire: {item.cible_label || '-'}</div>
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                          {item.type_demande || '-'}
+                        </span>
                       </td>
 
                       <td className="py-4 px-6 align-top">
                         <p className="text-xs text-gray-600 italic max-w-xs line-clamp-3">
-                          {item.message || 'Aucun message.'}
+                          {item.message || 'Aucune cause.'}
                         </p>
                       </td>
 
@@ -227,7 +227,7 @@ export default function SecretaireReclamations() {
                             <select
                               className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 focus:ring-2 focus:ring-blue-500/20 outline-none"
                               value={String(item.statut || 'en_attente').toLowerCase()}
-                              onChange={(event) => onStatusChange(item.id_reclamation, event.target.value)}
+                              onChange={(event) => onStatusChange(item.id_demande, event.target.value)}
                               disabled={isUpdating}
                             >
                               {statusOptions.map((option) => (
@@ -247,15 +247,15 @@ export default function SecretaireReclamations() {
                   );
                 })}
 
-                {!loading && filteredReclamations.length === 0 && (
+                {!loading && filteredDemandes.length === 0 && (
                   <tr>
                     <td colSpan="6" className="py-12 text-center">
                       <div className="flex flex-col items-center justify-center text-gray-400">
                         <span className="mb-3 text-gray-200">
                           <ClipboardList className="w-10 h-10" />
                         </span>
-                        <p className="text-base font-medium text-gray-500">Aucune reclamation trouvee</p>
-                        <p className="text-sm mt-1">Ajustez votre recherche pour afficher les reclamations.</p>
+                        <p className="text-base font-medium text-gray-500">Aucune demande trouvee</p>
+                        <p className="text-sm mt-1">Ajustez votre recherche pour afficher les demandes.</p>
                       </div>
                     </td>
                   </tr>

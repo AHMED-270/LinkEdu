@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Absence;
 use App\Models\Annonce;
 use App\Models\Classe;
+use App\Models\Demande;
 use App\Models\Etudiant;
 use App\Models\ParentEleve;
 use App\Models\Professeur;
@@ -675,6 +676,7 @@ class SecretaireController extends Controller
             ->leftJoin('users as parent_user', 'parents.id_parent', '=', 'parent_user.id')
             ->leftJoin('etudiants', 'reclamations.id_etudiant', '=', 'etudiants.id_etudiant')
             ->leftJoin('users as etu_user', 'etudiants.id_etudiant', '=', 'etu_user.id')
+            ->leftJoin('classes', 'etudiants.id_classe', '=', 'classes.id_classe')
             ->select(
                 'reclamations.id_reclamation',
                 'reclamations.sujet',
@@ -685,7 +687,9 @@ class SecretaireController extends Controller
                 'reclamations.id_etudiant',
                 DB::raw("CONCAT(COALESCE(parent_user.prenom, ''), ' ', COALESCE(parent_user.nom, '')) as parent_nom_complet"),
                 DB::raw('parent_user.email as parent_email'),
-                DB::raw("CONCAT(COALESCE(etu_user.prenom, ''), ' ', COALESCE(etu_user.nom, '')) as etudiant_nom_complet")
+                DB::raw("CONCAT(COALESCE(etu_user.prenom, ''), ' ', COALESCE(etu_user.nom, '')) as etudiant_nom_complet"),
+                'classes.nom as classe_nom',
+                'classes.niveau as classe_niveau'
             );
 
         if ($hasProfesseurColumn) {
@@ -766,11 +770,62 @@ class SecretaireController extends Controller
                     'parent_nom' => trim((string) ($rec->parent_nom_complet ?? '')),
                     'parent_prenom' => '',
                     'parent_email' => $rec->parent_email,
+                    'eleve_nom' => trim((string) ($rec->etudiant_nom_complet ?? '')),
+                    'classe' => trim((string) ($rec->classe_nom ?? '') . (((string) ($rec->classe_niveau ?? '')) !== '' ? (' - ' . (string) $rec->classe_niveau) : '')),
                 ];
             })
             ->values();
 
         return response()->json(['reclamations' => $reclamations]);
+    }
+
+    public function listDemandes(): JsonResponse
+    {
+        if (! Schema::hasTable('demandes')) {
+            return response()->json(['demandes' => []]);
+        }
+
+        $demandes = DB::table('demandes')
+            ->leftJoin('parents', 'demandes.id_parent', '=', 'parents.id_parent')
+            ->leftJoin('users as parent_user', 'parents.id_parent', '=', 'parent_user.id')
+            ->leftJoin('etudiants', 'demandes.id_etudiant', '=', 'etudiants.id_etudiant')
+            ->leftJoin('users as etu_user', 'etudiants.id_etudiant', '=', 'etu_user.id')
+            ->leftJoin('classes', 'etudiants.id_classe', '=', 'classes.id_classe')
+            ->select(
+                'demandes.id_demande',
+                'demandes.type_demande',
+                'demandes.message',
+                'demandes.statut',
+                'demandes.date_demande',
+                'demandes.id_parent',
+                'demandes.id_etudiant',
+                DB::raw("CONCAT(COALESCE(parent_user.prenom, ''), ' ', COALESCE(parent_user.nom, '')) as parent_nom_complet"),
+                DB::raw('parent_user.email as parent_email'),
+                DB::raw("CONCAT(COALESCE(etu_user.prenom, ''), ' ', COALESCE(etu_user.nom, '')) as etudiant_nom_complet"),
+                'classes.nom as classe_nom',
+                'classes.niveau as classe_niveau'
+            )
+            ->orderByDesc('demandes.date_demande')
+            ->get()
+            ->map(function ($demande) {
+                return [
+                    'id_demande' => $demande->id_demande,
+                    'type_demande' => $demande->type_demande,
+                    'message' => $demande->message,
+                    'statut' => $demande->statut,
+                    'date_demande' => $demande->date_demande,
+                    'id_parent' => $demande->id_parent,
+                    'id_etudiant' => $demande->id_etudiant,
+                    'parent_nom' => trim((string) ($demande->parent_nom_complet ?? '')),
+                    'parent_prenom' => '',
+                    'parent_email' => $demande->parent_email,
+                    'eleve_nom' => trim((string) ($demande->etudiant_nom_complet ?? '')),
+                    'classe' => trim((string) ($demande->classe_nom ?? '') . (((string) ($demande->classe_niveau ?? '')) !== '' ? (' - ' . (string) $demande->classe_niveau) : '')),
+                ];
+            })
+            ->values();
+
+        return response()->json(['demandes' => $demandes]);
     }
 
     public function listProfesseurs(): JsonResponse
@@ -817,6 +872,22 @@ class SecretaireController extends Controller
         $reclamation->update(['statut' => $validated['statut']]);
 
         return response()->json(['message' => 'Statut de reclamation mis a jour avec succes.']);
+    }
+
+    public function updateDemandeStatus(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'statut' => ['required', 'in:en_attente,en_cours,resolue,rejetee'],
+        ]);
+
+        if (! Schema::hasTable('demandes')) {
+            return response()->json(['message' => 'Table demandes introuvable.'], 404);
+        }
+
+        $demande = Demande::findOrFail($id);
+        $demande->update(['statut' => $validated['statut']]);
+
+        return response()->json(['message' => 'Statut de demande mis a jour avec succes.']);
     }
 
     public function updateReclamation(Request $request, int $id): JsonResponse

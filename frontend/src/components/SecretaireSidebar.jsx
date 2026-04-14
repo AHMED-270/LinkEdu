@@ -1,5 +1,5 @@
-import { NavLink, useNavigate } from 'react-router-dom';
-import { FiGrid, FiUsers, FiCreditCard, FiBookOpen, FiCalendar, FiMessageCircle, FiAlertCircle, FiLogOut } from 'react-icons/fi';
+﻿import { NavLink, useNavigate } from 'react-router-dom';
+import { FiGrid, FiUsers, FiCreditCard, FiBookOpen, FiCalendar, FiMessageCircle, FiAlertCircle, FiFileText, FiLogOut } from 'react-icons/fi';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
@@ -13,17 +13,47 @@ const navItems = [
   { path: '/secretaire/absences', label: 'Absences', icon: FiCalendar },
   { path: '/secretaire/annonces', label: 'Annonces', icon: FiMessageCircle },
   { path: '/secretaire/reclamations', label: 'Reclamations', icon: FiAlertCircle },
+  { path: '/secretaire/demandes', label: 'Demandes', icon: FiFileText },
 ];
 
 export default function SecretaireSidebar() {
+  const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [classes, setClasses] = useState([]);
+  const [isLoadingClasses, setIsLoadingClasses] = useState(false);
+
   const role = String(user?.role || '').toLowerCase();
   const visibleNavItems = role === 'comptable'
     ? navItems.filter((item) => item.path === '/secretaire/dashboard' || item.path === '/secretaire/paiements')
     : navItems;
+
+  useEffect(() => {
+    const loadClasses = async () => {
+      if (role === 'comptable') {
+        setClasses([]);
+        return;
+      }
+
+      setIsLoadingClasses(true);
+      try {
+        const res = await axios.get(apiBaseUrl + '/api/secretaire/classes', {
+          withCredentials: true,
+          withXSRFToken: true,
+        });
+        setClasses(res.data?.classes || []);
+      } catch {
+        setClasses([]);
+      } finally {
+        setIsLoadingClasses(false);
+      }
+    };
+
+    loadClasses();
+  }, [apiBaseUrl, role]);
 
   const handleLogoutConfirm = async () => {
     if (isLoggingOut) return;
@@ -59,8 +89,8 @@ export default function SecretaireSidebar() {
             <div className="logout-modal-icon">
               <FiLogOut size={48} color="#f43f5e" />
             </div>
-            <h3>Êtes-vous sûr de vouloir vous déconnecter ?</h3>
-            <p>Vous devrez saisir à nouveau vos identifiants pour accéder à ce panneau.</p>
+            <h3>Etes-vous sur de vouloir vous deconnecter ?</h3>
+            <p>Vous devrez saisir a nouveau vos identifiants pour acceder a ce panneau.</p>
             <div className="logout-modal-actions">
               <button
                 className="btn-cancel"
@@ -74,7 +104,7 @@ export default function SecretaireSidebar() {
                 onClick={handleLogoutConfirm}
                 disabled={isLoggingOut}
               >
-                {isLoggingOut ? 'Déconnexion...' : 'Oui, me déconnecter'}
+                {isLoggingOut ? 'Deconnexion...' : 'Oui, me deconnecter'}
               </button>
             </div>
           </div>
@@ -104,7 +134,7 @@ export default function SecretaireSidebar() {
           <div className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Navigation</div>
 
           <nav className="flex flex-col gap-1 px-2">
-            {navItems.map((item) => {
+            {visibleNavItems.map((item) => {
               const Icon = item.icon;
               return (
                 <NavLink
@@ -145,7 +175,7 @@ export default function SecretaireSidebar() {
                     <li key={classe.id_classe} className="sidebar-class-item">
                       <span className="sidebar-class-name">{classe.nom}</span>
                       <span className="sidebar-class-meta">
-                        {classe.niveau || '-'} • {classe.total_etudiants ?? 0} eleve(s)
+                        {classe.niveau || '-'} - {classe.total_etudiants ?? 0} eleve(s)
                       </span>
                     </li>
                   ))}

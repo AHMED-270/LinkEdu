@@ -6,6 +6,7 @@ use App\Models\Annonce;
 use App\Models\Absence;
 use App\Models\Devoir;
 use App\Models\DevoirSoumission;
+use App\Models\Demande;
 use App\Models\EmploiDuTemps;
 use App\Models\Etudiant;
 use App\Models\Lecon;
@@ -20,6 +21,13 @@ use Illuminate\Support\Facades\Storage;
 
 class StudentParentController extends Controller
 {
+    private const PARENT_REQUEST_TYPES = [
+        'Attestation de scolarite',
+        'Certificat de depart',
+        'Recu de paiement',
+        'Liste de fournitures',
+    ];
+
     public function studentDashboard(Request $request): JsonResponse
     {
         $student = $this->getAuthenticatedStudent($request);
@@ -790,10 +798,42 @@ class StudentParentController extends Controller
             return response()->json(['reclamations' => []]);
         }
 
-        $complaints = Reclamation::query()
-            ->where('id_parent', $parent->id_parent)
-            ->orderByDesc('date_soumission')
-            ->get();
+        $complaints = DB::table('reclamations')
+            ->leftJoin('etudiants', 'reclamations.id_etudiant', '=', 'etudiants.id_etudiant')
+            ->leftJoin('users as etu_user', 'etudiants.id_etudiant', '=', 'etu_user.id')
+            ->leftJoin('classes', 'etudiants.id_classe', '=', 'classes.id_classe')
+            ->where('reclamations.id_parent', $parent->id_parent)
+            ->orderByDesc('reclamations.date_soumission')
+            ->get([
+                'reclamations.id_reclamation',
+                'reclamations.id_parent',
+                'reclamations.id_etudiant',
+                'reclamations.sujet',
+                'reclamations.message',
+                'reclamations.statut',
+                'reclamations.date_soumission',
+                'reclamations.created_at',
+                DB::raw("CONCAT(COALESCE(etu_user.prenom, ''), ' ', COALESCE(etu_user.nom, '')) as eleve_nom_complet"),
+                'classes.nom as classe_nom',
+                'classes.niveau as classe_niveau',
+            ])
+            ->map(function ($row) {
+                $className = trim((string) ($row->classe_nom ?? ''));
+                $classLevel = trim((string) ($row->classe_niveau ?? ''));
+
+                return [
+                    'id_reclamation' => $row->id_reclamation,
+                    'id_parent' => $row->id_parent,
+                    'id_etudiant' => $row->id_etudiant,
+                    'sujet' => $row->sujet,
+                    'message' => $row->message,
+                    'statut' => $row->statut,
+                    'date_soumission' => $row->date_soumission,
+                    'eleve_nom' => trim((string) ($row->eleve_nom_complet ?? '')),
+                    'classe' => trim($className . ($classLevel !== '' ? (' - ' . $classLevel) : '')),
+                ];
+            })
+            ->values();
 
         return response()->json(['reclamations' => $complaints]);
     }
@@ -809,19 +849,152 @@ class StudentParentController extends Controller
         $validated = $request->validate([
             'sujet' => ['required', 'string', 'max:255'],
             'message' => ['required', 'string', 'max:3000'],
+            'id_etudiant' => ['nullable', 'integer'],
+            'child_id' => ['nullable', 'integer'],
         ]);
 
-        $complaint = Reclamation::query()->create([
+        $requestedChildId = (int) ($validated['id_etudiant'] ?? $validated['child_id'] ?? 0);
+        $childQuery = Etudiant::query()->where('id_parent', $parent->id_parent);
+
+        if ($requestedChildId > 0) {
+            $childQuery->where('id_etudiant', $requestedChildId);
+        }
+
+        $child = $childQuery->first();
+
+        if ($requestedChildId > 0 && ! $child) {
+            return response()->json(['message' => 'Eleve introuvable pour ce parent.'], 422);
+        }
+
+        $payload = [
             'id_parent' => $parent->id_parent,
-            'sujet' => $validated['sujet'],
-            'message' => $validated['message'],
+            'sujet' => trim((string) $validated['sujet']),
+            'message' => trim((string) $validated['message']),
             'date_soumission' => now(),
             'statut' => 'en_attente',
-        ]);
+        ];
+
+        if ($child) {
+            $payload['id_etudiant'] = $child->id_etudiant;
+        }
+
+        if (Schema::hasColumn('reclamations', 'cible')) {
+            $payload['cible'] = 'secretaire';
+        }
+
+        $complaint = Reclamation::query()->create($payload);
 
         return response()->json([
             'message' => 'Reclamation envoyee avec succes.',
             'reclamation' => $complaint,
+            'eleve' => [
+                'id_etudiant' => $child->id_etudiant ?? null,
+                'nom_complet' => trim((string) ($child?->user?->prenom ?? '') . ' ' . (string) ($child?->user?->nom ?? '')),
+                'classe' => $child?->classe ? trim($child->classe->nom . ' - ' . $child->classe->niveau) : null,
+            ],
+        ], 201);
+    }
+
+    public function parentDemandes(Request $request): JsonResponse
+    {
+        $parent = $this->getAuthenticatedParent($request);
+
+        if (! $parent) {
+            return response()->json(['demandes' => []]);
+        }
+
+        $demandes = DB::table('demandes')
+            ->leftJoin('etudiants', 'demandes.id_etudiant', '=', 'etudiants.id_etudiant')
+            ->leftJoin('users as etu_user', 'etudiants.id_etudiant', '=', 'etu_user.id')
+            ->leftJoin('classes', 'etudiants.id_classe', '=', 'classes.id_classe')
+            ->where('demandes.id_parent', $parent->id_parent)
+            ->orderByDesc('demandes.date_demande')
+            ->get([
+                'demandes.id_demande',
+                'demandes.id_parent',
+                'demandes.id_etudiant',
+                'demandes.type_demande',
+                'demandes.message',
+                'demandes.statut',
+                'demandes.date_demande',
+                DB::raw("CONCAT(COALESCE(etu_user.prenom, ''), ' ', COALESCE(etu_user.nom, '')) as eleve_nom_complet"),
+                'classes.nom as classe_nom',
+                'classes.niveau as classe_niveau',
+            ])
+            ->map(function ($row) {
+                $className = trim((string) ($row->classe_nom ?? ''));
+                $classLevel = trim((string) ($row->classe_niveau ?? ''));
+
+                return [
+                    'id_demande' => $row->id_demande,
+                    'id_parent' => $row->id_parent,
+                    'id_etudiant' => $row->id_etudiant,
+                    'type_demande' => $row->type_demande,
+                    'message' => $row->message,
+                    'statut' => $row->statut,
+                    'date_demande' => $row->date_demande,
+                    'eleve_nom' => trim((string) ($row->eleve_nom_complet ?? '')),
+                    'classe' => trim($className . ($classLevel !== '' ? (' - ' . $classLevel) : '')),
+                ];
+            })
+            ->values();
+
+        return response()->json(['demandes' => $demandes]);
+    }
+
+    public function submitParentDemande(Request $request): JsonResponse
+    {
+        $parent = $this->getAuthenticatedParent($request);
+
+        if (! $parent) {
+            return response()->json(['message' => 'Profil parent introuvable.'], 404);
+        }
+
+        $validated = $request->validate([
+            'type_demande' => ['required', 'string', 'max:255'],
+            'message' => ['nullable', 'string', 'max:3000'],
+            'id_etudiant' => ['nullable', 'integer'],
+            'child_id' => ['nullable', 'integer'],
+        ]);
+
+        $typeDemande = trim((string) $validated['type_demande']);
+
+        if (! in_array($typeDemande, self::PARENT_REQUEST_TYPES, true)) {
+            return response()->json(['message' => 'Type de demande invalide.'], 422);
+        }
+
+        $requestedChildId = (int) ($validated['id_etudiant'] ?? $validated['child_id'] ?? 0);
+        $childQuery = Etudiant::query()
+            ->with('classe:id_classe,nom,niveau')
+            ->where('id_parent', $parent->id_parent);
+
+        if ($requestedChildId > 0) {
+            $childQuery->where('id_etudiant', $requestedChildId);
+        }
+
+        $child = $childQuery->first();
+
+        if (! $child) {
+            return response()->json(['message' => 'Eleve introuvable pour ce parent.'], 422);
+        }
+
+        $demande = Demande::query()->create([
+            'id_parent' => $parent->id_parent,
+            'id_etudiant' => $child->id_etudiant,
+            'type_demande' => $typeDemande,
+            'message' => trim((string) ($validated['message'] ?? '')),
+            'date_demande' => now(),
+            'statut' => 'en_attente',
+        ]);
+
+        return response()->json([
+            'message' => 'Demande envoyee avec succes.',
+            'demande' => $demande,
+            'eleve' => [
+                'id_etudiant' => $child->id_etudiant,
+                'nom_complet' => trim((string) ($child->user?->prenom ?? '') . ' ' . (string) ($child->user?->nom ?? '')),
+                'classe' => $child->classe ? trim($child->classe->nom . ' - ' . $child->classe->niveau) : null,
+            ],
         ], 201);
     }
 
