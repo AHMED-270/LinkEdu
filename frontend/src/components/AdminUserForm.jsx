@@ -45,6 +45,7 @@ export default function AdminUserForm({ mode = 'create', userToEdit = null, onBa
   const [formError, setFormError] = useState('');
   const [loadWarning, setLoadWarning] = useState('');
   const [showCreationToast, setShowCreationToast] = useState(false);
+  const [createdCredentials, setCreatedCredentials] = useState(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -273,17 +274,18 @@ export default function AdminUserForm({ mode = 'create', userToEdit = null, onBa
           headers: { Accept: 'application/json' }
         });
       } else {
-        await axios.post(`${apiBaseUrl}/api/admin/users`, payload, {
+        const createResponse = await axios.post(`${apiBaseUrl}/api/admin/users`, payload, {
           withCredentials: true,
           withXSRFToken: true,
           headers: { Accept: 'application/json' }
         });
 
+        setCreatedCredentials({
+          email: createResponse?.data?.credentials?.email || payload.email,
+          temporaryPassword: createResponse?.data?.credentials?.temporary_password || '',
+        });
+
         setShowCreationToast(true);
-        setTimeout(() => {
-          setShowCreationToast(false);
-          if (onSuccess) onSuccess();
-        }, 2200);
         return;
       }
 
@@ -317,7 +319,23 @@ export default function AdminUserForm({ mode = 'create', userToEdit = null, onBa
     <div className={isModal ? '' : 'dashboard-content'}>
       {showCreationToast && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 max-w-xl w-[92%] sm:w-auto rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800 shadow-lg">
-          Le mot de passe est genere automatiquement et envoye par email a l'utilisateur.
+          <div>Compte cree avec succes.</div>
+          <div className="mt-1 text-xs font-medium text-blue-900">
+            Identifiants: {createdCredentials?.email || '-'} / {createdCredentials?.temporaryPassword || 'envoye par email'}
+          </div>
+          <div className="mt-3 flex justify-end">
+            <button
+              type="button"
+              onClick={() => {
+                setShowCreationToast(false);
+                setCreatedCredentials(null);
+                if (onSuccess) onSuccess();
+              }}
+              className="rounded-lg bg-blue-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-800"
+            >
+              Fermer
+            </button>
+          </div>
         </div>
       )}
 

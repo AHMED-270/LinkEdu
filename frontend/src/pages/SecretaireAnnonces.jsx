@@ -12,6 +12,7 @@ import {
   Download,
   Inbox
 } from 'lucide-react';
+import TableSkeletonRows from '../components/TableSkeletonRows';
 
 const emptyForm = { titre: '', contenu: '', cible: 'Tous' };
 
@@ -278,14 +279,7 @@ export default function SecretaireAnnonces() {
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {loading ? (
-                      [...Array(6)].map((_, i) => (
-                        <tr key={`annonce-skeleton-${i}`} className="animate-pulse">
-                          <td className="py-4 px-6"><div className="h-4 w-56 rounded bg-gray-100"></div></td>
-                          <td className="py-4 px-6"><div className="h-9 w-16 rounded bg-gray-100"></div></td>
-                          <td className="py-4 px-6"><div className="h-5 w-20 rounded-full bg-gray-100"></div></td>
-                          <td className="py-4 px-6"><div className="h-4 w-16 ml-auto rounded bg-gray-100"></div></td>
-                        </tr>
-                      ))
+                      <TableSkeletonRows rowCount={6} colCount={4} />
                     ) : filteredAnnonces.length > 0 ? filteredAnnonces.map((a) => (
                       <tr key={a.id_annonce} className="hover:bg-blue-50/50 transition-colors group">
                         <td className="py-4 px-6">

@@ -20,6 +20,7 @@ import {
   X,
   Inbox,
 } from 'lucide-react';
+import TableSkeletonRows from '../components/TableSkeletonRows';
 
 const emptyForm = { id_etudiant: '', date_abs: '', motif: 'Medical' };
 const allowedJustificationTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
@@ -456,15 +457,7 @@ export default function SecretaireAbsences() {
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {loading ? (
-                      [...Array(6)].map((_, i) => (
-                        <tr key={`absence-skeleton-${i}`} className="animate-pulse">
-                          <td className="py-4 px-6"><div className="h-10 w-40 rounded bg-gray-100"></div></td>
-                          <td className="py-4 px-6"><div className="h-4 w-28 rounded bg-gray-100"></div></td>
-                          <td className="py-4 px-6"><div className="h-4 w-24 rounded bg-gray-100"></div></td>
-                          <td className="py-4 px-6"><div className="h-6 w-24 rounded-full bg-gray-100"></div></td>
-                          <td className="py-4 px-6"><div className="h-4 w-16 ml-auto rounded bg-gray-100"></div></td>
-                        </tr>
-                      ))
+                      <TableSkeletonRows rowCount={6} colCount={5} />
                     ) : filteredAbsences.length > 0 ? filteredAbsences.map((a) => (
                       <tr key={a.id_absence} className="hover:bg-blue-50/50 transition-colors group">
                         <td className="py-4 px-6">

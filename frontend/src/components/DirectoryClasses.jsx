@@ -1,10 +1,8 @@
 import React from 'react';
-import DirectoryFallback from './DirectoryFallback';
+import SecretaireClasses from '../pages/SecretaireClasses';
 
-function DirectoryClasses({ userRole }) {
-  return (
-    <DirectoryFallback activeMenu="Liste des Classes" userRole={userRole} />
-  );
+function DirectoryClasses() {
+  return <SecretaireClasses />;
 }
 
 export default DirectoryClasses;

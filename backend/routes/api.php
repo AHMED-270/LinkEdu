@@ -9,9 +9,6 @@ use App\Http\Controllers\PaiementController;
 use App\Http\Controllers\ProfessorController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SecretaireController;
-use App\Http\Controllers\StudentParentController;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -199,4 +196,41 @@ Route::middleware(['auth:sanctum', 'role:secretaire,admin,directeur'])->prefix('
     Route::delete('/reclamations/{id}', [SecretaireController::class, 'deleteReclamation']);
     Route::put('/reclamations/{id}/status', [SecretaireController::class, 'updateReclamationStatus']);
     Route::get('/parents', [SecretaireController::class, 'listParents']);
+    Route::get('/professeurs', [SecretaireController::class, 'listProfesseurs']);
+    Route::get('/secretaires', [SecretaireController::class, 'listSecretaires']);
+});
+
+// Directeur Module Routes
+Route::middleware(['auth:sanctum', 'role:directeur'])->prefix('directeur')->group(function () {
+    Route::get('/dashboard', [DirecteurController::class, 'dashboard']);
+
+    // Professors list
+    Route::get('/professeurs', [DirecteurController::class, 'getProfessors']);
+
+    // Students + absences details
+    Route::get('/etudiants', [DirecteurController::class, 'getStudents']);
+    Route::get('/etudiants/{id}/absences', [DirecteurController::class, 'getStudentAbsences']);
+
+    // Secretaries list for targeted reclamations
+    Route::get('/secretaires', [DirecteurController::class, 'getSecretaires']);
+
+    // Annonces management for directeur
+    Route::get('/annonces', [SecretaireController::class, 'listAnnonces']);
+    Route::post('/annonces', [SecretaireController::class, 'createAnnonce']);
+    Route::put('/annonces/{id}', [SecretaireController::class, 'updateAnnonce']);
+    Route::delete('/annonces/{id}', [SecretaireController::class, 'deleteAnnonce']);
+
+    // Reclamations management
+    Route::get('/reclamations', [DirecteurController::class, 'getReclamations']);
+    Route::post('/reclamations', [DirecteurController::class, 'storeReclamation']);
+    Route::put('/reclamations/{id}', [DirecteurController::class, 'updateReclamation']);
+    Route::delete('/reclamations/{id}', [DirecteurController::class, 'deleteReclamation']);
+
+    // Notes & examens overview
+    Route::get('/notes', [DirecteurController::class, 'getNotesOverview']);
+
+    // Profile
+    Route::get('/profile', [DirecteurController::class, 'getProfile']);
+    Route::put('/profile', [DirecteurController::class, 'updateProfile']);
+    Route::put('/profile/password', [DirecteurController::class, 'updatePassword']);
 });

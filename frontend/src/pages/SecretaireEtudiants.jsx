@@ -4,6 +4,7 @@ import jsPDF from 'jspdf';
 import { useNavigate } from 'react-router-dom';
 import { FiUser, FiCalendar, FiMail, FiPhone, FiMapPin, FiArrowLeft, FiCheckCircle, FiSearch, FiEdit2, FiTrash2, FiPlus, FiUsers, FiDownload, FiEye, FiX, FiUpload } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
+import TableSkeletonRows from '../components/TableSkeletonRows';
 
 const emptyForm = {
   nom: '',
@@ -574,14 +575,7 @@ export default function SecretaireEtudiants() {
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {loading ? (
-                      [...Array(6)].map((_, i) => (
-                        <tr key={`student-skeleton-${i}`} className="animate-pulse">
-                          <td className="py-4 px-6"><div className="h-9 w-48 rounded bg-gray-100"></div></td>
-                          <td className="py-4 px-6"><div className="h-4 w-40 rounded bg-gray-100 mx-auto"></div></td>
-                          <td className="py-4 px-6"><div className="h-10 w-52 rounded bg-gray-100"></div></td>
-                          <td className="py-4 px-6"><div className="h-4 w-16 ml-auto rounded bg-gray-100"></div></td>
-                        </tr>
-                      ))
+                      <TableSkeletonRows rowCount={6} colCount={4} />
                     ) : visibleStudents.map((student) => (
                       <tr key={student.id_etudiant} className="hover:bg-blue-50/50 transition-colors group">
                         <td className="py-4 px-6">

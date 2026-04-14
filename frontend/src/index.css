@@ -233,6 +233,98 @@ button {
   color: #374151;
   border-bottom: 1px solid #f3f4f6;
   vertical-align: middle;
+<<<<<<< HEAD
+=======
+}
+
+.table tr:hover td {
+  background: rgba(0, 0, 0, 0.01);
+}
+
+.table-skeleton-row td {
+  background: transparent;
+}
+
+.table-skeleton-bar {
+  height: 14px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #e2e8f0 8%, #f8fafc 32%, #e2e8f0 56%);
+  background-size: 240% 100%;
+  animation: tableSkeletonShimmer 1.25s ease-in-out infinite;
+}
+
+@keyframes tableSkeletonShimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.badge-blue {
+  background: var(--primary-50);
+  color: var(--primary-600);
+}
+
+.badge-green {
+  background: #D5F5E3;
+  color: var(--accent-green);
+}
+
+.badge-orange {
+  background: #FDEBD0;
+  color: var(--accent-orange);
+}
+
+.badge-red {
+  background: #FADBD8;
+  color: var(--accent-red);
+}
+
+.layout-content {
+  margin-top: var(--header-height);
+  padding: var(--space-8);
+  flex: 1;
+  animation: fadeIn 0.3s ease forwards;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-sm);
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: var(--primary-600);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: var(--primary-700);
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+>>>>>>> 78db954bb8f9de8159957adfa96a2d298d6c39d8
   background: transparent;
   box-shadow: none !important;
 }

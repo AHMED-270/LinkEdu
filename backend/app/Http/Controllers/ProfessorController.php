@@ -884,6 +884,8 @@ class ProfessorController extends Controller
     {
         $user = $request->user();
         $classIds = $this->getAssignedClassIds((int) $user->id);
+        $evaluationType = $this->normalizeEvaluationTypeLabel((string) $request->query('evaluation_type', 'Contrôle 1'));
+        $hasEvaluationTypeColumn = Schema::hasColumn('notes', 'type_evaluation');
 
         $classes = DB::table('classes')->whereIn('id_classe', $classIds)->get(['id_classe as id', 'nom', 'niveau']);
 
@@ -894,6 +896,7 @@ class ProfessorController extends Controller
                 'showMatiereField' => false,
                 'selectedClassId' => 0,
                 'selectedMatiereId' => 0,
+                'selectedEvaluationType' => $evaluationType,
                 'students' => [],
             ]);
         }
@@ -925,6 +928,16 @@ class ProfessorController extends Controller
             $notesSub->where('id_matiere', $matiereId);
         } else {
             $notesSub->whereRaw('1 = 0');
+        }
+
+        if ($hasEvaluationTypeColumn) {
+            $notesSub->where(function ($query) use ($evaluationType) {
+                $query->where('type_evaluation', $evaluationType);
+
+                if ($this->isDefaultEvaluationType($evaluationType)) {
+                    $query->orWhereNull('type_evaluation');
+                }
+            });
         }
 
         $students = DB::table('etudiants')
@@ -965,6 +978,7 @@ class ProfessorController extends Controller
             'showMatiereField' => $matieres->count() > 1,
             'selectedClassId' => $classId,
             'selectedMatiereId' => $matiereId,
+            'selectedEvaluationType' => $evaluationType,
             'students' => $students,
         ]);
     }
@@ -975,12 +989,16 @@ class ProfessorController extends Controller
         $validated = $request->validate([
             'classId' => 'required|integer|exists:classes,id_classe',
             'matiereId' => 'nullable|integer|exists:matieres,id_matiere',
+            'evaluationType' => 'required|string|max:120',
             'notes' => 'required|array|min:1',
             'notes.*.studentId' => 'required|integer|exists:users,id',
             'notes.*.noteId' => 'nullable|integer|exists:notes,id_note',
             'notes.*.note' => 'nullable|numeric|min:0|max:20',
             'notes.*.appreciation' => 'nullable|string|max:1000',
         ]);
+
+        $evaluationType = $this->normalizeEvaluationTypeLabel((string) ($validated['evaluationType'] ?? 'Contrôle 1'));
+        $hasEvaluationTypeColumn = Schema::hasColumn('notes', 'type_evaluation');
 
         $classId = (int) $validated['classId'];
         if (! $this->isAssignedToClass((int) $user->id, $classId)) {
@@ -1006,6 +1024,21 @@ class ProfessorController extends Controller
                         ->where('id_note', $noteId)
                         ->where('id_professeur', $user->id)
                         ->delete();
+                } elseif ($hasEvaluationTypeColumn) {
+                    $deleteQuery = DB::table('notes')
+                        ->where('id_professeur', $user->id)
+                        ->where('id_etudiant', $line['studentId'])
+                        ->where('id_matiere', $matiereId);
+
+                    $deleteQuery->where(function ($query) use ($evaluationType) {
+                        $query->where('type_evaluation', $evaluationType);
+
+                        if ($this->isDefaultEvaluationType($evaluationType)) {
+                            $query->orWhereNull('type_evaluation');
+                        }
+                    });
+
+                    $deleteQuery->delete();
                 }
                 continue;
             }
@@ -1020,23 +1053,58 @@ class ProfessorController extends Controller
             }
 
             if ($noteId) {
+                $updatePayload = [
+                    'valeur' => $line['note'],
+                    'appreciation' => $line['appreciation'] ?? null,
+                    'updated_at' => now(),
+                ];
+
+                if ($hasEvaluationTypeColumn) {
+                    $updatePayload['type_evaluation'] = $evaluationType;
+                }
+
                 $updated = DB::table('notes')
                     ->where('id_note', $noteId)
                     ->where('id_professeur', $user->id)
                     ->where('id_etudiant', $line['studentId'])
                     ->where('id_matiere', $matiereId)
-                    ->update([
-                        'valeur' => $line['note'],
-                        'appreciation' => $line['appreciation'] ?? null,
-                        'updated_at' => now(),
-                    ]);
+                    ->update($updatePayload);
 
                 if ($updated) {
                     continue;
                 }
             }
 
-            DB::table('notes')->insert([
+            if ($hasEvaluationTypeColumn) {
+                $existingByType = DB::table('notes')
+                    ->where('id_professeur', $user->id)
+                    ->where('id_etudiant', $line['studentId'])
+                    ->where('id_matiere', $matiereId)
+                    ->where(function ($query) use ($evaluationType) {
+                        $query->where('type_evaluation', $evaluationType);
+
+                        if ($this->isDefaultEvaluationType($evaluationType)) {
+                            $query->orWhereNull('type_evaluation');
+                        }
+                    })
+                    ->orderByDesc('id_note')
+                    ->first(['id_note']);
+
+                if ($existingByType) {
+                    DB::table('notes')
+                        ->where('id_note', $existingByType->id_note)
+                        ->update([
+                            'valeur' => $line['note'],
+                            'appreciation' => $line['appreciation'] ?? null,
+                            'type_evaluation' => $evaluationType,
+                            'updated_at' => now(),
+                        ]);
+
+                    continue;
+                }
+            }
+
+            $insertPayload = [
                 'valeur' => $line['note'],
                 'appreciation' => $line['appreciation'] ?? null,
                 'id_etudiant' => $line['studentId'],
@@ -1044,7 +1112,13 @@ class ProfessorController extends Controller
                 'id_professeur' => $user->id,
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]);
+            ];
+
+            if ($hasEvaluationTypeColumn) {
+                $insertPayload['type_evaluation'] = $evaluationType;
+            }
+
+            DB::table('notes')->insert($insertPayload);
         }
 
         return response()->json(['message' => 'Notes enregistrees avec succes.']);
@@ -1510,6 +1584,45 @@ class ProfessorController extends Controller
         }
 
         return [null, 'Veuillez selectionner une matiere pour cette classe.'];
+    }
+
+    private function normalizeEvaluationTypeLabel(string $value): string
+    {
+        $normalized = mb_strtolower(trim($value));
+        $normalized = str_replace(
+            ['ô', 'é', 'è', 'ê', 'à', 'â', 'î', 'ï', 'ù', 'û', 'ç', '/', '-'],
+            ['o', 'e', 'e', 'e', 'a', 'a', 'i', 'i', 'u', 'u', 'c', ' ', ' '],
+            $normalized
+        );
+        $normalized = preg_replace('/\s+/', ' ', $normalized ?? '');
+        $normalized = trim((string) $normalized);
+
+        if (str_contains($normalized, 'controle 2')) {
+            return 'Contrôle 2';
+        }
+
+        if (str_contains($normalized, 'controle 3')) {
+            return 'Contrôle 3';
+        }
+
+        if (str_contains($normalized, 'controle 4')) {
+            return 'Contrôle 4';
+        }
+
+        if (str_contains($normalized, 'tp') || str_contains($normalized, 'participation')) {
+            return 'TP / Participation';
+        }
+
+        if (str_contains($normalized, 'projet') || str_contains($normalized, 'expose')) {
+            return 'Projet / Exposé';
+        }
+
+        return 'Contrôle 1';
+    }
+
+    private function isDefaultEvaluationType(string $evaluationType): bool
+    {
+        return $this->normalizeEvaluationTypeLabel($evaluationType) === 'Contrôle 1';
     }
 
     private function getAssignedClassIds(int $professorId)

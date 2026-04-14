@@ -1,5 +1,5 @@
-﻿import { useEffect, useState } from 'react';
-import { Save, Printer, UploadCloud, CheckCircle2, AlertCircle, FileSpreadsheet, Trash2 } from 'lucide-react';
+﻿import { useEffect, useMemo, useState } from 'react';
+import { Save, Printer, CheckCircle2, AlertCircle, FileSpreadsheet, Trash2, Search, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { professorGet, professorPost } from '../services/professorApi';
@@ -17,6 +17,7 @@ export default function Notes() {
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedMatiere, setSelectedMatiere] = useState('');
   const [evaluationType, setEvaluationType] = useState('Contrôle 1');
+  const [studentsSearch, setStudentsSearch] = useState('');
   
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -47,13 +48,14 @@ export default function Notes() {
     navigate('/login', { replace: true });
   };
 
-  const loadNotes = async (classId, matiereId) => {
+  const loadNotes = async (classId, matiereId, evaluationTypeValue = evaluationType) => {
     setLoading(true);
     setStatusMsg({ type: '', text: '' });
     try {
       const data = await professorGet('/api/professeur/notes', {
         class_id: classId,
         matiere_id: matiereId,
+        evaluation_type: evaluationTypeValue,
       });
       
       setClasses(data.classes || []);
@@ -61,11 +63,12 @@ export default function Notes() {
       setShowMatiereField(Boolean(data.showMatiereField ?? (data.matieres || []).length > 1));
       setStudents((data.students || []).map((student) => ({
         ...student,
-        appreciation: getDynamicAppreciation(student.note),
+        appreciation: student.appreciation || getDynamicAppreciation(student.note),
       })));
 
       if (data.selectedClassId) setSelectedClass(String(data.selectedClassId));
       if (data.selectedMatiereId) setSelectedMatiere(String(data.selectedMatiereId));
+      if (data.selectedEvaluationType) setEvaluationType(String(data.selectedEvaluationType));
     } catch (error) {
       const status = error?.response?.status;
       if (status === 401) {
@@ -82,8 +85,27 @@ export default function Notes() {
   };
 
   useEffect(() => {
-    loadNotes('', '');
+    loadNotes('', '', evaluationType);
   }, []);
+
+  const handleClassChange = (e) => {
+    const value = e.target.value;
+    setSelectedClass(value);
+    setSelectedMatiere('');
+    loadNotes(value, '', evaluationType);
+  };
+
+  const handleMatiereChange = (e) => {
+    const value = e.target.value;
+    setSelectedMatiere(value);
+    loadNotes(selectedClass, value, evaluationType);
+  };
+
+  const handleEvaluationTypeChange = (e) => {
+    const value = e.target.value;
+    setEvaluationType(value);
+    loadNotes(selectedClass, selectedMatiere, value);
+  };
 
   const updateNote = (id, value) => {
     // Sanitize input: allow only numbers and one decimal dot
@@ -121,7 +143,7 @@ export default function Notes() {
         })),
       });
 
-      await loadNotes(selectedClass, selectedMatiere);
+      await loadNotes(selectedClass, selectedMatiere, evaluationType);
       setStatusMsg({ type: 'success', text: 'Les notes ont été enregistrées avec succès.' });
       setTimeout(() => setStatusMsg({ type: '', text: '' }), 3500);
     } catch (error) {
@@ -151,6 +173,145 @@ export default function Notes() {
 
   const clearNote = (id) => {
     setStudents(students.map((s) => s.id === id ? { ...s, note: '', appreciation: '' } : s));
+  };
+
+  const selectedClassLabel = useMemo(() => {
+    const current = classes.find((classe) => String(classe.id) === String(selectedClass));
+    if (!current) return 'Classe';
+    return `${current.nom || ''}${current.niveau ? ` - ${current.niveau}` : ''}`.trim();
+  }, [classes, selectedClass]);
+
+  const selectedMatiereLabel = useMemo(() => {
+    const current = matieres.find((matiere) => String(matiere.id) === String(selectedMatiere));
+    return current?.nom || 'Matiere';
+  }, [matieres, selectedMatiere]);
+
+  const filteredStudents = useMemo(() => {
+    const search = studentsSearch.trim().toLowerCase();
+    if (!search) return students;
+
+    return students.filter((student) => {
+      const fullName = `${student.firstName || ''} ${student.lastName || ''}`.trim().toLowerCase();
+      const matricule = String(student.matricule || '').toLowerCase();
+      return fullName.includes(search) || matricule.includes(search);
+    });
+  }, [students, studentsSearch]);
+
+  const getStudentAppreciation = (student) => {
+    if (student.note === '' || student.note === null || student.note === undefined) {
+      return '';
+    }
+    return student.appreciation || getDynamicAppreciation(student.note);
+  };
+
+  const toCsvCell = (value) => {
+    const safe = String(value ?? '').replace(/"/g, '""');
+    return `"${safe}"`;
+  };
+
+  const downloadCsv = (filename, headers, rows) => {
+    const csvRows = [
+      headers.map(toCsvCell).join(';'),
+      ...rows.map((row) => row.map(toCsvCell).join(';')),
+    ];
+
+    const csvContent = '\uFEFF' + csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportNotes = () => {
+    const rows = filteredStudents.map((student) => [
+      student.matricule || '',
+      student.lastName || '',
+      student.firstName || '',
+      student.note ?? '',
+      getStudentAppreciation(student),
+    ]);
+
+    downloadCsv(
+      `notes-${selectedClassLabel}-${selectedMatiereLabel}.csv`,
+      ['Matricule', 'Nom', 'Prenom', 'Note', 'Appreciation'],
+      rows,
+    );
+  };
+
+  const handleDownloadStudentsList = () => {
+    const rows = filteredStudents.map((student) => [
+      student.matricule || '',
+      student.lastName || '',
+      student.firstName || '',
+    ]);
+
+    downloadCsv(
+      `liste-eleves-${selectedClassLabel}.csv`,
+      ['Matricule', 'Nom', 'Prenom'],
+      rows,
+    );
+  };
+
+  const escapeHtml = (value) => String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank', 'width=1100,height=700');
+    if (!printWindow) return;
+
+    const rows = filteredStudents.map((student, index) => `
+      <tr>
+        <td>${index + 1}</td>
+        <td>${escapeHtml(student.matricule || '')}</td>
+        <td>${escapeHtml(`${student.firstName || ''} ${student.lastName || ''}`.trim())}</td>
+        <td>${escapeHtml(student.note ?? '')}</td>
+        <td>${escapeHtml(getStudentAppreciation(student) || '-')}</td>
+      </tr>
+    `).join('');
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Feuille des notes</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 24px; color: #0f172a; }
+            h1 { font-size: 20px; margin-bottom: 8px; }
+            p { margin: 0 0 12px 0; color: #475569; }
+            table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+            th, td { border: 1px solid #cbd5e1; padding: 8px; font-size: 13px; text-align: left; }
+            th { background: #f8fafc; text-transform: uppercase; font-size: 11px; letter-spacing: 0.04em; }
+          </style>
+        </head>
+        <body>
+          <h1>Saisie des Notes</h1>
+          <p>Classe: ${escapeHtml(selectedClassLabel)} | Matiere: ${escapeHtml(selectedMatiereLabel)} | Evaluation: ${escapeHtml(evaluationType)}</p>
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Matricule</th>
+                <th>Eleve</th>
+                <th>Note</th>
+                <th>Appreciation</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
   };
 
   // Framer Motion Variants
@@ -203,10 +364,31 @@ export default function Notes() {
               <><Save size={18} className="mr-2" /> Enregistrer les notes</>
             )}
           </motion.button>
-          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="btn btn-outline bg-white shadow-sm">
-            <UploadCloud size={16} /> <span className="hidden sm:inline">Importer Excel</span>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="btn btn-outline bg-white shadow-sm"
+            onClick={handleExportNotes}
+            disabled={filteredStudents.length === 0}
+          >
+            <FileSpreadsheet size={16} /> <span className="hidden sm:inline">Exporter</span>
           </motion.button>
-          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="btn btn-outline bg-white shadow-sm">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="btn btn-outline bg-white shadow-sm"
+            onClick={handleDownloadStudentsList}
+            disabled={filteredStudents.length === 0}
+          >
+            <Download size={16} /> <span className="hidden sm:inline">Liste élèves</span>
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="btn btn-outline bg-white shadow-sm"
+            onClick={handlePrint}
+            disabled={filteredStudents.length === 0}
+          >
             <Printer size={16} /> <span className="hidden sm:inline">Imprimer</span>
           </motion.button>
         </div>
@@ -225,11 +407,7 @@ export default function Notes() {
             <select
               className="form-select min-w-[220px] !px-4 !py-2.5 rounded-xl border border-slate-300 bg-white shadow-sm"
               value={selectedClass}
-              onChange={(e) => {
-                const value = e.target.value;
-                setSelectedClass(value);
-                loadNotes(value, selectedMatiere);
-              }}
+              onChange={handleClassChange}
             >
               <option value="">Sélectionner une classe</option>
               {classes.map((classe) => (
@@ -241,11 +419,7 @@ export default function Notes() {
               <select
                 className="form-select min-w-[220px] !px-4 !py-2.5 rounded-xl border border-slate-300 bg-white shadow-sm"
                 value={selectedMatiere}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setSelectedMatiere(value);
-                  loadNotes(selectedClass, value);
-                }}
+                onChange={handleMatiereChange}
               >
                 <option value="">Sélectionner une matière</option>
                 {matieres.map((matiere) => (
@@ -257,15 +431,27 @@ export default function Notes() {
             <select
               className="form-select min-w-[220px] !px-4 !py-2.5 rounded-xl border border-slate-300 bg-white shadow-sm"
               value={evaluationType}
-              onChange={(e) => setEvaluationType(e.target.value)}
+              onChange={handleEvaluationTypeChange}
             >
               <option value="Contrôle 1">Contrôle 1</option>
               <option value="Contrôle 2">Contrôle 2</option>
               <option value="Contrôle 3">Contrôle 3</option>
               <option value="Contrôle 4">Contrôle 4</option>
-              <option value="TP et Participation">TP / Participation</option>
+              <option value="TP / Participation">TP / Participation</option>
               <option value="Projet / Exposé">Projet / Exposé</option>
             </select>
+
+            <div className="relative w-full md:w-72 mt-2 md:mt-0">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                className="form-input"
+                style={{ paddingLeft: '2.5rem' }}
+                placeholder="Rechercher un élève..."
+                value={studentsSearch}
+                onChange={(e) => setStudentsSearch(e.target.value)}
+              />
+            </div>
           </div>
         </div>
 
@@ -289,7 +475,7 @@ export default function Notes() {
                 </tr>
               </thead>
               <tbody>
-                {students.length === 0 ? (
+                {filteredStudents.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="text-center py-16 text-slate-500">
                       <FileSpreadsheet size={48} className="mx-auto mb-3 opacity-20" />
@@ -298,7 +484,7 @@ export default function Notes() {
                     </td>
                   </tr>
                 ) : (
-                  students.map((s, index) => (
+                  filteredStudents.map((s, index) => (
                     <motion.tr 
                       custom={index}
                       variants={tableRowVariants}

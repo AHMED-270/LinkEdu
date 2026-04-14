@@ -65,6 +65,7 @@ function LoginCard() {
 
       const roleHome = getHomeRouteByRole(connectedUser?.role)
 
+<<<<<<< HEAD
       navigate(roleHome, { replace: true })
     } catch (error) {
       const status = error?.response?.status
@@ -78,6 +79,36 @@ function LoginCard() {
         message = backendMessage
       } else if (status === 422 || status === 401) {
         message = 'Email ou mot de passe incorrect.'
+=======
+      if (setAuthenticatedUser) {
+        setAuthenticatedUser({
+          ...connectedUser,
+          ...(authToken ? { token: authToken } : {}),
+        });
+      }
+      
+      if (onLoginSuccess && typeof onLoginSuccess === 'function') {
+        onLoginSuccess(connectedUser);
+      }
+
+      setLoginFeedback('Authentification réussie !');
+      setLoginFeedbackType('success');
+
+      const roleHome = getHomeRouteByRole(connectedUser?.role);
+
+      setTimeout(() => navigate(roleHome, { replace: true }), 500);
+    } catch (err) {
+      const status = err?.response?.status;
+      if (status === 422 || status === 401) {
+        const apiMessage = err?.response?.data?.errors?.email?.[0]
+          || err?.response?.data?.message;
+        setLoginFeedback(apiMessage || 'E-mail ou mot de passe incorrect.');
+        setLoginFeedbackType('error');
+      } else if (status === 403) {
+        // Just in case backend somehow returns 403
+        setLoginFeedback(err?.response?.data?.message || 'Accès refusé.');
+        setLoginFeedbackType('error');
+>>>>>>> 78db954bb8f9de8159957adfa96a2d298d6c39d8
       } else if (status === 419) {
         message = 'Session expiree. Reessayez.'
       } else if (error?.message) {

@@ -8,6 +8,7 @@ import {
   FiRefreshCw as RefreshCw,
 } from 'react-icons/fi';
 import { BiSolidUserDetail } from 'react-icons/bi';
+import TableSkeletonRows from './TableSkeletonRows';
 
 export default function AdminAccountActivations() {
   const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
@@ -236,16 +237,7 @@ export default function AdminAccountActivations() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {loading ? (
-                  [...Array(6)].map((_, i) => (
-                    <tr key={`activation-skeleton-${i}`} className="animate-pulse">
-                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 rounded w-44"></div></td>
-                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 rounded w-28"></div></td>
-                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 rounded w-52"></div></td>
-                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 rounded w-52"></div></td>
-                      <td className="py-4 px-6"><div className="h-6 bg-gray-200 rounded-full w-32"></div></td>
-                      <td className="py-4 px-6"><div className="h-8 bg-gray-200 rounded w-28 ml-auto"></div></td>
-                    </tr>
-                  ))
+                  <TableSkeletonRows rowCount={6} colCount={6} />
                 ) : filteredStudents.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="py-14 text-center text-gray-400">

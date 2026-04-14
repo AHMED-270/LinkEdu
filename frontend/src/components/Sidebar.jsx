@@ -1,9 +1,8 @@
 ﻿import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { FiGrid, FiCalendar, FiUsers, FiStar, FiFileText, FiMessageCircle, FiSettings, FiLogOut, FiAlertCircle } from 'react-icons/fi';
+import { FiGrid, FiCalendar, FiUsers, FiStar, FiFileText, FiMessageCircle, FiLogOut, FiAlertCircle, FiUser } from 'react-icons/fi';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { motion, AnimatePresence } from 'framer-motion';
 import './Sidebar.css';
 
 const navItems = [
@@ -15,7 +14,7 @@ const navItems = [
   { path: '/devoirs', label: 'Devoirs & Ressources', icon: FiFileText },
   { path: '/reclamation', label: 'Réclamations', icon: FiAlertCircle },
   { path: '/annonces', label: 'Annonces', icon: FiMessageCircle },
-  { path: '/parametres', label: 'Paramètres', icon: FiSettings },
+  { path: '/profil', label: 'Profil', icon: FiUser },
 ];
 
 export default function Sidebar() {
@@ -50,110 +49,98 @@ export default function Sidebar() {
     }
   };
 
-  // Staggered animation variants for the nav links
-  const navItemVariants = {
-    hidden: { opacity: 0, x: -20 },
-    visible: (i) => ({
-      opacity: 1,
-      x: 0,
-      transition: { delay: i * 0.05 + 0.3, type: 'spring', stiffness: 100 }
-    })
-  };
-
   return (
     <>
-      {/* Animated Logout Modal */}
-      <AnimatePresence>
-        {showLogoutModal && (
-          <motion.div 
-            initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
-            animate={{ opacity: 1, backdropFilter: "blur(8px)" }}
-            exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
-            className="logout-modal-backdrop"
-          >
-            <motion.div 
-              initial={{ scale: 0.8, y: 50, opacity: 0 }}
-              animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ scale: 0.8, y: 50, opacity: 0 }}
-              transition={{ type: "spring", bounce: 0.4, duration: 0.5 }}
-              className="logout-modal-card card"
-            >
-              <div className="logout-modal-icon">
-                <FiLogOut size={36} color="#EF4444" />
-              </div>
-              <h3>Êtes-vous sûr de vouloir vous déconnecter ?</h3>
-              <p>Vous devrez saisir à nouveau vos identifiants pour revenir sur l'espace LinkEdu.</p>
-              <div className="logout-modal-actions">
-                <button
-                  className="btn btn-outline"
-                  onClick={() => setShowLogoutModal(false)}
-                  disabled={isLoggingOut}
-                >
-                  Annuler
-                </button>
-                <button
-                  className="btn btn-danger"
-                  onClick={handleLogoutConfirm}
-                  disabled={isLoggingOut}
-                >
-                  {isLoggingOut ? 'Déconnexion...' : 'Oui, me déconnecter'}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <aside className="sidebar">
-        {/* User Profile Section */}
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
-          className="sidebar-profile"
-        >
-          <div className="sidebar-avatar-wrapper">
-            {user?.profilePhoto ? (
-              <img src={user.profilePhoto} alt="Profil" className="sidebar-avatar" />
-            ) : (
-              <div className="sidebar-avatar sidebar-avatar-fallback">{initials}</div>
-            )}
-            <div className="online-indicator"></div>
-          </div>
-          <div className="sidebar-user-info">
-            <span className="sidebar-name">{user?.name || 'Utilisateur'}</span>
-            <span className="sidebar-role badge badge-blue">{user?.role || 'Membre'}</span>
-          </div>
-        </motion.div>
-
-        {/* Navigation Links */}
-        <nav className="sidebar-nav">
-          {navItems.map((item, i) => {
-            const Icon = item.icon;
-            return (
-              <motion.div
-                key={item.path}
-                custom={i}
-                initial="hidden"
-                animate="visible"
-                variants={navItemVariants}
+      {showLogoutModal && (
+        <div className="logout-modal-backdrop">
+          <div className="logout-modal-card">
+            <div className="logout-modal-icon">
+              <FiLogOut size={48} color="#f43f5e" />
+            </div>
+            <h3>Êtes-vous sûr de vouloir vous déconnecter ?</h3>
+            <p>Vous devrez saisir à nouveau vos identifiants pour accéder à ce panneau.</p>
+            <div className="logout-modal-actions">
+              <button
+                className="btn btn-outline"
+                onClick={() => setShowLogoutModal(false)}
+                disabled={isLoggingOut}
               >
-                <NavLink
-                  to={item.path}
-                  className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
-                >
-                  <Icon size={20} className="sidebar-icon" />
-                  <span className="sidebar-link-text">{item.label}</span>
-                  {/* Subtle active indicator dot */}
-                  <div className="active-dot"></div>
-                </NavLink>
-              </motion.div>
-            );
-          })}
-        </nav>
+                Annuler
+              </button>
+              <button
+                className="btn btn-danger"
+                onClick={handleLogoutConfirm}
+                disabled={isLoggingOut}
+              >
+                {isLoggingOut ? 'Déconnexion...' : 'Oui, me déconnecter'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-        {/* Footer / Logout */}
-      
+      <aside className="h-full w-full border-r border-slate-200 bg-white">
+        <div className="flex h-full flex-col px-3 py-4">
+          <div className="mx-2 mb-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <div className="flex items-center gap-3">
+              {user?.profilePhoto ? (
+                <img src={user.profilePhoto} alt="Profil" className="h-11 w-11 rounded-full object-cover ring-2 ring-blue-100" />
+              ) : (
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white ring-2 ring-blue-100">
+                  {initials}
+                </div>
+              )}
+              <div className="min-w-0">
+                <div className="truncate text-sm font-bold text-slate-900">{user?.name || 'Professeur'}</div>
+                <span className="mt-1 inline-flex rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700">
+                  {user?.role || 'professeur'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Navigation</div>
+
+          <nav className="flex flex-col gap-1 px-2">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={({ isActive }) =>
+                    `group flex items-center gap-3 rounded-xl border-l-2 px-3 py-2.5 text-sm font-semibold transition-all duration-200 ${
+                      isActive
+                        ? 'border-blue-500 bg-blue-50 text-blue-700'
+                        : 'border-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    }`
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      <Icon
+                        size={18}
+                        className={isActive ? 'text-blue-600' : 'text-slate-400 transition-colors group-hover:text-blue-600'}
+                      />
+                      <span>{item.label}</span>
+                    </>
+                  )}
+                </NavLink>
+              );
+            })}
+          </nav>
+
+          <div className="mt-auto px-2 pt-4">
+            <button
+              type="button"
+              onClick={() => setShowLogoutModal(true)}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm font-semibold text-rose-700 transition-colors hover:bg-rose-100"
+            >
+              <FiLogOut size={16} />
+              <span>Se deconnecter</span>
+            </button>
+          </div>
+        </div>
       </aside>
     </>
   );

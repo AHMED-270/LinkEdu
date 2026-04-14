@@ -11,6 +11,7 @@ import {
   Users,
   Download
 } from 'lucide-react';
+import TableSkeletonRows from '../components/TableSkeletonRows';
 
 export default function SecretaireClasses() {
   const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000';
@@ -295,15 +296,7 @@ export default function SecretaireClasses() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {loading ? (
-                  [...Array(4)].map((_, i) => (
-                    <tr key={`skeleton-${i}`} className="animate-pulse">
-                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 rounded w-24"></div></td>
-                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 rounded w-32"></div></td>
-                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 rounded w-12 ml-auto"></div></td>
-                      <td className="py-4 px-6"><div className="h-6 bg-gray-200 rounded-full w-20 mx-auto"></div></td>
-                      <td className="py-4 px-6"><div className="h-8 bg-gray-200 rounded-xl w-16 ml-auto"></div></td>
-                    </tr>
-                  ))
+                  <TableSkeletonRows rowCount={4} colCount={5} />
                 ) : filteredClasses.length > 0 ? (
                   filteredClasses.map((c) => (
                     <tr 

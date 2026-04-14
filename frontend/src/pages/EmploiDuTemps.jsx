@@ -53,6 +53,93 @@ export default function EmploiDuTemps() {
     return CARD_COLORS[charCode % CARD_COLORS.length];
   };
 
+  const toCsvCell = (value) => {
+    const safe = String(value ?? '').replace(/"/g, '""');
+    return `"${safe}"`;
+  };
+
+  const handleExportPdf = () => {
+    if (!schedule.length) return;
+
+    const rows = schedule.map((cours) => [
+      cours.jour,
+      `${cours.heure_debut || ''} - ${cours.heure_fin || ''}`,
+      cours.matiere_nom,
+      `${cours.classe_nom || ''} ${cours.classe_niveau ? `(${cours.classe_niveau})` : ''}`.trim(),
+    ]);
+
+    const csvRows = [
+      ['Jour', 'Horaire', 'Matiere', 'Classe'].map(toCsvCell).join(';'),
+      ...rows.map((row) => row.map(toCsvCell).join(';')),
+    ];
+
+    const blob = new Blob(['\uFEFF' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'emploi-du-temps.csv';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const escapeHtml = (value) => String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank', 'width=1100,height=720');
+    if (!printWindow) {
+      alert("S'il vous plaît, autorisez les pop-ups pour imprimer.");
+      return;
+    }
+
+    const rows = schedule.map((cours) => `
+      <tr>
+        <td>${escapeHtml(cours.jour)}</td>
+        <td>${escapeHtml(cours.heure_debut)} - ${escapeHtml(cours.heure_fin)}</td>
+        <td>${escapeHtml(cours.matiere_nom)}</td>
+        <td>${escapeHtml(cours.classe_nom)} ${escapeHtml(cours.classe_niveau ? `(${cours.classe_niveau})` : '')}</td>
+      </tr>
+    `).join('');
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Emploi du Temps</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 24px; color: #0f172a; }
+            h1 { font-size: 20px; margin: 0 0 12px; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; font-size: 13px; }
+            th { background: #f8fafc; text-transform: uppercase; letter-spacing: 0.04em; font-size: 11px; }
+          </style>
+        </head>
+        <body>
+          <h1>Emploi du Temps</h1>
+          <table>
+            <thead>
+              <tr>
+                <th>Jour</th>
+                <th>Horaire</th>
+                <th>Matiere</th>
+                <th>Classe</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
   // Animations Framer Motion
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -76,10 +163,22 @@ export default function EmploiDuTemps() {
         </div>
         
         <div className="flex items-center gap-3">
-          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="btn btn-outline bg-white shadow-sm">
-            <Download size={16} /> Exporter PDF
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="btn btn-outline bg-white shadow-sm"
+            onClick={handleExportPdf}
+            disabled={!schedule.length}
+          >
+            <Download size={16} /> Exporter CSV
           </motion.button>
-          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="btn btn-primary shadow-[0_4px_14px_rgba(59,130,246,0.25)]">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="btn btn-primary shadow-[0_4px_14px_rgba(59,130,246,0.25)]"
+            onClick={handlePrint}
+            disabled={!schedule.length}
+          >
             <Printer size={16} className="mr-2"/> Imprimer
           </motion.button>
         </div>

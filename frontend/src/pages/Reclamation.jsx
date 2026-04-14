@@ -155,7 +155,8 @@ export default function Reclamation() {
                   <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     type="text"
-                    className="form-input pl-9 w-full"
+                    className="form-input w-full"
+                    style={{ paddingLeft: '2.5rem' }}
                     placeholder="Rechercher une réclamation..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -233,12 +234,12 @@ export default function Reclamation() {
               <p className="text-blue-100 text-sm mt-1">Envoyez votre réclamation à la bonne personne.</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
-              <div className="form-group">
-                <label className="form-label">Titre</label>
+            <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5">
+              <div className="form-group flex flex-col gap-1">
+                <label className="text-sm font-semibold text-slate-700">Titre</label>
                 <input
                   type="text"
-                  className="form-input"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
                   placeholder="Sujet de votre réclamation"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
@@ -246,21 +247,26 @@ export default function Reclamation() {
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Description</label>
+              <div className="form-group flex flex-col gap-1">
+                <label className="text-sm font-semibold text-slate-700">Description</label>
                 <textarea
-                  className="form-textarea"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all resize-none"
                   placeholder="Saisissez votre réclamation ici..."
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   required
-                  style={{ minHeight: '140px',  }}
+                  style={{ minHeight: '140px' }}
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Public cible</label>
-                <select className="form-select" value={cible} onChange={(e) => setCible(e.target.value)} required>
+              <div className="form-group flex flex-col gap-1">
+                <label className="text-sm font-semibold text-slate-700">Public cible</label>
+                <select 
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all appearance-none cursor-pointer"
+                  value={cible} 
+                  onChange={(e) => setCible(e.target.value)} 
+                  required
+                >
                   <option value="directeur">Directeur</option>
                   <option value="secretaire">Secrétaire</option>
                   <option value="les_deux">Les deux</option>
@@ -268,16 +274,17 @@ export default function Reclamation() {
               </div>
 
               <motion.button
-                whileHover={{ scale: 1.02 }}
+                whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.98 }}
                 type="submit"
                 disabled={isSubmitting}
-                className="btn btn-primary w-full py-3 mt-2"
+                className="w-full flex items-center justify-center py-3.5 px-4 mt-2 bg-blue-600 text-white rounded-xl font-semibold shadow-md shadow-blue-500/30 hover:bg-blue-700 transition-colors"
+                style={{ border: 'none' }}
               >
                 {isSubmitting ? (
-                  <><span className="loading-spinner w-4 h-4 border-white mr-2"></span> Envoi...</>
+                  <><span className="loading-spinner w-5 h-5 border-2 border-t-white border-white/30 rounded-full animate-spin mr-3"></span> Envoi...</>
                 ) : (
-                  <><Send size={16} className="mr-2" /> Envoyer</>
+                  <><Send size={18} className="mr-2" /> Envoyer</>
                 )}
               </motion.button>
             </form>

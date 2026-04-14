@@ -11,6 +11,7 @@ import {
   Edit2,
   Trash2,
 } from 'lucide-react';
+import TableSkeletonRows from '../components/TableSkeletonRows';
 
 const emptyForm = { id_etudiant: '', sujet: '', message: '' };
 
@@ -219,11 +220,7 @@ export default function SecretaireReclamations() {
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {loading ? (
-                      [...Array(5)].map((_, i) => (
-                        <tr key={`reclamation-skeleton-${i}`} className="animate-pulse">
-                          <td colSpan="4" className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-full"></div></td>
-                        </tr>
-                      ))
+                      <TableSkeletonRows rowCount={5} colSpan={4} />
                     ) : filteredReclamations.map((r) => (
                       <tr key={r.id_reclamation} className="hover:bg-blue-50/50 transition-colors">
                           <td className="py-4 px-6">

@@ -9,11 +9,13 @@ use App\Models\Etudiant;
 use App\Models\ParentEleve;
 use App\Models\Professeur;
 use App\Models\Reclamation;
+use App\Models\Secretaire;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -613,23 +615,145 @@ class SecretaireController extends Controller
 
     public function listReclamations(): JsonResponse
     {
-        $reclamations = DB::table('reclamations')
-            ->join('parents', 'reclamations.id_parent', '=', 'parents.id_parent')
-            ->join('users', 'parents.id_parent', '=', 'users.id')
+        $hasProfesseurColumn = Schema::hasColumn('reclamations', 'id_professeur');
+        $hasSecretaireColumn = Schema::hasColumn('reclamations', 'id_secretaire');
+        $hasCibleColumn = Schema::hasColumn('reclamations', 'cible');
+
+        $query = DB::table('reclamations')
+            ->leftJoin('parents', 'reclamations.id_parent', '=', 'parents.id_parent')
+            ->leftJoin('users as parent_user', 'parents.id_parent', '=', 'parent_user.id')
+            ->leftJoin('etudiants', 'reclamations.id_etudiant', '=', 'etudiants.id_etudiant')
+            ->leftJoin('users as etu_user', 'etudiants.id_etudiant', '=', 'etu_user.id')
             ->select(
                 'reclamations.id_reclamation',
                 'reclamations.sujet',
                 'reclamations.message',
                 'reclamations.statut',
                 'reclamations.date_soumission',
-                'users.nom as parent_nom',
-                'users.prenom as parent_prenom',
-                'users.email as parent_email'
-            )
+                'reclamations.id_parent',
+                'reclamations.id_etudiant',
+                DB::raw("CONCAT(COALESCE(parent_user.prenom, ''), ' ', COALESCE(parent_user.nom, '')) as parent_nom_complet"),
+                DB::raw('parent_user.email as parent_email'),
+                DB::raw("CONCAT(COALESCE(etu_user.prenom, ''), ' ', COALESCE(etu_user.nom, '')) as etudiant_nom_complet")
+            );
+
+        if ($hasProfesseurColumn) {
+            $query->leftJoin('professeurs', 'reclamations.id_professeur', '=', 'professeurs.id_professeur')
+                ->leftJoin('users as prof_user', 'professeurs.id_professeur', '=', 'prof_user.id')
+                ->addSelect(
+                    'reclamations.id_professeur',
+                    DB::raw("CONCAT(COALESCE(prof_user.prenom, ''), ' ', COALESCE(prof_user.nom, '')) as professeur_nom_complet"),
+                    DB::raw('prof_user.email as professeur_email')
+                );
+        } else {
+            $query->addSelect(
+                DB::raw('NULL as id_professeur'),
+                DB::raw("'' as professeur_nom_complet"),
+                DB::raw("'' as professeur_email")
+            );
+        }
+
+        if ($hasSecretaireColumn) {
+            $query->leftJoin('secretaires', 'reclamations.id_secretaire', '=', 'secretaires.id_secretaire')
+                ->leftJoin('users as sec_user', 'secretaires.id_secretaire', '=', 'sec_user.id')
+                ->addSelect(
+                    'reclamations.id_secretaire',
+                    DB::raw("CONCAT(COALESCE(sec_user.prenom, ''), ' ', COALESCE(sec_user.nom, '')) as secretaire_nom_complet"),
+                    DB::raw('sec_user.email as secretaire_email')
+                );
+        } else {
+            $query->addSelect(
+                DB::raw('NULL as id_secretaire'),
+                DB::raw("'' as secretaire_nom_complet"),
+                DB::raw("'' as secretaire_email")
+            );
+        }
+
+        if ($hasCibleColumn) {
+            $query->addSelect('reclamations.cible');
+        } else {
+            $query->addSelect(DB::raw("'parent' as cible"));
+        }
+
+        $reclamations = $query
             ->orderByDesc('reclamations.date_soumission')
-            ->get();
+            ->get()
+            ->map(function ($rec) {
+                $cible = mb_strtolower(trim((string) ($rec->cible ?? 'parent')));
+                if ($cible === 'directeur') {
+                    $cible = 'professeur';
+                }
+
+                $cibleLabel = 'Parent';
+                $destinataireEmail = trim((string) ($rec->parent_email ?? ''));
+
+                if ($cible === 'professeur') {
+                    $cibleLabel = trim((string) ($rec->professeur_nom_complet ?? '')) ?: 'Professeur';
+                    $destinataireEmail = trim((string) ($rec->professeur_email ?? ''));
+                } elseif ($cible === 'secretaire') {
+                    $cibleLabel = trim((string) ($rec->secretaire_nom_complet ?? '')) ?: 'Secretaire';
+                    $destinataireEmail = trim((string) ($rec->secretaire_email ?? ''));
+                } else {
+                    $studentName = trim((string) ($rec->etudiant_nom_complet ?? ''));
+                    $parentName = trim((string) ($rec->parent_nom_complet ?? ''));
+                    $cibleLabel = $studentName !== '' ? $studentName : ($parentName !== '' ? $parentName : 'Parent');
+                }
+
+                return [
+                    'id_reclamation' => $rec->id_reclamation,
+                    'sujet' => $rec->sujet,
+                    'message' => $rec->message,
+                    'statut' => $rec->statut,
+                    'date_soumission' => $rec->date_soumission,
+                    'id_parent' => $rec->id_parent,
+                    'id_etudiant' => $rec->id_etudiant,
+                    'id_professeur' => $rec->id_professeur,
+                    'id_secretaire' => $rec->id_secretaire,
+                    'cible' => $cible,
+                    'cible_label' => $cibleLabel,
+                    'destinataire_email' => $destinataireEmail,
+                    'parent_nom' => trim((string) ($rec->parent_nom_complet ?? '')),
+                    'parent_prenom' => '',
+                    'parent_email' => $rec->parent_email,
+                ];
+            })
+            ->values();
 
         return response()->json(['reclamations' => $reclamations]);
+    }
+
+    public function listProfesseurs(): JsonResponse
+    {
+        $professeurs = Professeur::with('user')
+            ->get()
+            ->map(function ($professeur) {
+                return [
+                    'id_professeur' => $professeur->id_professeur,
+                    'nom' => $professeur->user->nom ?? '',
+                    'prenom' => $professeur->user->prenom ?? '',
+                    'email' => $professeur->user->email ?? '',
+                ];
+            })
+            ->values();
+
+        return response()->json(['professeurs' => $professeurs]);
+    }
+
+    public function listSecretaires(): JsonResponse
+    {
+        $secretaires = Secretaire::with('user')
+            ->get()
+            ->map(function ($secretaire) {
+                return [
+                    'id_secretaire' => $secretaire->id_secretaire,
+                    'nom' => $secretaire->user->nom ?? '',
+                    'prenom' => $secretaire->user->prenom ?? '',
+                    'email' => $secretaire->user->email ?? '',
+                ];
+            })
+            ->values();
+
+        return response()->json(['secretaires' => $secretaires]);
     }
 
     public function updateReclamationStatus(Request $request, int $id): JsonResponse
@@ -691,45 +815,148 @@ class SecretaireController extends Controller
     public function createReclamation(Request $request): JsonResponse
     {
         $validated = $request->validate([
+            'cible' => ['nullable', 'string', 'in:parent,professeur,secretaire,directeur'],
             'id_etudiant' => ['nullable', 'integer', 'exists:etudiants,id_etudiant'],
             'id_parent' => ['nullable', 'integer', 'exists:parents,id_parent'],
+            'id_professeur' => ['nullable', 'integer', 'exists:professeurs,id_professeur'],
+            'id_secretaire' => ['nullable', 'integer', 'exists:secretaires,id_secretaire'],
             'sujet' => ['required', 'string', 'max:255'],
             'message' => ['required', 'string'],
         ]);
 
+        $hasProfesseurColumn = Schema::hasColumn('reclamations', 'id_professeur');
+        $hasSecretaireColumn = Schema::hasColumn('reclamations', 'id_secretaire');
+        $hasCibleColumn = Schema::hasColumn('reclamations', 'cible');
+
+        $cible = mb_strtolower(trim((string) ($validated['cible'] ?? 'parent')));
+        if ($cible === 'directeur') {
+            $cible = 'professeur';
+        }
+
         $idParent = $validated['id_parent'] ?? null;
         $idEtudiant = $validated['id_etudiant'] ?? null;
+        $idProfesseur = $validated['id_professeur'] ?? null;
+        $idSecretaire = $validated['id_secretaire'] ?? null;
+        $cibleLabel = null;
 
-        if (! $idParent && ! empty($idEtudiant)) {
-            $etudiant = Etudiant::find($idEtudiant);
-            if (! $etudiant || ! $etudiant->id_parent) {
+        if ($cible === 'parent') {
+            if (! $idParent && ! empty($idEtudiant)) {
+                $etudiant = Etudiant::find($idEtudiant);
+                if (! $etudiant || ! $etudiant->id_parent) {
+                    return response()->json([
+                        'message' => 'Aucun parent lie a cet etudiant.',
+                    ], 422);
+                }
+                $idParent = $etudiant->id_parent;
+                $idEtudiant = $etudiant->id_etudiant;
+            }
+
+            if (! $idParent) {
                 return response()->json([
-                    'message' => 'Aucun parent lie a cet etudiant.',
+                    'message' => 'Selectionnez un eleve valide pour cibler un parent.',
                 ], 422);
             }
-            $idParent = $etudiant->id_parent;
-            $idEtudiant = $etudiant->id_etudiant;
+
+            $studentName = DB::table('etudiants')
+                ->join('users', 'etudiants.id_etudiant', '=', 'users.id')
+                ->where('etudiants.id_etudiant', $idEtudiant)
+                ->value(DB::raw("CONCAT(COALESCE(users.prenom, ''), ' ', COALESCE(users.nom, ''))"));
+
+            $cibleLabel = trim((string) $studentName);
+        }
+
+        if ($cible === 'professeur') {
+            if (! $idProfesseur) {
+                return response()->json([
+                    'message' => 'Selectionnez un professeur cible.',
+                ], 422);
+            }
+
+            $profName = DB::table('professeurs')
+                ->join('users', 'professeurs.id_professeur', '=', 'users.id')
+                ->where('professeurs.id_professeur', $idProfesseur)
+                ->value(DB::raw("CONCAT(COALESCE(users.prenom, ''), ' ', COALESCE(users.nom, ''))"));
+
+            $cibleLabel = trim((string) $profName);
+        }
+
+        if ($cible === 'secretaire') {
+            if (! $idSecretaire) {
+                return response()->json([
+                    'message' => 'Selectionnez une secretaire ciblee.',
+                ], 422);
+            }
+
+            $secName = DB::table('secretaires')
+                ->join('users', 'secretaires.id_secretaire', '=', 'users.id')
+                ->where('secretaires.id_secretaire', $idSecretaire)
+                ->value(DB::raw("CONCAT(COALESCE(users.prenom, ''), ' ', COALESCE(users.nom, ''))"));
+
+            $cibleLabel = trim((string) $secName);
+        }
+
+        // Compatibilite schema legacy: id_parent peut rester obligatoire.
+        if (! $idParent) {
+            $idParent = DB::table('parents')->value('id_parent');
         }
 
         if (! $idParent) {
             return response()->json([
-                'message' => 'Selectionnez un etudiant ou un parent valide.',
+                'message' => 'Aucun parent disponible pour l enregistrement de la reclamation.',
             ], 422);
         }
 
-        $reclamation = Reclamation::create([
+        $payload = [
             'id_parent' => $idParent,
-            'id_etudiant' => $idEtudiant,
             'sujet' => $validated['sujet'],
             'message' => $validated['message'],
             'statut' => 'en_attente',
             'date_soumission' => now(),
             'date_envoi' => now(),
-        ]);
+        ];
+
+        if ($idEtudiant) {
+            $payload['id_etudiant'] = $idEtudiant;
+        }
+
+        if ($hasProfesseurColumn) {
+            $payload['id_professeur'] = $cible === 'professeur' ? $idProfesseur : null;
+        }
+
+        if ($hasSecretaireColumn) {
+            $payload['id_secretaire'] = $cible === 'secretaire' ? $idSecretaire : null;
+        }
+
+        if ($hasCibleColumn) {
+            $payload['cible'] = $cible;
+        } else {
+            $prefix = '[CIBLE:' . $cible . ($cibleLabel ? ':' . $cibleLabel : '') . '] ';
+            $payload['message'] = $prefix . $payload['message'];
+        }
+
+        $reclamation = Reclamation::create($payload);
+
+        $targetMessage = match ($cible) {
+            'professeur' => 'Reclamation envoyee au professeur avec succes.',
+            'secretaire' => 'Reclamation envoyee a la secretaire avec succes.',
+            default => 'Reclamation envoyee au parent avec succes.',
+        };
 
         return response()->json([
-            'message' => 'Reclamation envoyée au parent avec succès.',
-            'reclamation' => $reclamation
+            'message' => $targetMessage,
+            'reclamation' => [
+                'id_reclamation' => $reclamation->id_reclamation,
+                'sujet' => $reclamation->sujet,
+                'message' => $reclamation->message,
+                'statut' => $reclamation->statut,
+                'date_soumission' => $reclamation->date_soumission,
+                'id_parent' => $reclamation->id_parent,
+                'id_etudiant' => $reclamation->id_etudiant,
+                'id_professeur' => $reclamation->id_professeur ?? null,
+                'id_secretaire' => $reclamation->id_secretaire ?? null,
+                'cible' => $reclamation->cible ?? $cible,
+                'cible_label' => $cibleLabel,
+            ],
         ], 201);
     }
 }

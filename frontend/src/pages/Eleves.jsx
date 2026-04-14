@@ -241,6 +241,7 @@ export default function Eleves() {
                 <input
                   type="text"
                   className="form-input w-full pl-10"
+                  style={{ paddingLeft: '2.5rem' }}
                   placeholder="Rechercher un eleve..."
                   value={studentsSearch}
                   onChange={(e) => setStudentsSearch(e.target.value)}

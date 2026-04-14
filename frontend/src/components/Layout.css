@@ -165,6 +165,15 @@
   transition: all var(--transition-fast);
 }
 
+/* Keep left icon spacing when utility padding classes are used. */
+.form-input.pl-9 {
+  padding-left: 2.25rem;
+}
+
+.form-input.pl-10 {
+  padding-left: 2.5rem;
+}
+
 .form-input:hover,
 .form-select:hover,
 .form-textarea:hover {

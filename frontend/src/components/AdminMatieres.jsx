@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { FiPlus as Plus, FiEdit2 as Edit, FiTrash2 as Trash2, FiSearch as Search, FiEye as Eye } from 'react-icons/fi';
 import { BiSolidUserDetail } from 'react-icons/bi';
+import TableSkeletonRows from './TableSkeletonRows';
 import {
   LEVEL_LABELS,
   PROFESSOR_SUBJECTS_BY_LEVEL,
@@ -432,12 +433,7 @@ export default function AdminMatieres({ userRole = 'admin' }) {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {loading ? (
-                  [...Array(4)].map((_, i) => (
-                    <tr key={`skeleton-${i}`} className="animate-pulse">
-                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 rounded w-44"></div></td>
-                      <td className="py-4 px-6"><div className="h-4 bg-gray-200 rounded w-16 ml-auto"></div></td>
-                    </tr>
-                  ))
+                  <TableSkeletonRows rowCount={4} colCount={2} />
                 ) : filteredMatieres.length === 0 ? (
                   <tr>
                     <td colSpan="2" className="py-12 text-center text-gray-400">

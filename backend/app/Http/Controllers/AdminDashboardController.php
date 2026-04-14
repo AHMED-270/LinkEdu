@@ -64,7 +64,7 @@ class AdminDashboardController extends Controller
                 'max:255',
                 \Illuminate\Validation\Rule::unique('users')->where(fn ($query) => $query->where('role', $request->input('role')))
             ],
-            'role' => 'required|string|in:secretaire,comptable,directeur,professeur',
+            'role' => 'required|string|in:secretaire,directeur,professeur',
             'telephone' => 'nullable|string|max:30',
             'matiere_enseignement' => 'nullable|string|max:255',
             'matieres_enseignement' => 'nullable|array',
@@ -76,7 +76,9 @@ class AdminDashboardController extends Controller
             DB::beginTransaction();
 
             [$prenom, $nom] = $this->splitFullName((string) $validated['name']);
-            $generatedPassword = $this->generateRandomPassword(12);
+            $generatedPassword = !empty($validated['password'])
+                ? (string) $validated['password']
+                : $this->generateRandomPassword(12);
 
             $hasUserAccountStatus = Schema::hasColumn('users', 'account_status');
             $hasUserActivatedAt = Schema::hasColumn('users', 'activated_at');
@@ -176,6 +178,10 @@ class AdminDashboardController extends Controller
                 'message' => 'Utilisateur créé avec succès !',
                 'user' => $user,
                 'warnings' => $mailWarnings,
+                'credentials' => [
+                    'email' => (string) ($user->email ?? ''),
+                    'temporary_password' => $generatedPassword,
+                ],
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
