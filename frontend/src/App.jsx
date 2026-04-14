@@ -3,10 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
 import AdminDashboard from './components/AdminDashboard';
 import DirecteurDashboard from './components/DirecteurDashboard';
-<<<<<<< HEAD
 import SecretaireLayout from './components/SecretaireLayout';
-=======
->>>>>>> 78db954bb8f9de8159957adfa96a2d298d6c39d8
 import Dashboard from './pages/Dashboard';
 import Devoirs from './pages/Devoirs';
 import Ressources from './pages/Ressources';
@@ -31,23 +28,12 @@ import ParentPortal from './pages/ParentPortal';
 import { getHomeRouteByRole } from './constants/roles';
 import './App.css';
 
-<<<<<<< HEAD
 const FullScreenLoader = () => (
   <div className="loading-screen">Chargement...</div>
 );
 
 const SECRETARIAT_STAFF_ROLES = ['secretaire'];
 const FINANCE_PORTAL_ROLES = ['secretaire', 'comptable'];
-=======
-const getHomeRouteByRole = (role) => {
-  const normalizedRole = String(role || '').toLowerCase();
-    if (normalizedRole === 'admin') return '/admin';
-    if (normalizedRole === 'directeur') return '/directeur';
-  if (normalizedRole === 'professeur') return '/dashboard';
-  if (normalizedRole === 'secretaire') return '/secretaire/dashboard';
-  return '/login';
-};
->>>>>>> 78db954bb8f9de8159957adfa96a2d298d6c39d8
 
 const RootRoute = () => {
   const { user, loading } = useAuth();
@@ -82,7 +68,6 @@ const AppRoutes = () => {
       <Route
         path="/admin"
         element={
-<<<<<<< HEAD
           <ProtectedRoute allowedRoles={['admin', 'directeur']}>
             <AdminDashboard onLogout={logout} userRole={user?.role || 'admin'} user={user} />
           </ProtectedRoute>
@@ -125,24 +110,7 @@ const AppRoutes = () => {
       <Route path="/secretaire/reclamations" element={<ProtectedRoute allowedRoles={SECRETARIAT_STAFF_ROLES}><SecretaireLayout><SecretaireReclamations /></SecretaireLayout></ProtectedRoute>} />
       <Route path="/secretaire/profil" element={<ProtectedRoute allowedRoles={FINANCE_PORTAL_ROLES}><SecretaireLayout><Parametres /></SecretaireLayout></ProtectedRoute>} />
 
-=======
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AdminDashboard onLogout={logout} userRole={user?.role || 'admin'} user={user} />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/directeur/*"
-          element={
-            <ProtectedRoute allowedRoles={['directeur']}>
-              <DirecteurDashboard onLogout={logout} user={user} />
-            </ProtectedRoute>
-          }
-        />
-
       {/* Professeur routes */}
->>>>>>> 78db954bb8f9de8159957adfa96a2d298d6c39d8
       <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['professeur']}><Layout title="Tableau de Bord"><Dashboard /></Layout></ProtectedRoute>} />
       <Route path="/devoirs" element={<ProtectedRoute allowedRoles={['professeur']}><Layout title="Devoirs & Ressources"><Devoirs /></Layout></ProtectedRoute>} />
       <Route path="/ressources" element={<ProtectedRoute allowedRoles={['professeur']}><Layout title="Publier une Ressource"><Ressources /></Layout></ProtectedRoute>} />
