@@ -104,6 +104,58 @@ const ACADEMIC_STRUCTURE = {
   }
 };
 
+const normalizeTextToken = (value) => String(value || '')
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase()
+  .trim();
+
+const NIVEAU_CODE_TO_CYCLE = Object.entries(ACADEMIC_STRUCTURE).reduce((acc, [cycle, data]) => {
+  (data.niveaux || []).forEach((label) => {
+    const code = NIVEAU_LABEL_TO_CODE[label];
+    if (code) {
+      acc[normalizeTextToken(code)] = cycle;
+    }
+  });
+  return acc;
+}, {});
+
+const NIVEAU_LABEL_TO_CYCLE = Object.entries(ACADEMIC_STRUCTURE).reduce((acc, [cycle, data]) => {
+  (data.niveaux || []).forEach((label) => {
+    acc[normalizeTextToken(label)] = cycle;
+  });
+  return acc;
+}, {});
+
+const resolveCycleFromNiveauValue = (niveauValue) => {
+  const normalized = normalizeTextToken(niveauValue);
+  if (!normalized) return '';
+
+  if (Object.prototype.hasOwnProperty.call(ACADEMIC_STRUCTURE, normalized)) {
+    return normalized;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(NIVEAU_CODE_TO_CYCLE, normalized)) {
+    return NIVEAU_CODE_TO_CYCLE[normalized];
+  }
+
+  if (Object.prototype.hasOwnProperty.call(NIVEAU_LABEL_TO_CYCLE, normalized)) {
+    return NIVEAU_LABEL_TO_CYCLE[normalized];
+  }
+
+  return '';
+};
+
+const normalizeFiliere = (value) => {
+  const normalized = normalizeTextToken(value || 'General');
+
+  if (!normalized || normalized === 'general' || normalized === 'generale') {
+    return 'general';
+  }
+
+  return normalized;
+};
+
 export default function SecretaireEtudiants() {
   const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000';
   const navigate = useNavigate();
@@ -235,19 +287,41 @@ export default function SecretaireEtudiants() {
         adresse: form.adresse,
       };
 
+      let createdCredentials = null;
+
       if (editingId) {
         await axios.put(`${apiBaseUrl}/api/secretaire/students/${editingId}`, payload, {
           withCredentials: true,
           withXSRFToken: true,
         });
       } else {
-        await axios.post(apiBaseUrl + '/api/secretaire/students', payload, {
+        const createRes = await axios.post(apiBaseUrl + '/api/secretaire/students', payload, {
           withCredentials: true,
           withXSRFToken: true,
         });
+        createdCredentials = createRes?.data?.credentials || null;
       }
 
       await loadData();
+
+      if (createdCredentials) {
+        const status = String(createdCredentials.account_status || '').toLowerCase();
+        const lines = [
+          'Identifiants generes :',
+          `Eleve: ${createdCredentials.student_email || '-'}`,
+          `Mot de passe eleve: ${createdCredentials.student_password || 'Etudiant@2026'}`,
+          `Parent: ${createdCredentials.parent_email || '-'}`,
+          `Mot de passe parent: ${createdCredentials.parent_password || 'Parent@2026'}`,
+        ];
+
+        if (status === 'pending_activation') {
+          lines.push('');
+          lines.push("Statut: compte en attente d activation par un admin.");
+        }
+
+        window.alert(lines.join('\n'));
+      }
+
       resetForm();
     } catch (error) {
       setErrorMessage(error?.response?.data?.message || "Impossible d'enregistrer l'etudiant.");
@@ -577,28 +651,57 @@ export default function SecretaireEtudiants() {
     return form.cycle ? ACADEMIC_STRUCTURE[form.cycle].niveaux : [];
   }, [form.cycle]);
 
+  const classesForSelectedNiveau = useMemo(() => {
+    if (!form.cycle || !form.niveau) return [];
+
+    const selectedCycle = normalizeTextToken(form.cycle);
+    const selectedNiveauLabel = normalizeTextToken(form.niveau);
+    const selectedNiveauCode = normalizeTextToken(NIVEAU_LABEL_TO_CODE[form.niveau] || form.niveau);
+
+    return classes.filter((c) => {
+      const classNiveauRaw = c?.niveau;
+      const classNiveauNormalized = normalizeTextToken(classNiveauRaw);
+
+      if (!classNiveauNormalized) return false;
+
+      if (classNiveauNormalized === selectedNiveauCode || classNiveauNormalized === selectedNiveauLabel) {
+        return true;
+      }
+
+      const classCycle = resolveCycleFromNiveauValue(classNiveauRaw);
+      return classCycle === selectedCycle;
+    });
+  }, [classes, form.cycle, form.niveau]);
+
   const availableFilieres = useMemo(() => {
     if (!form.cycle || !form.niveau) return [];
+
+    const classFilieres = [...new Set(
+      classesForSelectedNiveau
+        .map((c) => String(c?.filiere || 'General').trim())
+        .filter(Boolean)
+    )];
+
+    if (classFilieres.length > 0) {
+      return classFilieres;
+    }
 
     const cycleData = ACADEMIC_STRUCTURE[form.cycle];
     if (cycleData.filieresByNiveau) {
       return cycleData.filieresByNiveau[form.niveau] || ['Général'];
     }
     return cycleData.filieres || ['Général'];
-  }, [form.cycle, form.niveau]);
+  }, [classesForSelectedNiveau, form.cycle, form.niveau]);
 
   const availableClasses = useMemo(() => {
-    if (!form.niveau || !form.filiere) return [];
+    if (!form.filiere) return [];
 
-    const niveauCode = NIVEAU_LABEL_TO_CODE[form.niveau] || form.niveau;
-    // If the selected filiere is "Général", the DB might store it as "General" or NULL
-    const searchFiliere = form.filiere === 'Général' ? ['General', 'Général', null, ''] : [form.filiere];
+    const selectedFiliere = normalizeFiliere(form.filiere);
 
-    return classes.filter(c => {
-      const cFiliere = c.filiere || 'General';
-      return c.niveau === niveauCode && searchFiliere.includes(cFiliere);
+    return classesForSelectedNiveau.filter((c) => {
+      return normalizeFiliere(c?.filiere) === selectedFiliere;
     });
-  }, [classes, form.niveau, form.filiere]);
+  }, [classesForSelectedNiveau, form.filiere]);
 
   const selectedClassPrice = useMemo(() => {
     if (!form.id_classe) return null;

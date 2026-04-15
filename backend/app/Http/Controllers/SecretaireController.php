@@ -198,10 +198,22 @@ class SecretaireController extends Controller
         ]);
 
         $student = $this->persistStudentFromValidated($validated);
+        $parentEmail = DB::table('etudiants')
+            ->join('parents', 'etudiants.id_parent', '=', 'parents.id_parent')
+            ->join('users as parent_user', 'parents.id_parent', '=', 'parent_user.id')
+            ->where('etudiants.id_etudiant', $student->id)
+            ->value('parent_user.email');
 
         return response()->json([
             'message' => 'Etudiant cree avec succes.',
             'student' => $student,
+            'credentials' => [
+                'student_email' => (string) ($student->email ?? ''),
+                'student_password' => 'Etudiant@2026',
+                'parent_email' => (string) ($parentEmail ?? ''),
+                'parent_password' => 'Parent@2026',
+                'account_status' => (string) ($student->account_status ?? 'active'),
+            ],
         ], 201);
     }
 
@@ -594,19 +606,54 @@ class SecretaireController extends Controller
 
     public function listAnnonces(): JsonResponse
     {
-        $annonces = DB::table('annonces')
-            ->join('users', 'annonces.id_user', '=', 'users.id')
+        $hasIdUserColumn = Schema::hasColumn('annonces', 'id_user');
+        $hasTypeColumn = Schema::hasColumn('annonces', 'type');
+        $hasAuteurColumn = Schema::hasColumn('annonces', 'auteur');
+        $hasCibleColumn = Schema::hasColumn('annonces', 'cible');
+        $hasPhotoColumn = Schema::hasColumn('annonces', 'photo_path');
+
+        $query = DB::table('annonces')
             ->select(
                 'annonces.id_annonce',
                 'annonces.titre',
                 'annonces.contenu',
-                'annonces.cible',
                 'annonces.date_publication',
-                'annonces.created_at',
-                'annonces.photo_path',
-                'users.nom as auteur_nom',
-                'users.prenom as auteur_prenom'
-            )
+                'annonces.created_at'
+            );
+
+        if ($hasIdUserColumn) {
+            $query->join('users', 'annonces.id_user', '=', 'users.id')
+                ->addSelect(
+                    'users.nom as auteur_nom',
+                    'users.prenom as auteur_prenom'
+                );
+        } elseif ($hasAuteurColumn) {
+            $query->addSelect(
+                DB::raw('annonces.auteur as auteur_nom'),
+                DB::raw("'' as auteur_prenom")
+            );
+        } else {
+            $query->addSelect(
+                DB::raw("'' as auteur_nom"),
+                DB::raw("'' as auteur_prenom")
+            );
+        }
+
+        if ($hasCibleColumn) {
+            $query->addSelect('annonces.cible');
+        } elseif ($hasTypeColumn) {
+            $query->addSelect(DB::raw('annonces.type as cible'));
+        } else {
+            $query->addSelect(DB::raw("'Tous' as cible"));
+        }
+
+        if ($hasPhotoColumn) {
+            $query->addSelect('annonces.photo_path');
+        } else {
+            $query->addSelect(DB::raw('NULL as photo_path'));
+        }
+
+        $annonces = $query
             ->orderByDesc('annonces.created_at')
             ->get()
             ->map(function ($annonce) {
@@ -635,19 +682,42 @@ class SecretaireController extends Controller
                 return response()->json(['message' => 'Utilisateur non authentifié'], 401);
             }
 
+            $hasIdUserColumn = Schema::hasColumn('annonces', 'id_user');
+            $hasTypeColumn = Schema::hasColumn('annonces', 'type');
+            $hasAuteurColumn = Schema::hasColumn('annonces', 'auteur');
+            $hasCibleColumn = Schema::hasColumn('annonces', 'cible');
+            $hasPhotoColumn = Schema::hasColumn('annonces', 'photo_path');
+
             $photoPath = null;
-            if ($request->hasFile('photo')) {
+            if ($hasPhotoColumn && $request->hasFile('photo')) {
                 $photoPath = $request->file('photo')->store('annonces', 'public');
             }
 
-            $annonce = Annonce::create([
+            $payload = [
                 'titre' => $validated['titre'],
                 'contenu' => $validated['contenu'],
-                'cible' => $validated['cible'] ?? 'Tous',
                 'date_publication' => now(),
-                'id_user' => $user->id,
-                'photo_path' => $photoPath,
-            ]);
+            ];
+
+            if ($hasIdUserColumn) {
+                $payload['id_user'] = $user->id;
+            }
+
+            if ($hasAuteurColumn) {
+                $payload['auteur'] = trim((string) (($user->prenom ?? '') . ' ' . ($user->nom ?? ''))) ?: (string) ($user->name ?? '');
+            }
+
+            if ($hasCibleColumn) {
+                $payload['cible'] = $validated['cible'] ?? 'Tous';
+            } elseif ($hasTypeColumn) {
+                $payload['type'] = $validated['cible'] ?? $validated['statut'] ?? 'Tous';
+            }
+
+            if ($hasPhotoColumn) {
+                $payload['photo_path'] = $photoPath;
+            }
+
+            $annonce = Annonce::create($payload);
 
             $annonce->photo_url = $annonce->photo_path
                 ? Storage::disk('public')->url($annonce->photo_path)
@@ -676,14 +746,23 @@ class SecretaireController extends Controller
             'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ]);
 
+        $hasTypeColumn = Schema::hasColumn('annonces', 'type');
+        $hasCibleColumn = Schema::hasColumn('annonces', 'cible');
+        $hasPhotoColumn = Schema::hasColumn('annonces', 'photo_path');
+
         $annonce = Annonce::findOrFail($id);
         $updateData = [
             'titre' => $validated['titre'],
             'contenu' => $validated['contenu'],
-            'cible' => $validated['cible'] ?? 'Tous',
         ];
 
-        if ($request->hasFile('photo')) {
+        if ($hasCibleColumn) {
+            $updateData['cible'] = $validated['cible'] ?? 'Tous';
+        } elseif ($hasTypeColumn) {
+            $updateData['type'] = $validated['cible'] ?? $validated['statut'] ?? ($annonce->type ?? 'Tous');
+        }
+
+        if ($hasPhotoColumn && $request->hasFile('photo')) {
             if ($annonce->photo_path && Storage::disk('public')->exists($annonce->photo_path)) {
                 Storage::disk('public')->delete($annonce->photo_path);
             }
@@ -714,6 +793,8 @@ class SecretaireController extends Controller
 
     public function listReclamations(): JsonResponse
     {
+        $hasEtudiantColumn = Schema::hasColumn('reclamations', 'id_etudiant');
+        $hasDateEnvoiColumn = Schema::hasColumn('reclamations', 'date_envoi');
         $hasProfesseurColumn = Schema::hasColumn('reclamations', 'id_professeur');
         $hasSecretaireColumn = Schema::hasColumn('reclamations', 'id_secretaire');
         $hasCibleColumn = Schema::hasColumn('reclamations', 'cible');
@@ -721,9 +802,6 @@ class SecretaireController extends Controller
         $query = DB::table('reclamations')
             ->leftJoin('parents', 'reclamations.id_parent', '=', 'parents.id_parent')
             ->leftJoin('users as parent_user', 'parents.id_parent', '=', 'parent_user.id')
-            ->leftJoin('etudiants', 'reclamations.id_etudiant', '=', 'etudiants.id_etudiant')
-            ->leftJoin('users as etu_user', 'etudiants.id_etudiant', '=', 'etu_user.id')
-            ->leftJoin('classes', 'etudiants.id_classe', '=', 'classes.id_classe')
             ->select(
                 'reclamations.id_reclamation',
                 'reclamations.sujet',
@@ -731,13 +809,28 @@ class SecretaireController extends Controller
                 'reclamations.statut',
                 'reclamations.date_soumission',
                 'reclamations.id_parent',
-                'reclamations.id_etudiant',
                 DB::raw("CONCAT(COALESCE(parent_user.prenom, ''), ' ', COALESCE(parent_user.nom, '')) as parent_nom_complet"),
-                DB::raw('parent_user.email as parent_email'),
-                DB::raw("CONCAT(COALESCE(etu_user.prenom, ''), ' ', COALESCE(etu_user.nom, '')) as etudiant_nom_complet"),
-                'classes.nom as classe_nom',
-                'classes.niveau as classe_niveau'
+                DB::raw('parent_user.email as parent_email')
             );
+
+        if ($hasEtudiantColumn) {
+            $query->leftJoin('etudiants', 'reclamations.id_etudiant', '=', 'etudiants.id_etudiant')
+                ->leftJoin('users as etu_user', 'etudiants.id_etudiant', '=', 'etu_user.id')
+                ->leftJoin('classes', 'etudiants.id_classe', '=', 'classes.id_classe')
+                ->addSelect(
+                    'reclamations.id_etudiant',
+                    DB::raw("CONCAT(COALESCE(etu_user.prenom, ''), ' ', COALESCE(etu_user.nom, '')) as etudiant_nom_complet"),
+                    'classes.nom as classe_nom',
+                    'classes.niveau as classe_niveau'
+                );
+        } else {
+            $query->addSelect(
+                DB::raw('NULL as id_etudiant'),
+                DB::raw("'' as etudiant_nom_complet"),
+                DB::raw("'' as classe_nom"),
+                DB::raw("'' as classe_niveau")
+            );
+        }
 
         if ($hasProfesseurColumn) {
             $query->leftJoin('professeurs', 'reclamations.id_professeur', '=', 'professeurs.id_professeur')
@@ -993,6 +1086,8 @@ class SecretaireController extends Controller
             'message' => ['required', 'string'],
         ]);
 
+        $hasEtudiantColumn = Schema::hasColumn('reclamations', 'id_etudiant');
+        $hasDateEnvoiColumn = Schema::hasColumn('reclamations', 'date_envoi');
         $hasProfesseurColumn = Schema::hasColumn('reclamations', 'id_professeur');
         $hasSecretaireColumn = Schema::hasColumn('reclamations', 'id_secretaire');
         $hasCibleColumn = Schema::hasColumn('reclamations', 'cible');
@@ -1081,10 +1176,13 @@ class SecretaireController extends Controller
             'message' => $validated['message'],
             'statut' => 'en_attente',
             'date_soumission' => now(),
-            'date_envoi' => now(),
         ];
 
-        if ($idEtudiant) {
+        if ($hasDateEnvoiColumn) {
+            $payload['date_envoi'] = now();
+        }
+
+        if ($hasEtudiantColumn && $idEtudiant) {
             $payload['id_etudiant'] = $idEtudiant;
         }
 
@@ -1124,7 +1222,7 @@ class SecretaireController extends Controller
                 'statut' => $reclamation->statut,
                 'date_soumission' => $reclamation->date_soumission,
                 'id_parent' => $reclamation->id_parent,
-                'id_etudiant' => $reclamation->id_etudiant,
+                'id_etudiant' => $hasEtudiantColumn ? ($reclamation->id_etudiant ?? null) : null,
                 'id_professeur' => $reclamation->id_professeur ?? null,
                 'id_secretaire' => $reclamation->id_secretaire ?? null,
                 'cible' => $reclamation->cible ?? $cible,

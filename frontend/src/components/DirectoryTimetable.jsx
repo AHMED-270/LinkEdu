@@ -450,8 +450,8 @@ function DirectoryTimetable() {
   }, [filteredEmplois]);
 
   const handleOpenModal = () => {
-    if (!selectedNiveauFilter || !selectedClassFilter) {
-      alert('Choisissez d\'abord un niveau puis une classe pour afficher l\'emploi.');
+    if (!selectedClassFilter) {
+      alert('Choisissez une classe pour afficher l\'emploi.');
       return;
     }
 
@@ -621,7 +621,7 @@ function DirectoryTimetable() {
             {!selectedClassFilter ? (
               <tr>
                 <td colSpan={days.length + 1} className="timetable-empty-state">
-                  Choisissez un niveau puis une classe pour afficher son emploi du temps.
+                  Choisissez une classe pour afficher l'emploi.
                 </td>
               </tr>
             ) : (

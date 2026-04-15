@@ -6,6 +6,7 @@ use App\Models\Etudiant;
 use App\Models\Paiement;
 use App\Models\Reclamation;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Schema;
 
 class CheckLatePaiements extends Command
 {
@@ -30,6 +31,9 @@ class CheckLatePaiements extends Command
      */
     public function handle(): int
     {
+        $hasEtudiantColumn = Schema::hasColumn('reclamations', 'id_etudiant');
+        $hasDateEnvoiColumn = Schema::hasColumn('reclamations', 'date_envoi');
+
         $today = now();
         $currentMonth = (int) $today->month;
 
@@ -70,25 +74,39 @@ class CheckLatePaiements extends Command
 
         $created = 0;
         foreach ($studentsToNotify as $student) {
-            $alreadyExists = Reclamation::query()
-                ->where('id_etudiant', $student->id_etudiant)
+            $alreadyExistsQuery = Reclamation::query()
                 ->where('sujet', $sujet)
-                ->where('message', 'Paiement en retard')
-                ->exists();
+                ->where('message', 'Paiement en retard');
+
+            if ($hasEtudiantColumn) {
+                $alreadyExistsQuery->where('id_etudiant', $student->id_etudiant);
+            } else {
+                $alreadyExistsQuery->where('id_parent', $student->id_parent);
+            }
+
+            $alreadyExists = $alreadyExistsQuery->exists();
 
             if ($alreadyExists) {
                 continue;
             }
 
-            Reclamation::create([
+            $payload = [
                 'id_parent' => $student->id_parent,
-                'id_etudiant' => $student->id_etudiant,
                 'sujet' => $sujet,
                 'message' => 'Paiement en retard',
                 'statut' => 'en_attente',
                 'date_soumission' => now(),
-                'date_envoi' => now(),
-            ]);
+            ];
+
+            if ($hasEtudiantColumn) {
+                $payload['id_etudiant'] = $student->id_etudiant;
+            }
+
+            if ($hasDateEnvoiColumn) {
+                $payload['date_envoi'] = now();
+            }
+
+            Reclamation::create($payload);
 
             $created++;
         }

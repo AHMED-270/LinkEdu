@@ -223,7 +223,7 @@ Route::middleware(['auth:sanctum', 'role:etudiant'])->prefix('etudiant')->group(
 });
 
 // Parent Portal Routes
-Route::middleware(['auth:sanctum', 'role:parent_eleve'])->prefix('parent')->group(function () {
+Route::middleware(['auth:sanctum', 'role:parent,parent_eleve'])->prefix('parent')->group(function () {
     Route::get('/dashboard', [StudentParentController::class, 'parentDashboard']);
     Route::get('/enfants', [StudentParentController::class, 'parentChildren']);
     Route::get('/notes', [StudentParentController::class, 'parentNotes']);

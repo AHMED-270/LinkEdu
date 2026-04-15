@@ -15,6 +15,10 @@ class Annonce extends Model
     protected $fillable = [
         'titre',
         'contenu',
+        'cible',
+        'statut',
+        'id_user',
+        'photo_path',
         'type',
         'auteur',
         'date_publication',

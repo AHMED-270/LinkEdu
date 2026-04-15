@@ -322,6 +322,8 @@ class DirecteurController extends Controller
 
     public function getReclamations(): JsonResponse
     {
+        $hasEtudiantColumn = Schema::hasColumn('reclamations', 'id_etudiant');
+        $hasDateEnvoiColumn = Schema::hasColumn('reclamations', 'date_envoi');
         $hasProfesseurColumn = Schema::hasColumn('reclamations', 'id_professeur');
         $hasSecretaireColumn = Schema::hasColumn('reclamations', 'id_secretaire');
         $hasCibleColumn = Schema::hasColumn('reclamations', 'cible');
@@ -329,8 +331,6 @@ class DirecteurController extends Controller
         $query = DB::table('reclamations')
             ->leftJoin('parents', 'reclamations.id_parent', '=', 'parents.id_parent')
             ->leftJoin('users as parent_user', 'parents.id_parent', '=', 'parent_user.id')
-            ->leftJoin('etudiants', 'reclamations.id_etudiant', '=', 'etudiants.id_etudiant')
-            ->leftJoin('users as etu_user', 'etudiants.id_etudiant', '=', 'etu_user.id')
             ->orderByDesc('created_at')
 
             ->select(
@@ -339,12 +339,24 @@ class DirecteurController extends Controller
                 'reclamations.date_soumission',
                 'reclamations.created_at',
                 'reclamations.id_parent',
-                'reclamations.id_etudiant',
                 'reclamations.sujet',
                 'reclamations.message',
-                DB::raw("CONCAT(COALESCE(parent_user.prenom, ''), ' ', COALESCE(parent_user.nom, '')) as parent_nom_complet"),
-                DB::raw("CONCAT(COALESCE(etu_user.prenom, ''), ' ', COALESCE(etu_user.nom, '')) as etudiant_nom_complet")
+                DB::raw("CONCAT(COALESCE(parent_user.prenom, ''), ' ', COALESCE(parent_user.nom, '')) as parent_nom_complet")
             );
+
+        if ($hasEtudiantColumn) {
+            $query->leftJoin('etudiants', 'reclamations.id_etudiant', '=', 'etudiants.id_etudiant')
+                ->leftJoin('users as etu_user', 'etudiants.id_etudiant', '=', 'etu_user.id')
+                ->addSelect(
+                    'reclamations.id_etudiant',
+                    DB::raw("CONCAT(COALESCE(etu_user.prenom, ''), ' ', COALESCE(etu_user.nom, '')) as etudiant_nom_complet")
+                );
+        } else {
+            $query->addSelect(
+                DB::raw('NULL as id_etudiant'),
+                DB::raw("'' as etudiant_nom_complet")
+            );
+        }
 
         if ($hasProfesseurColumn) {
             $query->leftJoin('professeurs', 'reclamations.id_professeur', '=', 'professeurs.id_professeur')
@@ -417,6 +429,8 @@ class DirecteurController extends Controller
             'secretaire_id' => 'required_if:cible,secretaire|nullable|integer|exists:secretaires,id_secretaire',
         ]);
 
+        $hasEtudiantColumn = Schema::hasColumn('reclamations', 'id_etudiant');
+        $hasDateEnvoiColumn = Schema::hasColumn('reclamations', 'date_envoi');
         $hasProfesseurColumn = Schema::hasColumn('reclamations', 'id_professeur');
         $hasSecretaireColumn = Schema::hasColumn('reclamations', 'id_secretaire');
         $hasCibleColumn = Schema::hasColumn('reclamations', 'cible');
@@ -507,12 +521,15 @@ class DirecteurController extends Controller
             'sujet' => $validated['sujet'],
             'message' => $validated['description'],
             'date_soumission' => now(),
-            'date_envoi' => now(),
             'statut' => 'Nouveau',
             'id_parent' => $parentId,
         ];
 
-        if ($etudiantId) {
+        if ($hasDateEnvoiColumn) {
+            $payload['date_envoi'] = now();
+        }
+
+        if ($hasEtudiantColumn && $etudiantId) {
             $payload['id_etudiant'] = $etudiantId;
         }
 
@@ -540,7 +557,7 @@ class DirecteurController extends Controller
                 'statut' => $reclamation->statut,
                 'date_reclamation' => $reclamation->date_soumission,
                 'id_parent' => $reclamation->id_parent,
-                'id_etudiant' => $reclamation->id_etudiant,
+                'id_etudiant' => $hasEtudiantColumn ? ($reclamation->id_etudiant ?? null) : null,
                 'id_professeur' => $reclamation->id_professeur ?? null,
                 'id_secretaire' => $reclamation->id_secretaire ?? null,
                 'cible' => $reclamation->cible ?? $cible,
