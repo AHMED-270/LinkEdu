@@ -67,7 +67,7 @@ export default function AdminDashboard({ onLogout, userRole = 'admin', user = nu
 
         const parsed = JSON.parse(raw);
         setSubproject({ ...defaultSubproject, ...parsed });
-      } catch (error) {
+      } catch {
         setSubproject(defaultSubproject);
       }
     };

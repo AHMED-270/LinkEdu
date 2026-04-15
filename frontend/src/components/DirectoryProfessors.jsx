@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { BiSearchAlt2, BiUserVoice } from 'react-icons/bi';
 import { ROLE, getPortalLabelByRole } from '../constants/roles';
@@ -267,9 +267,12 @@ function DirectoryProfessors({ userRole = ROLE.DIRECTEUR }) {
 
                     <td>
                       <div className="dir-prof-pill-stack">
-                        <span className="dir-prof-pill">{primaryMatiere}</span>
-                        {extraMatieresCount > 0 && (
-                          <span className="dir-prof-pill dir-prof-pill-muted">+{extraMatieresCount}</span>
+                        {matieres.length > 0 ? (
+                          matieres.map((matiere) => (
+                            <span key={matiere} className="dir-prof-pill">{matiere}</span>
+                          ))
+                        ) : (
+                          <span className="dir-prof-pill dir-prof-empty">Non renseignee</span>
                         )}
                       </div>
                     </td>

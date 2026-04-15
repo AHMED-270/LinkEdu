@@ -212,7 +212,7 @@ function DirecteurDashboard({ user, onLogout }) {
     }
 
     loadDashboard()
-  }, [user?.id, user?.role])
+  }, [user?.id, user?.role, user?.token])
 
   const handleLogoutConfirm = async () => {
     if (isLoggingOut) return;
@@ -315,7 +315,7 @@ function DirecteurDashboard({ user, onLogout }) {
             <div className="page-dashboard">
               <header className="page-dashboard-header flex justify-between items-center">
                 <div>
-                  <h1>Bonjour, {user?.prenom ?? 'M.'} {user?.nom ?? fallbackUserName}</h1>
+                  <h1>Bonjour, {directorDisplayName}</h1>
                   <p>Resume du jour avec les indicateurs essentiels.</p>
                 </div>
                 {stats?.academic_year && (

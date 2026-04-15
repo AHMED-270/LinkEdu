@@ -165,7 +165,7 @@ export default function AdminClassForm({ mode = 'create', classToEdit = null, on
           setPrefillDone(false);
           setNiveauScolaire('');
         }
-      } catch (error) {
+      } catch {
         setFormMsg('Impossible de charger les données.');
       }
     };
@@ -194,14 +194,17 @@ export default function AdminClassForm({ mode = 'create', classToEdit = null, on
     }
   }, [formData.niveau, formData.filiere, classOptions]);
 
-  const niveauxWithCycle = classOptions.niveaux.map((niveau) => ({
-    ...niveau,
-    cycle: inferCycleFromNiveau(niveau?.code, niveau),
-  }));
+  const niveauxWithCycle = useMemo(() => {
+    return classOptions.niveaux.map((niveau) => ({
+      ...niveau,
+      cycle: inferCycleFromNiveau(niveau?.code, niveau),
+    }));
+  }, [classOptions.niveaux]);
 
-  const availableNiveaux = niveauScolaire
-    ? niveauxWithCycle.filter((niveau) => niveau.cycle === niveauScolaire)
-    : [];
+  const availableNiveaux = useMemo(() => {
+    if (!niveauScolaire) return [];
+    return niveauxWithCycle.filter((niveau) => niveau.cycle === niveauScolaire);
+  }, [niveauScolaire, niveauxWithCycle]);
 
   useEffect(() => {
     if (!niveauScolaire) {

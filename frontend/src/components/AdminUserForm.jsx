@@ -37,8 +37,6 @@ const normalizeMatieres = (rawValue, fallback = '') => {
 export default function AdminUserForm({ mode = 'create', userToEdit = null, onBack, onSuccess, isModal = false }) {
   const isEditing = mode === 'edit' && !!userToEdit;
 
-  const [users, setUsers] = useState([]);
-  const [classes, setClasses] = useState([]);
   const [matieres, setMatieres] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -60,9 +58,6 @@ export default function AdminUserForm({ mode = 'create', userToEdit = null, onBa
   });
 
   const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
-
-  const parentUsers = useMemo(() => users.filter((u) => u.role === 'parent'), [users]);
-  const selectedParent = parentUsers.find((p) => String(p.id) === String(formData.id_parent));
 
   useEffect(() => {
     const fetchData = async () => {
@@ -88,8 +83,6 @@ export default function AdminUserForm({ mode = 'create', userToEdit = null, onBa
         const usersData = usersResult.status === 'fulfilled' ? (usersResult.value.data || []) : [];
         const classesData = classesResult.status === 'fulfilled' ? (classesResult.value.data || []) : [];
         const matieresData = matieresResult.status === 'fulfilled' ? (matieresResult.value.data || []) : [];
-        setUsers(usersData);
-        setClasses(classesData);
         setMatieres(Array.isArray(matieresData) ? matieresData : []);
 
         if (

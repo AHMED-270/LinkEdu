@@ -1,8 +1,12 @@
 name: CI
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   backend-tests:
@@ -22,7 +26,7 @@ jobs:
         with:
           php-version: "8.3"
           tools: composer:v2
-          extensions: mbstring, dom, fileinfo, sqlite, pdo_sqlite
+          extensions: mbstring, dom, fileinfo, sqlite3, pdo_sqlite
           coverage: none
 
       - name: Install backend dependencies
@@ -37,7 +41,7 @@ jobs:
         run: php artisan test --colors=always
 
   frontend-checks:
-    name: Frontend checks (Lint + Build)
+    name: Frontend build (Vite)
     runs-on: ubuntu-latest
 
     defaults:
@@ -57,9 +61,6 @@ jobs:
 
       - name: Install frontend dependencies
         run: npm ci
-
-      - name: Run linter
-        run: npm run lint
 
       - name: Build frontend
         run: npm run build

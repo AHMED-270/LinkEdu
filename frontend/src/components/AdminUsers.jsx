@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import axios from 'axios';
 import {
   FiSearch as Search,
@@ -30,7 +30,7 @@ export default function AdminUsers({ onCreateUser, onEditUser }) {
 
   const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const resUsers = await axios.get(apiBaseUrl + '/api/admin/users', {
@@ -46,11 +46,11 @@ export default function AdminUsers({ onCreateUser, onEditUser }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiBaseUrl]);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   const ensureCsrfCookie = async () => {
     await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', {
@@ -90,7 +90,7 @@ export default function AdminUsers({ onCreateUser, onEditUser }) {
 
       setDeleteTarget(null);
       fetchData();
-    } catch (err) {
+    } catch {
       alert('Erreur lors de la suppression');
     } finally {
       setIsDeleting(false);
@@ -324,6 +324,9 @@ export default function AdminUsers({ onCreateUser, onEditUser }) {
         </div>
 
         <div className="px-6 py-4 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-3 bg-white">
+          <p className="text-xs font-medium text-gray-500">
+            {filteredUsers.length === 0 ? '0 resultat' : `${firstItem}-${lastItem} sur ${filteredUsers.length}`}
+          </p>
           
           <div className="flex items-center gap-2">
             <button
