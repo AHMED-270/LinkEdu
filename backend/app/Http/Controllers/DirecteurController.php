@@ -33,10 +33,27 @@ class DirecteurController extends Controller
             ->limit(5)
             ->get();
 
+        $etudiantsParNiveau = DB::table('etudiants')
+            ->join('classes', 'etudiants.id_classe', '=', 'classes.id_classe')
+            ->select(
+                'classes.niveau',
+                DB::raw('COUNT(etudiants.id_etudiant) as total')
+            )
+            ->groupBy('classes.niveau')
+            ->orderBy('classes.niveau')
+            ->get();
+
+        $currentDate = now();
+        $isAfterSchoolStart = $currentDate->month >= 9;
+        $startYear = $isAfterSchoolStart ? $currentDate->year : $currentDate->year - 1;
+        $academicYear = $startYear . '-' . ($startYear + 1);
+
         return response()->json([
             'message' => 'Dashboard directeur',
-            'stats' => $stats,
+            'academic_year' => $academicYear,
+            'stats' => array_merge($stats, ['academic_year' => $academicYear]),
             'latest_devoirs' => $latestDevoirs,
+            'etudiants_par_niveau' => $etudiantsParNiveau,
         ]);
     }
 
@@ -1249,41 +1266,9 @@ class DirecteurController extends Controller
 
     public function updateProfile(\Illuminate\Http\Request $request): JsonResponse
     {
-        $user = $request->user();
-        $request->validate([
-            'nom' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:users,email,' . $user->id,
-            'telephone' => 'nullable|string|max:20'
-        ]);
-
-        // Update User
-        $user->name = $request->nom;
-        $user->email = $request->email;
-        $user->save();
-
-        // Update Directeur details
-        if ($user->directeur) {
-            $user->directeur->telephone = $request->telephone;
-            $user->directeur->save();
-        } else {
-            // Create directeur profile if missing
-            \App\Models\Directeur::create([
-                'id_directeur' => $user->id,
-                'telephone' => $request->telephone
-            ]);
-            $user->load('directeur');
-        }
-
         return response()->json([
-            'message' => 'Profil mis à jour avec succès',
-            'profile' => [
-                'nom' => $user->name,
-                'email' => $user->email,
-                'telephone' => $user->directeur ? $user->directeur->telephone : '',
-                'etablissement' => 'Lycée Excellence',
-                'adresse' => 'Quartier Administratif, Rabat'
-            ]
-        ]);
+            'message' => 'La modification du nom, prenom et email est desactivee. Utilisez uniquement le changement de mot de passe.',
+        ], 422);
     }
 
     public function updatePassword(\Illuminate\Http\Request $request): JsonResponse

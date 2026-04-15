@@ -47,9 +47,17 @@ export default function Dashboard() {
   return (
     <div className="layout-content relative">
       {/* Header */}
-      <header className="mb-8">
-        <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: 'var(--text-primary)' }}>Bonjour, {user?.name || 'Professeur'} 👋</h1>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Voici un aperçu de vos activités et de vos classes pour aujourd'hui.</p>
+      <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: 'var(--text-primary)' }}>Bonjour, {user?.name || 'Professeur'} 👋</h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Voici un aperçu de vos activités pour l'année scolaire {stats?.academic_year}.</p>
+        </div>
+        {stats?.academic_year && (
+          <div className="bg-blue-600 text-white px-4 py-2 rounded-xl shadow-md flex flex-col items-center">
+            <span className="text-[10px] uppercase font-bold opacity-80">Année Académique</span>
+            <span className="text-lg font-black leading-none">{stats.academic_year}</span>
+          </div>
+        )}
       </header>
 
       {loading ? (

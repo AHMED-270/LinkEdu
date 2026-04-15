@@ -5,9 +5,10 @@ import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, Users, GraduationCap, FileText, Calendar, 
-  Bell, UserCheck, Clock, LifeBuoy, LogOut, AlertCircle, 
-  Send, CheckCircle2, ChevronDown, Download, BookOpen
+  Bell, UserCheck, Clock, LifeBuoy, AlertCircle, 
+  Send, CheckCircle2, ChevronDown, Download, BookOpen, User, LogOut
 } from 'lucide-react';
+import Parametres from './Parametres';
 import './RolePortal.css'; 
 import '../components/DirectoryTimetable.css';
 
@@ -23,6 +24,7 @@ const tabs = [
   { key: 'absences', label: 'Absences', icon: Clock },
   { key: 'reclamations', label: 'Reclamations', icon: LifeBuoy },
   { key: 'demandes', label: 'Demandes', icon: Send },
+  { key: 'profil', label: 'Profil', icon: User },
 ];
 
 const parentRequestTypes = [
@@ -39,6 +41,14 @@ const AUTH_TOKEN_KEY = 'linkedu_token';
 const getStoredToken = () => {
   try { return localStorage.getItem(AUTH_TOKEN_KEY); } 
   catch { return null; }
+};
+
+const clearStoredToken = () => {
+  try {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+  } catch {
+    // Ignore storage failures in restricted browser modes.
+  }
 };
 
 export default function ParentPortal() {
@@ -77,6 +87,8 @@ export default function ParentPortal() {
   const [requestMessage, setRequestMessage] = useState('');
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
   const [demandeFeedback, setDemandeFeedback] = useState({ type: '', msg: '' });
+  const [showLogoutAlert, setShowLogoutAlert] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const normalizeTime = (value) => String(value || '').slice(0, 5);
   const timeToMinutes = (value) => {
@@ -174,8 +186,8 @@ export default function ParentPortal() {
     return formatted;
   }, [emploi]);
 
-  const fetchWithAuth = async (path, method = 'get', payload = null) => {
-    const token = getStoredToken();
+  const requestWithAuthConfig = async (path, method = 'get', payload = null, forceCookieOnly = false) => {
+    const token = forceCookieOnly ? null : getStoredToken();
     const isGet = method.toLowerCase() === 'get';
 
     if (!isGet && !token) {
@@ -196,6 +208,22 @@ export default function ParentPortal() {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
     });
+  };
+
+  const fetchWithAuth = async (path, method = 'get', payload = null) => {
+    try {
+      return await requestWithAuthConfig(path, method, payload, false);
+    } catch (error) {
+      const status = error?.response?.status;
+      const hasToken = Boolean(getStoredToken());
+
+      if (hasToken && (status === 401 || status === 419)) {
+        clearStoredToken();
+        return requestWithAuthConfig(path, method, payload, true);
+      }
+
+      throw error;
+    }
   };
 
   const childQuery = selectedChildId ? `?child_id=${selectedChildId}` : '';
@@ -262,7 +290,12 @@ export default function ParentPortal() {
           setDemandes(res.data.demandes ?? []);
         }
       } catch (err) {
-        setError(err?.response?.data?.message || 'Chargement impossible pour le moment.');
+        const status = err?.response?.status;
+        if (status === 401 || status === 419) {
+          setError('Session expiree. Veuillez vous reconnecter.');
+        } else {
+          setError(err?.response?.data?.message || err?.message || 'Chargement impossible pour le moment.');
+        }
       } finally {
         setLoading(false);
       }
@@ -270,13 +303,18 @@ export default function ParentPortal() {
     load();
   }, [activeTab, selectedChildId]);
 
-  const handleLogout = async () => {
+  const handleLogoutConfirm = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+
     try {
       await fetchWithAuth('/api/admin/logout', 'post');
     } catch {
       // Continue local logout
     } finally {
       logout();
+      setIsLoggingOut(false);
+      setShowLogoutAlert(false);
       navigate('/login', { replace: true });
     }
   };
@@ -388,6 +426,32 @@ export default function ParentPortal() {
 
   return (
     <div className="portal-shell min-h-screen bg-[#F4F7FE] flex flex-col font-sans text-slate-800 pb-12">
+      {showLogoutAlert && (
+        <div className="header-logout-modal-backdrop">
+          <div className="header-logout-modal-card" role="dialog" aria-modal="true" aria-label="Confirmation deconnexion">
+            <h3>Deconnexion</h3>
+            <p>Voulez-vous vraiment vous deconnecter ?</p>
+            <div className="header-logout-modal-actions">
+              <button
+                type="button"
+                className="header-logout-cancel"
+                onClick={() => setShowLogoutAlert(false)}
+                disabled={isLoggingOut}
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                className="header-logout-confirm"
+                onClick={handleLogoutConfirm}
+                disabled={isLoggingOut}
+              >
+                {isLoggingOut ? 'Deconnexion...' : 'Oui'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 px-6 py-4 shadow-sm flex justify-between items-center">
@@ -400,13 +464,21 @@ export default function ParentPortal() {
             <h1 className="text-lg font-extrabold text-slate-800 leading-tight">Bonjour, {parentName}</h1>
           </div>
         </div>
-        <motion.button 
-          whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-red-500 hover:bg-red-50 rounded-full transition-colors"
-          onClick={handleLogout}
-        >
-          <LogOut size={16} /> <span className="hidden sm:inline">Déconnexion</span>
-        </motion.button>
+        <div className="flex items-center gap-4">
+          {dashboard?.academic_year && (
+            <div className="bg-blue-600 text-white px-3 py-1.5 rounded-lg shadow-sm flex flex-col items-center mr-4 hidden md:flex">
+                <span className="text-[9px] uppercase font-bold opacity-80 leading-none mb-0.5">Scolaire</span>
+                <span className="text-sm font-black leading-none">{dashboard.academic_year}</span>
+            </div>
+          )}
+          <motion.button
+            whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-red-500 hover:bg-red-50 rounded-full transition-colors"
+            onClick={() => setShowLogoutAlert(true)}
+          >
+            <LogOut size={16} /> <span className="hidden sm:inline">Déconnexion</span>
+          </motion.button>
+        </div>
       </header>
 
       <div className="portal-body">
@@ -435,13 +507,6 @@ export default function ParentPortal() {
               );
             })}
           </nav>
-
-          <div className="portal-sidebar-footer">
-            <button className="portal-sidebar-logout" onClick={handleLogout}>
-              <LogOut size={16} />
-              <span>Se deconnecter</span>
-            </button>
-          </div>
         </aside>
 
         <main className="portal-content max-w-6xl w-full mx-auto px-4 mt-8">
@@ -551,7 +616,7 @@ export default function ParentPortal() {
                                 </div>
                               </div>
                               <div className="p-4 bg-white">
-                                {enfant.today_sessions?.length === 0 ? (
+                                {!enfant.today_sessions || enfant.today_sessions.length === 0 ? (
                                   <p className="text-sm text-slate-400 italic text-center py-2">Pas de séances prévues aujourd'hui.</p>
                                 ) : (
                                   <div className="flex flex-col gap-3">
@@ -584,7 +649,7 @@ export default function ParentPortal() {
                               <span className="text-[10px] font-black text-indigo-400 uppercase tracking-tighter">Nouveau</span>
                             </div>
 
-                            {dashboard.annonces?.length === 0 ? (
+                            {!dashboard.annonces || dashboard.annonces.length === 0 ? (
                               <p className="text-xs text-slate-400 py-4 text-center">Aucune annonce pour le moment.</p>
                             ) : (
                               <div className="mini-announcement-highlight bg-white p-4 rounded-xl border border-indigo-100 shadow-sm relative overflow-hidden group">
@@ -611,7 +676,7 @@ export default function ParentPortal() {
                             </div>
 
                             <div className="space-y-3 flex-1">
-                              {dashboard.reclamations?.length === 0 ? (
+                              {!dashboard.reclamations || dashboard.reclamations.length === 0 ? (
                                 <p className="text-xs text-slate-400 text-center py-6">Aucune reclamation a afficher.</p>
                               ) : (
                                 dashboard.reclamations.slice(0, 2).map((rec) => (
@@ -1124,6 +1189,8 @@ export default function ParentPortal() {
                     </motion.div>
                   </div>
                 )}
+
+                {activeTab === 'profil' && <Parametres />}
                 
               </motion.div>
             )}

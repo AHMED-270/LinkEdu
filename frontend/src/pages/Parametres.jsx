@@ -21,6 +21,7 @@ export default function Parametres() {
   const { user, updateAuthenticatedUser } = useAuth();
   const fileInputRef = useRef(null);
   const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000';
+  const apiOrigin = apiBaseUrl.replace(/\/api\/?$/, '').replace(/\/$/, '');
 
   const [profileForm, setProfileForm] = useState({
     nom: user?.nom || '',
@@ -41,6 +42,15 @@ export default function Parametres() {
   const [passwordMessage, setPasswordMessage] = useState(null);
   const [passwordError, setPasswordError] = useState(null);
 
+  const resolvePhotoUrl = (rawValue) => {
+    const value = String(rawValue || '').trim();
+    if (!value) return '';
+    if (/^(https?:|data:image|blob:)/i.test(value)) return value;
+    if (value.startsWith('//')) return `${window.location.protocol}${value}`;
+    if (value.startsWith('/')) return `${apiOrigin}${value}`;
+    return `${apiOrigin}/${value.replace(/^\.?\//, '')}`;
+  };
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -57,7 +67,7 @@ export default function Parametres() {
           prenom: profile.prenom || '',
           email: profile.email || '',
         });
-        setAvatarPreview(profile.profile_photo_url || profile.profilePhoto || user?.profilePhoto || '');
+        setAvatarPreview(resolvePhotoUrl(profile.profile_photo_url || profile.profilePhoto || user?.profilePhoto || ''));
       } catch {
         setProfileError('Erreur lors du chargement du profil.');
       } finally {
@@ -69,11 +79,6 @@ export default function Parametres() {
   }, [apiBaseUrl, user?.profilePhoto]);
 
   const initials = `${profileForm.prenom || ''} ${profileForm.nom || ''}`.trim().charAt(0).toUpperCase() || 'P';
-
-  const handleProfileInputChange = (event) => {
-    const { name, value } = event.target;
-    setProfileForm((prev) => ({ ...prev, [name]: value }));
-  };
 
   const handlePasswordInputChange = (event) => {
     const { name, value } = event.target;
@@ -130,8 +135,6 @@ export default function Parametres() {
       });
 
       const payload = new FormData();
-      payload.append('nom', profileForm.nom);
-      payload.append('prenom', profileForm.prenom);
 
       if (avatarFile) {
         payload.append('profile_photo', avatarFile);
@@ -148,20 +151,16 @@ export default function Parametres() {
       });
 
       const updated = res.data?.user || {};
-      const nextProfilePhoto = updated.profile_photo_url || updated.profilePhoto || null;
+      const nextProfilePhoto = resolvePhotoUrl(updated.profile_photo_url || updated.profilePhoto || null);
 
       updateAuthenticatedUser({
-        name: updated.name || `${profileForm.prenom} ${profileForm.nom}`.trim(),
-        nom: updated.nom || profileForm.nom,
-        prenom: updated.prenom || profileForm.prenom,
-        email: updated.email || profileForm.email,
         profilePhoto: nextProfilePhoto,
       });
 
       setAvatarPreview(nextProfilePhoto || '');
       setAvatarFile(null);
       setRemovePhoto(false);
-      setProfileMessage(res.data?.message || 'Profil mis à jour avec succès.');
+      setProfileMessage(res.data?.message || 'Photo de profil mise a jour avec succes.');
     } catch (submitError) {
       const backendErrors = submitError?.response?.data?.errors;
       if (backendErrors) {
@@ -212,7 +211,7 @@ export default function Parametres() {
     <div className="dashboard-content">
       <header className="content-header">
         <h1>Mon Profil</h1>
-        <p>Gérez votre photo, votre nom et votre mot de passe.</p>
+        <p>Gerez votre photo et votre mot de passe.</p>
       </header>
 
       {loading ? (
@@ -273,9 +272,9 @@ export default function Parametres() {
                   type="text"
                   name="nom"
                   value={profileForm.nom}
-                  onChange={handleProfileInputChange}
-                  required
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  readOnly
+                  disabled
+                  className="w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-3 py-2.5 text-sm text-slate-500"
                 />
               </div>
 
@@ -287,9 +286,9 @@ export default function Parametres() {
                   type="text"
                   name="prenom"
                   value={profileForm.prenom}
-                  onChange={handleProfileInputChange}
-                  required
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  readOnly
+                  disabled
+                  className="w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-3 py-2.5 text-sm text-slate-500"
                 />
               </div>
             </div>
@@ -314,7 +313,7 @@ export default function Parametres() {
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Save size={16} />
-              {savingProfile ? 'Enregistrement...' : 'Enregistrer le profil'}
+              {savingProfile ? 'Enregistrement...' : 'Enregistrer la photo'}
             </button>
           </form>
 

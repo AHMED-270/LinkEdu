@@ -1,4 +1,4 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
   --admin-primary: #0f62fe;
@@ -294,8 +294,8 @@ body, html {
 /* Stats */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
   margin-bottom: 32px;
 }
 
@@ -347,17 +347,19 @@ body, html {
 
 .stat-label {
   margin: 0 0 4px 0;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--admin-text-light);
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .stat-value {
   margin: 0;
-  font-size: 1.75rem;
-  font-weight: 700;
+  font-size: 1.5rem;
+  font-weight: 800;
   color: var(--admin-text);
+  letter-spacing: -0.025em;
 }
 
 /* Main Grid */

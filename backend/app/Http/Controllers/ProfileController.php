@@ -29,16 +29,10 @@ class ProfileController extends Controller
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        $validated = $request->validate([
-            'nom' => ['required', 'string', 'max:255'],
-            'prenom' => ['required', 'string', 'max:255'],
+        $request->validate([
             'profile_photo' => ['nullable', 'image', 'max:2048'],
             'remove_profile_photo' => ['nullable', 'boolean'],
         ]);
-
-        $user->nom = $validated['nom'];
-        $user->prenom = $validated['prenom'];
-        $user->name = trim(($validated['prenom'] ?? '') . ' ' . ($validated['nom'] ?? ''));
 
         if ($request->boolean('remove_profile_photo') && $user->profile_photo_path) {
             Storage::disk('public')->delete($user->profile_photo_path);
@@ -56,7 +50,7 @@ class ProfileController extends Controller
         $user->save();
 
         return response()->json([
-            'message' => 'Profil mis a jour avec succes.',
+            'message' => 'Photo de profil mise a jour avec succes.',
             'user' => $this->formatUser($user),
         ]);
     }

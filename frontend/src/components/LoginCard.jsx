@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -108,9 +108,38 @@ export default function LoginCard({ onLoginSuccess }) {
      }
    };
 
-   const handleForgotSubmit = (event) => {
+   const [forgotEmail, setForgotEmail] = useState('');
+   const [isForgotLoading, setIsForgotLoading] = useState(false);
+   const [forgotError, setForgotError] = useState('');
+
+   const handleForgotSubmit = async (event) => {
      event.preventDefault();
-     setIsResetSent(true);
+     setIsForgotLoading(true);
+     setForgotError('');
+     setIsResetSent(false);
+
+     try {
+       await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', {
+         withCredentials: true,
+         withXSRFToken: true,
+       });
+
+       await axios.post(
+         apiBaseUrl + '/api/forgot-password',
+         { email: forgotEmail.trim().toLowerCase() },
+         {
+           withCredentials: true,
+           withXSRFToken: true,
+           headers: { Accept: 'application/json' },
+         }
+       );
+
+       setIsResetSent(true);
+     } catch (error) {
+       setForgotError(error?.response?.data?.message || error?.response?.data?.email?.[0] || 'Erreur lors de l\'envoi du lien.');
+     } finally {
+       setIsForgotLoading(false);
+     }
    };
 
    return (
@@ -182,10 +211,17 @@ export default function LoginCard({ onLoginSuccess }) {
          {isForgotMode && (
            <form className="auth-form" onSubmit={handleForgotSubmit}>
              <label htmlFor="forgot-email">E-mail</label>
-             <input id="forgot-email" type="email" placeholder="nom@ecole.com" required />
+             <input
+               id="forgot-email"
+               type="email"
+               placeholder="nom@ecole.com"
+               value={forgotEmail}
+               onChange={(e) => setForgotEmail(e.target.value)}
+               required
+             />
 
-             <button type="submit" className="auth-button">
-               Reinitialiser le mot de passe &rarr;
+             <button type="submit" className="auth-button" disabled={isForgotLoading}>
+               {isForgotLoading ? 'Envoi...' : 'Reinitialiser le mot de passe'} &rarr;
              </button>
 
              <button
@@ -195,13 +231,22 @@ export default function LoginCard({ onLoginSuccess }) {
                onClick={() => {
                  setIsForgotMode(false);
                  setIsResetSent(false);
+                 setForgotError('');
                }}
              >
                &larr; Retour a la page de connexion
              </button>
 
+             {forgotError && (
+               <p className="auth-feedback" style={{ fontSize: '0.85rem', color: '#d32f2f', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                 <AlertCircle size={16} />
+                 {forgotError}
+               </p>
+             )}
+
              {isResetSent && (
-               <p className="auth-feedback" style={{ fontSize: '0.85rem', color: '#2e7d32', marginTop: '0.5rem' }}>
+               <p className="auth-feedback" style={{ fontSize: '0.85rem', color: '#2e7d32', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                 <CheckCircle2 size={16} />
                  Si cet e-mail existe, un lien de reinitialisation a ete envoye.
                </p>
              )}

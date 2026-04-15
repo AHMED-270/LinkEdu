@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, GraduationCap, FileText, Calendar, FolderOpen, Bell, LogOut, Download, Eye, X, Clock, BookOpen, AlertCircle } from 'lucide-react';
+import { LayoutDashboard, GraduationCap, FileText, Calendar, FolderOpen, Bell, Download, Eye, X, Clock, BookOpen, AlertCircle, User, LogOut } from 'lucide-react';
+import Parametres from './Parametres';
 import './RolePortal.css';
 import '../components/DirectoryTimetable.css';
 
@@ -14,6 +15,7 @@ const tabs = [
   { key: 'emploi', label: 'Emploi du temps', icon: Calendar },
   { key: 'ressources', label: 'Ressources', icon: FolderOpen },
   { key: 'annonces', label: 'Annonces', icon: Bell },
+  { key: 'profil', label: 'Profil', icon: User },
 ];
 
 const browserHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
@@ -25,6 +27,14 @@ const getStoredToken = () => {
     return localStorage.getItem(AUTH_TOKEN_KEY);
   } catch {
     return null;
+  }
+};
+
+const clearStoredToken = () => {
+  try {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+  } catch {
+    // Ignore storage failures in restricted browser modes.
   }
 };
 
@@ -97,6 +107,83 @@ const isDeadlineReached = (value) => {
   return deadlineDateKey <= todayKey;
 };
 
+const WEEKDAY_LABELS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+
+const WEEKDAY_KEY_TO_LABEL = {
+  lundi: 'Lundi',
+  mardi: 'Mardi',
+  mercredi: 'Mercredi',
+  jeudi: 'Jeudi',
+  vendredi: 'Vendredi',
+  samedi: 'Samedi',
+  dimanche: 'Dimanche',
+};
+
+const WEEKDAY_ALIASES = {
+  lundi: 'lundi',
+  lun: 'lundi',
+  monday: 'lundi',
+  mon: 'lundi',
+  1: 'lundi',
+  mardi: 'mardi',
+  mar: 'mardi',
+  tuesday: 'mardi',
+  tue: 'mardi',
+  2: 'mardi',
+  mercredi: 'mercredi',
+  mer: 'mercredi',
+  wednesday: 'mercredi',
+  wed: 'mercredi',
+  3: 'mercredi',
+  jeudi: 'jeudi',
+  jeu: 'jeudi',
+  thursday: 'jeudi',
+  thu: 'jeudi',
+  4: 'jeudi',
+  vendredi: 'vendredi',
+  ven: 'vendredi',
+  friday: 'vendredi',
+  fri: 'vendredi',
+  5: 'vendredi',
+  samedi: 'samedi',
+  sam: 'samedi',
+  saturday: 'samedi',
+  sat: 'samedi',
+  6: 'samedi',
+  dimanche: 'dimanche',
+  dim: 'dimanche',
+  sunday: 'dimanche',
+  sun: 'dimanche',
+  0: 'dimanche',
+  7: 'dimanche',
+};
+
+const normalizeDayToken = (value) => {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+};
+
+const resolveWeekdayKey = (value) => {
+  const token = normalizeDayToken(value);
+  if (!token) return '';
+
+  if (WEEKDAY_ALIASES[token]) {
+    return WEEKDAY_ALIASES[token];
+  }
+
+  const firstToken = token.split(' ')[0];
+  return WEEKDAY_ALIASES[firstToken] ?? '';
+};
+
+const resolveWeekdayLabel = (value) => {
+  const key = resolveWeekdayKey(value);
+  return key ? WEEKDAY_KEY_TO_LABEL[key] : '';
+};
+
 const normalizeTime = (value) => String(value || '').slice(0, 5);
 const timeToMinutes = (value) => {
   const normalized = normalizeTime(value);
@@ -166,6 +253,8 @@ export default function StudentPortal() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showLogoutAlert, setShowLogoutAlert] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const [dashboard, setDashboard] = useState(null);
   const [notes, setNotes] = useState([]);
@@ -288,8 +377,8 @@ export default function StudentPortal() {
     };
   }, [selectedAnnonce]);
 
-  const fetchWithAuth = async (path, method = 'get', payload = null) => {
-    const token = getStoredToken();
+  const requestWithAuthConfig = async (path, method = 'get', payload = null, forceCookieOnly = false) => {
+    const token = forceCookieOnly ? null : getStoredToken();
     const isGet = method.toLowerCase() === 'get';
 
     if (!isGet && !token) {
@@ -310,6 +399,22 @@ export default function StudentPortal() {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
     });
+  };
+
+  const fetchWithAuth = async (path, method = 'get', payload = null) => {
+    try {
+      return await requestWithAuthConfig(path, method, payload, false);
+    } catch (error) {
+      const status = error?.response?.status;
+      const hasToken = Boolean(getStoredToken());
+
+      if (hasToken && (status === 401 || status === 419)) {
+        clearStoredToken();
+        return requestWithAuthConfig(path, method, payload, true);
+      }
+
+      throw error;
+    }
   };
 
   useEffect(() => {
@@ -347,7 +452,12 @@ export default function StudentPortal() {
           setAnnonces(res.data.annonces ?? []);
         }
       } catch (err) {
-        setError(err?.response?.data?.message || 'Chargement impossible pour le moment.');
+        const status = err?.response?.status;
+        if (status === 401 || status === 419) {
+          setError('Session expiree. Veuillez vous reconnecter.');
+        } else {
+          setError(err?.response?.data?.message || err?.message || 'Chargement impossible pour le moment.');
+        }
       } finally {
         setLoading(false);
       }
@@ -356,13 +466,18 @@ export default function StudentPortal() {
     load();
   }, [activeTab]);
 
-  const handleLogout = async () => {
+  const handleLogoutConfirm = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+
     try {
       await fetchWithAuth('/api/admin/logout', 'post');
     } catch {
       // Continue local logout even if backend logout fails.
     } finally {
       logout();
+      setIsLoggingOut(false);
+      setShowLogoutAlert(false);
       navigate('/login', { replace: true });
     }
   };
@@ -441,17 +556,19 @@ export default function StudentPortal() {
   };
 
   const todayEmploi = useMemo(() => {
-    const currentDayStr = new Date().toLocaleDateString('fr-FR', { weekday: 'long' }).toLowerCase();
-    return emploi.filter(item => String(item.jour).toLowerCase() === currentDayStr)
+    const currentDayKey = resolveWeekdayKey(new Date().toLocaleDateString('fr-FR', { weekday: 'long' }));
+    return emploi
+      .filter((item) => resolveWeekdayKey(item?.jour) === currentDayKey)
       .sort((a, b) => (a.heure_debut || '').localeCompare(b.heure_debut || ''));
   }, [emploi]);
 
   const emploiByDay = useMemo(() => {
-    const jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
     const acc = {};
-    jours.forEach(j => {
-      acc[j] = emploi.filter(item => String(item.jour).toLowerCase() === j.toLowerCase())
-        .sort((a,b) => (a.heure_debut || '').localeCompare(b.heure_debut || ''));
+    WEEKDAY_LABELS.forEach((dayLabel) => {
+      const dayKey = resolveWeekdayKey(dayLabel);
+      acc[dayLabel] = emploi
+        .filter((item) => resolveWeekdayKey(item?.jour) === dayKey)
+        .sort((a, b) => (a.heure_debut || '').localeCompare(b.heure_debut || ''));
     });
     return acc;
   }, [emploi]);
@@ -470,11 +587,11 @@ export default function StudentPortal() {
   const scheduleDataGrid = useMemo(() => {
     const formatted = {};
     emploi.forEach((item) => {
-      const day = String(item?.jour || '');
+      const day = resolveWeekdayLabel(item?.jour);
       const startTime = normalizeTime(item?.heure_debut);
       const endTime = normalizeTime(item?.heure_fin) || addHoursTime(startTime, 1);
 
-      if (!day || !/^\d{2}:\d{2}$/.test(startTime)) return;
+      if (!day || !WEEKDAY_LABELS.includes(day) || !/^\d{2}:\d{2}$/.test(startTime)) return;
 
       const coveredSlots = buildCoveredTimeSlots(startTime, endTime);
       const cardData = {
@@ -491,14 +608,53 @@ export default function StudentPortal() {
     return formatted;
   }, [emploi]);
 
+  const currentDayLabel = WEEKDAY_KEY_TO_LABEL[
+    resolveWeekdayKey(new Date().toLocaleDateString('fr-FR', { weekday: 'long' }))
+  ] || '';
+
   return (
     <div className="portal-shell">
+      {showLogoutAlert && (
+        <div className="header-logout-modal-backdrop">
+          <div className="header-logout-modal-card" role="dialog" aria-modal="true" aria-label="Confirmation deconnexion">
+            <h3>Deconnexion</h3>
+            <p>Voulez-vous vraiment vous deconnecter ?</p>
+            <div className="header-logout-modal-actions">
+              <button
+                type="button"
+                className="header-logout-cancel"
+                onClick={() => setShowLogoutAlert(false)}
+                disabled={isLoggingOut}
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                className="header-logout-confirm"
+                onClick={handleLogoutConfirm}
+                disabled={isLoggingOut}
+              >
+                {isLoggingOut ? 'Deconnexion...' : 'Oui'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="portal-header">
         <div>
           <p className="portal-kicker">LinkEdu - Espace Etudiant</p>
           <h1>Bienvenue {studentName}</h1>
         </div>
-        <button className="portal-logout" onClick={handleLogout}>Se deconnecter</button>
+        <div className="flex items-center gap-4">
+          {dashboard?.academic_year && (
+            <div className="bg-blue-600 text-white px-3 py-1.5 rounded-lg shadow-sm flex flex-col items-center mr-4 hidden md:flex">
+              <span className="text-[9px] uppercase font-bold opacity-80 leading-none mb-0.5">Scolaire</span>
+              <span className="text-sm font-black leading-none">{dashboard.academic_year}</span>
+            </div>
+          )}
+          <button className="portal-logout" onClick={() => setShowLogoutAlert(true)}>Se deconnecter</button>
+        </div>
       </header>
 
       <div className="portal-body">
@@ -527,13 +683,6 @@ export default function StudentPortal() {
               );
             })}
           </nav>
-
-          <div className="portal-sidebar-footer">
-            <button className="portal-sidebar-logout" onClick={handleLogout}>
-              <LogOut size={16} />
-              <span>Se deconnecter</span>
-            </button>
-          </div>
         </aside>
 
         <main className="portal-content">
@@ -657,7 +806,7 @@ export default function StudentPortal() {
                     notes.slice(0, 4).map((note) => (
                       <div key={note.id_note} className="mini-grade-item">
                         <div className={`grade-circle ${resolveNoteToneClass(note.valeur)}`}>
-                          {Math.round(note.valeur)}
+                          {Number.isFinite(Number(note.valeur)) ? Number(note.valeur).toFixed(2) : '-'}
                         </div>
                         <div className="grade-info">
                           <p className="grade-subject">{note.matiere}</p>
@@ -671,7 +820,7 @@ export default function StudentPortal() {
 
               <motion.section variants={cardVariants} className="dashboard-section-card mt-6">
                 <div className="section-card-header">
-                  <h3><FileText size={18} /> Devoirs Urgents</h3>
+                  <h3><FileText size={18} /> Devoirs</h3>
                 </div>
                 <div className="quick-assignments-feed">
                   {devoirsActifs.length === 0 ? <p className="text-xs text-slate-400 text-center py-4">Tous les devoirs sont à jour !</p> :
@@ -830,19 +979,19 @@ export default function StudentPortal() {
                 <thead>
                   <tr>
                     <th className="time-col"></th>
-                    {['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'].map(day => (
-                      <th key={day} className={day.toLowerCase() === new Date().toLocaleDateString('fr-FR', { weekday: 'long' }).toLowerCase() ? 'current-day-header' : ''}>{day}</th>
+                    {WEEKDAY_LABELS.map((day) => (
+                      <th key={day} className={day === currentDayLabel ? 'current-day-header' : ''}>{day}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {tableTimes.map(time => (
+                  {tableTimes.map((time) => (
                     <tr key={time}>
                       <td className="time-cell" style={{ fontWeight: 600 }}>{`${time} - ${addOneHourTime(time)}`}</td>
-                      {['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'].map(day => {
+                      {WEEKDAY_LABELS.map((day) => {
                         const cellData = scheduleDataGrid[time]?.[day];
                         return (
-                          <td key={`${time}-${day}`} className={day.toLowerCase() === new Date().toLocaleDateString('fr-FR', { weekday: 'long' }).toLowerCase() ? 'current-day-col' : ''}>
+                          <td key={`${time}-${day}`} className={day === currentDayLabel ? 'current-day-col' : ''}>
                             {cellData ? (
                               <div className="course-card border-blue" style={{ cursor: 'default' }}>
                                 <strong className="course-subject">{cellData.matiere}</strong>
@@ -949,6 +1098,10 @@ export default function StudentPortal() {
           {annonces.length === 0 && <p className="portal-state">Aucune annonce disponible.</p>}
         </section>
       )}
+
+
+
+      {activeTab === 'profil' && <Parametres />}
 
       {selectedAnnonce && (
         <div

@@ -32,9 +32,30 @@ class AdminDashboardController extends Controller
         $startYear = $isAfterSchoolStart ? $currentYear : $currentYear - 1;
         $endYear = $startYear + 1;
 
+        // Role Counts
+        $roleCounts = User::select('role', DB::raw('count(*) as total'))
+            ->groupBy('role')
+            ->get()
+            ->pluck('total', 'role')
+            ->all();
+
+        // Ensure all roles are present even if count is 0
+        $allRoles = ['admin', 'directeur', 'professeur', 'secretaire', 'comptable', 'etudiant', 'parent', 'parent_eleve'];
+        foreach ($allRoles as $role) {
+            if (!isset($roleCounts[$role])) {
+                $roleCounts[$role] = 0;
+            }
+        }
+
+        // Student Distribution by Class
+        $classDistribution = Classe::select('classes.nom', 'classes.niveau', DB::raw('count(etudiants.id_etudiant) as total'))
+            ->leftJoin('etudiants', 'classes.id_classe', '=', 'etudiants.id_classe')
+            ->groupBy('classes.id_classe', 'classes.nom', 'classes.niveau')
+            ->get();
+
         $totalStudents = Etudiant::count();
         $totalClasses = Classe::count();
-        $totalProfesseurs = User::where('role', 'professeur')->count();
+        $totalProfesseurs = $roleCounts['professeur'] ?? 0;
         $totalMatieres = Matiere::count();
         $anneeScolaireActuelle = $startYear . '-' . $endYear;
 
@@ -43,6 +64,8 @@ class AdminDashboardController extends Controller
             'totalClasses' => $totalClasses,
             'totalProfesseurs' => $totalProfesseurs,
             'totalMatieres' => $totalMatieres,
+            'roleCounts' => $roleCounts,
+            'classDistribution' => $classDistribution,
             'anneeScolaireActuelle' => $anneeScolaireActuelle
         ]);
     }
@@ -62,7 +85,7 @@ class AdminDashboardController extends Controller
                 'max:255',
                 \Illuminate\Validation\Rule::unique('users')->where(fn ($query) => $query->where('role', $request->input('role')))
             ],
-            'role' => 'required|string|in:secretaire,directeur,professeur',
+            'role' => 'required|string|in:secretaire,directeur,professeur,comptable',
             'password' => 'nullable|string|min:6',
             'telephone' => 'nullable|string|max:30',
             'matiere_enseignement' => 'nullable|string|max:255',
@@ -122,6 +145,7 @@ class AdminDashboardController extends Controller
                     'secretaire' => 'Secretaire',
                     'professeur' => 'Professeur',
                     'directeur' => 'Directeur',
+                    'comptable' => 'Comptable',
                     default => ucfirst((string) $validated['role']),
                 };
 
@@ -178,7 +202,7 @@ class AdminDashboardController extends Controller
                 'max:255',
                 \Illuminate\Validation\Rule::unique('users')->ignore($id)->where(fn ($query) => $query->where('role', $request->input('role')))
             ],
-            'role' => 'required|string|in:etudiant,parent,secretaire,admin,directeur,professeur',
+            'role' => 'required|string|in:etudiant,parent,secretaire,admin,directeur,professeur,comptable',
             'password' => 'nullable|string|min:6',
             'id_classe' => 'required_if:role,etudiant|nullable|integer|exists:classes,id_classe',
             'id_parent' => 'required_if:role,etudiant|nullable|integer|exists:parents,id_parent',
@@ -319,29 +343,16 @@ class AdminDashboardController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => [
-                'required',
-                'string',
-                'email',
-                'max:255',
-                \Illuminate\Validation\Rule::unique('users')->ignore($user->id)->where(fn ($query) => $query->where('role', $user->role))
-            ],
-            'password' => 'nullable|string|min:6',
+            'password' => 'required|string|min:6',
         ]);
 
         try {
-            $user->name = $validated['name'];
-            $user->email = $validated['email'];
-
-            if (!empty($validated['password'])) {
-                $user->password = bcrypt($validated['password']);
-            }
+            $user->password = bcrypt($validated['password']);
 
             $user->save();
 
             return response()->json([
-                'message' => 'Profil mis à jour avec succès.',
+                'message' => 'Mot de passe mis a jour avec succes.',
                 'user' => $user
             ]);
         } catch (\Exception $e) {

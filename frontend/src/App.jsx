@@ -1,4 +1,4 @@
-﻿import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
 import AdminDashboard from './components/AdminDashboard';
@@ -26,6 +26,7 @@ import SecretaireDemandes from './pages/SecretaireDemandes';
 import Paiements from './pages/Paiements';
 import StudentPortal from './pages/StudentPortal';
 import ParentPortal from './pages/ParentPortal';
+import PasswordReset from './pages/PasswordReset';
 import './App.css';
 
 const SECRETARIAT_STAFF_ROLES = ['secretaire'];
@@ -118,6 +119,8 @@ const AppRoutes = () => {
       <Route path="/student" element={<ProtectedRoute allowedRoles={['etudiant']}><StudentPortal /></ProtectedRoute>} />
       <Route path="/etudiant" element={<ProtectedRoute allowedRoles={['etudiant']}><Navigate to="/student" replace /></ProtectedRoute>} />
       <Route path="/parent" element={<ProtectedRoute allowedRoles={['parent_eleve', 'parent']}><ParentPortal /></ProtectedRoute>} />
+      
+      <Route path="/password-reset/:token" element={<PasswordReset />} />
 
       <Route path="*" element={<Navigate to={user ? getHomeRouteByRole(user?.role) : '/login'} replace />} />
     </Routes>

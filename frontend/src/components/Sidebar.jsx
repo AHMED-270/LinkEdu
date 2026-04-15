@@ -1,9 +1,11 @@
 ﻿import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { FiGrid, FiCalendar, FiUsers, FiStar, FiFileText, FiMessageCircle, FiLogOut, FiAlertCircle, FiUser } from 'react-icons/fi';
+import { FiGrid, FiCalendar, FiUsers, FiStar, FiFileText, FiMessageCircle, FiLogOut, FiAlertCircle } from 'react-icons/fi';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import './Sidebar.css';
+import './Header.css';
 
 const navItems = [
   { path: '/dashboard', label: 'Tableau de bord', icon: FiGrid },
@@ -14,7 +16,6 @@ const navItems = [
   { path: '/devoirs', label: 'Devoirs & Ressources', icon: FiFileText },
   { path: '/reclamation', label: 'Réclamations', icon: FiAlertCircle },
   { path: '/annonces', label: 'Annonces', icon: FiMessageCircle },
-  { path: '/profil', label: 'Profil', icon: FiUser },
 ];
 
 export default function Sidebar() {
@@ -24,7 +25,37 @@ export default function Sidebar() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const initials = (user?.name || 'P').trim().charAt(0).toUpperCase();
 
-  const handleLogoutConfirm = async () => {
+  const logoutModal = showLogoutModal && typeof document !== 'undefined'
+    ? createPortal(
+      <div className="header-logout-modal-backdrop">
+        <div className="header-logout-modal-card" role="dialog" aria-modal="true" aria-label="Confirmation deconnexion">
+          <h3>Deconnexion</h3>
+          <p>Voulez-vous vraiment vous deconnecter ?</p>
+          <div className="header-logout-modal-actions">
+            <button
+              type="button"
+              className="header-logout-cancel"
+              onClick={() => setShowLogoutModal(false)}
+              disabled={isLoggingOut}
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              className="header-logout-confirm"
+              onClick={handleLogoutConfirm}
+              disabled={isLoggingOut}
+            >
+              {isLoggingOut ? 'Deconnexion...' : 'Oui'}
+            </button>
+          </div>
+        </div>
+      </div>,
+      document.body
+    )
+    : null;
+
+  async function handleLogoutConfirm() {
     setIsLoggingOut(true);
     try {
       const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000';
@@ -47,37 +78,11 @@ export default function Sidebar() {
       setShowLogoutModal(false);
       navigate('/login', { replace: true });
     }
-  };
+  }
 
   return (
     <>
-      {showLogoutModal && (
-        <div className="logout-modal-backdrop">
-          <div className="logout-modal-card">
-            <div className="logout-modal-icon">
-              <FiLogOut size={48} color="#f43f5e" />
-            </div>
-            <h3>Êtes-vous sûr de vouloir vous déconnecter ?</h3>
-            <p>Vous devrez saisir à nouveau vos identifiants pour accéder à ce panneau.</p>
-            <div className="logout-modal-actions">
-              <button
-                className="btn btn-outline"
-                onClick={() => setShowLogoutModal(false)}
-                disabled={isLoggingOut}
-              >
-                Annuler
-              </button>
-              <button
-                className="btn btn-danger"
-                onClick={handleLogoutConfirm}
-                disabled={isLoggingOut}
-              >
-                {isLoggingOut ? 'Déconnexion...' : 'Oui, me déconnecter'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {logoutModal}
 
       <aside className="h-full w-full border-r border-slate-200 bg-white">
         <div className="flex h-full flex-col px-3 py-4">

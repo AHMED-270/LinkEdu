@@ -16,7 +16,6 @@ export default function Appel() {
   const [classes, setClasses] = useState([]);
   const [matieres, setMatieres] = useState([]);
   const [showMatiereField, setShowMatiereField] = useState(true);
-  const [seances, setSeances] = useState([]);
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedMatiere, setSelectedMatiere] = useState('');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
@@ -42,7 +41,6 @@ export default function Appel() {
       setClasses(data.classes || []);
       setMatieres(data.matieres || []);
       setShowMatiereField(Boolean(data.showMatiereField ?? (data.matieres || []).length > 1));
-      setSeances(data.seances || []);
       setStudents(
         data.students?.map((s) => ({
           ...s,
@@ -121,8 +119,8 @@ export default function Appel() {
 
   const presentCount = students.filter(s => s.status === 'present').length;
   const absentCount = students.filter(s => s.status === 'absent').length;
-  const seance1Label = seances?.[0]?.label || 'Seance 1';
-  const seance2Label = seances?.[1]?.label || 'Seance 2';
+  const seance1Label = 'Seance 1';
+  const seance2Label = 'Seance 2';
 
   const handleSave = async () => {
     const invalidStudent = students.find((student) => {

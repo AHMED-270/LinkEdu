@@ -3,7 +3,24 @@ import './DirectorySettings.css';
 import axios from 'axios';
 import { ROLE, getRoleLabel } from '../constants/roles';
 
+const AUTH_TOKEN_KEY = 'linkedu_token';
+
+const getAuthHeaders = () => {
+  let token = null;
+  try {
+    token = localStorage.getItem(AUTH_TOKEN_KEY);
+  } catch {
+    token = null;
+  }
+
+  return {
+    Accept: 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
+
 const DirectorySettings = ({ userRole = ROLE.DIRECTEUR }) => {
+  const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000';
   const [activeTab, setActiveTab] = useState('profil');
   const [profileData, setProfileData] = useState({
     nom: '',
@@ -29,10 +46,18 @@ const DirectorySettings = ({ userRole = ROLE.DIRECTEUR }) => {
 
   const fetchProfile = async () => {
     try {
-      const response = await axios.get('http://localhost:8000/api/directeur/profile', {
-        headers: { Authorization: 'Bearer ' + localStorage.getItem('token') }
+      const response = await axios.get(`${apiBaseUrl}/api/directeur/profile`, {
+        withCredentials: true,
+        withXSRFToken: true,
+        headers: getAuthHeaders(),
       });
-      setProfileData(response.data);
+      setProfileData({
+        nom: response.data?.nom || '',
+        email: response.data?.email || '',
+        telephone: response.data?.telephone || '',
+        etablissement: response.data?.etablissement || '',
+        adresse: response.data?.adresse || '',
+      });
       setIsLoading(false);
     } catch (error) {
       console.error("Erreur lors du chargement du profil", error);
@@ -56,15 +81,7 @@ const DirectorySettings = ({ userRole = ROLE.DIRECTEUR }) => {
   const saveProfile = async (e) => {
     e.preventDefault();
     clearMessages();
-    try {
-      const response = await axios.put('http://localhost:8000/api/directeur/profile', profileData, {
-        headers: { Authorization: 'Bearer ' + localStorage.getItem('token') }
-      });
-      setSuccessMessage(response.data.message);
-      setProfileData(response.data.profile);
-    } catch (error) {
-      setErrorMessage(error.response?.data?.message || 'Erreur lors de la mise à jour du profil');
-    }
+    setErrorMessage('La modification du nom, prenom et email est desactivee. Utilisez uniquement le changement de mot de passe.');
   };
 
   const savePassword = async (e) => {
@@ -76,11 +93,13 @@ const DirectorySettings = ({ userRole = ROLE.DIRECTEUR }) => {
     }
     
     try {
-      const response = await axios.put('http://localhost:8000/api/directeur/password', {
+      const response = await axios.put(`${apiBaseUrl}/api/directeur/profile/password`, {
         actuel: passwordData.actuel,
         nouveau: passwordData.nouveau
       }, {
-        headers: { Authorization: 'Bearer ' + localStorage.getItem('token') }
+        withCredentials: true,
+        withXSRFToken: true,
+        headers: getAuthHeaders(),
       });
       setSuccessMessage(response.data.message);
       setPasswordData({ actuel: '', nouveau: '', confirmation: '' });
@@ -141,18 +160,18 @@ const DirectorySettings = ({ userRole = ROLE.DIRECTEUR }) => {
                   <div className="form-row">
                     <div className="form-group">
                       <label>Nom Complet</label>
-                      <input type="text" name="nom" value={profileData.nom} onChange={handleProfileChange} required />
+                      <input type="text" name="nom" value={profileData.nom} onChange={handleProfileChange} readOnly disabled className="readonly-input" />
                     </div>
                     <div className="form-group">
                       <label>Email Professionnel</label>
-                      <input type="email" name="email" value={profileData.email} onChange={handleProfileChange} required />
+                      <input type="email" name="email" value={profileData.email} onChange={handleProfileChange} readOnly disabled className="readonly-input" />
                     </div>
                   </div>
                   
                   <div className="form-row">
                     <div className="form-group">
                       <label>Téléphone</label>
-                      <input type="text" name="telephone" value={profileData.telephone} onChange={handleProfileChange} />
+                      <input type="text" name="telephone" value={profileData.telephone} onChange={handleProfileChange} readOnly disabled className="readonly-input" />
                     </div>
                     <div className="form-group">
                       <label>Établissement</label>
@@ -162,12 +181,10 @@ const DirectorySettings = ({ userRole = ROLE.DIRECTEUR }) => {
 
                   <div className="form-group full-width">
                     <label>Adresse de l'établissement</label>
-                    <input type="text" name="adresse" value={profileData.adresse} onChange={handleProfileChange} />
+                    <input type="text" name="adresse" value={profileData.adresse} onChange={handleProfileChange} readOnly disabled className="readonly-input" />
                   </div>
 
-                  <div className="form-actions">
-                    <button type="submit" className="btn-primary">Enregistrer les modifications</button>
-                  </div>
+                  <p className="settings-readonly-note">Modification des informations personnelles desactivee.</p>
                 </form>
               )}
             </div>

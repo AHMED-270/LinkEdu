@@ -20,19 +20,9 @@ class ProfessorController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
-        ]);
-
-        $user->name = $validated['name'];
-        $user->email = $validated['email'];
-        $user->save();
-
         return response()->json([
-            'message' => 'Profil mis à jour avec succès.',
-            'user' => $user,
-        ]);
+            'message' => 'La modification du nom et de l email est desactivee. Utilisez uniquement le changement de mot de passe.',
+        ], 422);
     }
 
     public function getDashboard(Request $request): JsonResponse
@@ -98,15 +88,24 @@ class ProfessorController extends Controller
                 'matieres.nom as matiere_nom',
             ]);
 
+        $currentDate = Carbon::now();
+        $currentYear = $currentDate->year;
+        $isAfterSchoolStart = $currentDate->month >= 9;
+        $startYear = $isAfterSchoolStart ? $currentYear : $currentYear - 1;
+        $endYear = $startYear + 1;
+        $academicYear = $startYear . '-' . $endYear;
+
         return response()->json([
             'stats' => [
                 'total_eleves' => (int) $totalStudents,
                 'total_classes' => (int) $classIds->count(),
                 'devoirs_actifs' => (int) $activeAssignments,
                 'ressources_partagees' => (int) $sharedResources,
+                'academic_year' => $academicYear,
             ],
             'classes' => $classSummaries,
             'schedule' => $todaySchedule,
+            'academic_year' => $academicYear,
         ]);
     }
 

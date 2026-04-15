@@ -9,6 +9,24 @@ import {
 } from 'lucide-react';
 import TableSkeletonRows from '../components/TableSkeletonRows';
 
+const AUTH_TOKEN_KEY = 'linkedu_token';
+
+const getStoredToken = () => {
+  try {
+    return localStorage.getItem(AUTH_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+};
+
+const getAuthHeaders = () => {
+  const token = getStoredToken();
+  return {
+    Accept: 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
+
 const statusOptions = [
   { value: 'en_attente', label: 'En attente' },
   { value: 'en_cours', label: 'En cours' },
@@ -61,6 +79,7 @@ export default function SecretaireDemandes() {
       const res = await axios.get(`${apiBaseUrl}/api/secretaire/demandes`, {
         withCredentials: true,
         withXSRFToken: true,
+        headers: getAuthHeaders(),
       });
       setDemandes(res.data?.demandes || []);
     } catch (error) {
@@ -99,10 +118,12 @@ export default function SecretaireDemandes() {
     setFeedback({ type: '', msg: '' });
 
     try {
-      await axios.get(`${apiBaseUrl}/sanctum/csrf-cookie`, {
-        withCredentials: true,
-        withXSRFToken: true,
-      });
+      if (!getStoredToken()) {
+        await axios.get(`${apiBaseUrl}/sanctum/csrf-cookie`, {
+          withCredentials: true,
+          withXSRFToken: true,
+        });
+      }
 
       await axios.put(
         `${apiBaseUrl}/api/secretaire/demandes/${idDemande}/status`,
@@ -110,6 +131,7 @@ export default function SecretaireDemandes() {
         {
           withCredentials: true,
           withXSRFToken: true,
+          headers: getAuthHeaders(),
         }
       );
 

@@ -10,14 +10,10 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\EmploiDuTempsController;
 
 use App\Http\Controllers\SecretaireController;
-<<<<<<< HEAD
 use App\Http\Controllers\DirecteurController;
 use App\Http\Controllers\StudentParentController;
-=======
-use App\Http\Controllers\StudentParentController;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
->>>>>>> 98d0485 (feat: implement secretary dashboard, payment seeders, and routing updates)
+use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\NewPasswordController;
 
 /*
 |--------------------------------------------------------------------------
@@ -56,6 +52,10 @@ Route::post('/login', [AdminLoginController::class, 'login']);
 Route::post('/logout', [AdminLoginController::class, 'logout'])->middleware('auth:sanctum');
 Route::post('/admin/login', [AdminLoginController::class, 'login']);
 Route::post('/admin/logout', [AdminLoginController::class, 'logout'])->middleware('auth:sanctum');
+
+// Password Reset Routes
+Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
+Route::post('/reset-password', [NewPasswordController::class, 'store'])->name('password.store');
 
 Route::middleware(['auth:sanctum', 'role:admin,directeur'])->group(function () {
     Route::get('/admin/dashboard-stats', [AdminDashboardController::class, 'getStats']);
@@ -118,24 +118,7 @@ Route::middleware(['auth:sanctum', 'role:professeur'])->prefix('professeur')->gr
 });
 
 // Secretaire Module Routes
-<<<<<<< HEAD
-=======
 Route::middleware(['auth:sanctum', 'role:secretaire,admin,directeur,comptable'])->prefix('secretaire')->group(function () {
-    Route::get('/dashboard', [SecretaireController::class, 'dashboard']);
-
-    // Classes (read-only for comptable)
-    Route::get('/classes', [SecretaireController::class, 'listClasses']);
-
-    // Paiements
-    Route::get('/paiements', [PaiementController::class, 'index']);
-    Route::post('/paiements', [PaiementController::class, 'store']);
-    Route::put('/paiements/{id}', [PaiementController::class, 'update']);
-    Route::delete('/paiements/{id}', [PaiementController::class, 'destroy']);
-    Route::put('/paiements/{id}/toggle', [PaiementController::class, 'togglePaid']);
-});
-
->>>>>>> 98d0485 (feat: implement secretary dashboard, payment seeders, and routing updates)
-Route::middleware(['auth:sanctum', 'role:secretaire,admin,directeur'])->prefix('secretaire')->group(function () {
     Route::get('/dashboard', [SecretaireController::class, 'dashboard']);
 
     // Students
@@ -153,6 +136,7 @@ Route::middleware(['auth:sanctum', 'role:secretaire,admin,directeur'])->prefix('
     Route::put('/paiements/{id}/toggle', [PaiementController::class, 'togglePaid']);
 
     // Classes
+    Route::get('/classes', [SecretaireController::class, 'listClasses']);
     Route::post('/classes', [SecretaireController::class, 'createClasse']);
     Route::put('/classes/{id}', [SecretaireController::class, 'updateClasse']);
     Route::delete('/classes/{id}', [SecretaireController::class, 'deleteClasse']);

@@ -142,8 +142,8 @@ export default function AdminDashboard({ onLogout, userRole = 'admin', user = nu
             <div className="logout-modal-icon">
               <DoorOpen size={48} color="#f43f5e" />
             </div>
-            <h3>Êtes-vous sûr de vouloir vous déconnecter ?</h3>
-            <p>Vous devrez saisir à nouveau vos identifiants pour accéder à ce panneau.</p>
+            <h3>Deconnexion</h3>
+            <p>Voulez-vous vraiment vous deconnecter ?</p>
             <div className="logout-modal-actions">
               <button 
                 className="btn-cancel" 
@@ -157,7 +157,7 @@ export default function AdminDashboard({ onLogout, userRole = 'admin', user = nu
                 onClick={handleLogoutConfirm}
                 disabled={isLoggingOut}
               >
-                {isLoggingOut ? 'Déconnexion...' : 'Oui, me déconnecter'}
+                {isLoggingOut ? 'Deconnexion...' : 'Oui'}
               </button>
             </div>
           </div>

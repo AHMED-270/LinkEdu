@@ -203,6 +203,17 @@
   justify-content: flex-end;
 }
 
+.settings-readonly-note {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #dbeafe;
+  background: #eff6ff;
+  color: #1e40af;
+  font-size: 13px;
+  font-weight: 500;
+}
+
 .btn-primary {
   padding: 12px 24px;
   background-color: var(--primary-color, #4361ee);

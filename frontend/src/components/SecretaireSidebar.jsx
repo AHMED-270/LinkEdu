@@ -1,9 +1,11 @@
 ﻿import { NavLink, useNavigate } from 'react-router-dom';
 import { FiGrid, FiUsers, FiCreditCard, FiBookOpen, FiCalendar, FiMessageCircle, FiAlertCircle, FiFileText, FiLogOut } from 'react-icons/fi';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import './SecretaireSidebar.css';
+import './Header.css';
 
 const navItems = [
   { path: '/secretaire/dashboard', label: 'Tableau de bord', icon: FiGrid },
@@ -23,37 +25,11 @@ export default function SecretaireSidebar() {
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [classes, setClasses] = useState([]);
-  const [isLoadingClasses, setIsLoadingClasses] = useState(false);
 
   const role = String(user?.role || '').toLowerCase();
   const visibleNavItems = role === 'comptable'
     ? navItems.filter((item) => item.path === '/secretaire/dashboard' || item.path === '/secretaire/paiements')
     : navItems;
-
-  useEffect(() => {
-    const loadClasses = async () => {
-      if (role === 'comptable') {
-        setClasses([]);
-        return;
-      }
-
-      setIsLoadingClasses(true);
-      try {
-        const res = await axios.get(apiBaseUrl + '/api/secretaire/classes', {
-          withCredentials: true,
-          withXSRFToken: true,
-        });
-        setClasses(res.data?.classes || []);
-      } catch {
-        setClasses([]);
-      } finally {
-        setIsLoadingClasses(false);
-      }
-    };
-
-    loadClasses();
-  }, [apiBaseUrl, role]);
 
   const handleLogoutConfirm = async () => {
     if (isLoggingOut) return;
@@ -81,35 +57,39 @@ export default function SecretaireSidebar() {
 
   const initials = (user?.name || 'S').trim().charAt(0).toUpperCase();
 
-  return (
-    <>
-      {showLogoutModal && (
-        <div className="logout-modal-backdrop">
-          <div className="logout-modal-card">
-            <div className="logout-modal-icon">
-              <FiLogOut size={48} color="#f43f5e" />
-            </div>
-            <h3>Etes-vous sur de vouloir vous deconnecter ?</h3>
-            <p>Vous devrez saisir a nouveau vos identifiants pour acceder a ce panneau.</p>
-            <div className="logout-modal-actions">
-              <button
-                className="btn-cancel"
-                onClick={() => setShowLogoutModal(false)}
-                disabled={isLoggingOut}
-              >
-                Annuler
-              </button>
-              <button
-                className="btn-confirm-logout"
-                onClick={handleLogoutConfirm}
-                disabled={isLoggingOut}
-              >
-                {isLoggingOut ? 'Deconnexion...' : 'Oui, me deconnecter'}
-              </button>
-            </div>
+  const logoutModal = showLogoutModal && typeof document !== 'undefined'
+    ? createPortal(
+      <div className="header-logout-modal-backdrop">
+        <div className="header-logout-modal-card" role="dialog" aria-modal="true" aria-label="Confirmation deconnexion">
+          <h3>Deconnexion</h3>
+          <p>Voulez-vous vraiment vous deconnecter ?</p>
+          <div className="header-logout-modal-actions">
+            <button
+              type="button"
+              className="header-logout-cancel"
+              onClick={() => setShowLogoutModal(false)}
+              disabled={isLoggingOut}
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              className="header-logout-confirm"
+              onClick={handleLogoutConfirm}
+              disabled={isLoggingOut}
+            >
+              {isLoggingOut ? 'Deconnexion...' : 'Oui'}
+            </button>
           </div>
         </div>
-      )}
+      </div>,
+      document.body
+    )
+    : null;
+
+  return (
+    <>
+      {logoutModal}
 
       <aside className="fixed bottom-0 left-0 top-16 z-[90] w-[260px] border-r border-slate-200 bg-white">
         <div className="flex h-full flex-col overflow-y-auto px-3 py-4">
@@ -161,28 +141,6 @@ export default function SecretaireSidebar() {
               );
             })}
           </nav>
-
-          {role !== 'comptable' && (
-            <div className="sidebar-classes-wrap">
-              <div className="sidebar-classes-title">Classes</div>
-              {isLoadingClasses ? (
-                <p className="sidebar-classes-empty">Chargement...</p>
-              ) : classes.length === 0 ? (
-                <p className="sidebar-classes-empty">Aucune classe</p>
-              ) : (
-                <ul className="sidebar-classes-list">
-                  {classes.map((classe) => (
-                    <li key={classe.id_classe} className="sidebar-class-item">
-                      <span className="sidebar-class-name">{classe.nom}</span>
-                      <span className="sidebar-class-meta">
-                        {classe.niveau || '-'} - {classe.total_etudiants ?? 0} eleve(s)
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
         </div>
       </aside>
     </>

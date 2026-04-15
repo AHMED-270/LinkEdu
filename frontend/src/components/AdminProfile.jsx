@@ -97,18 +97,27 @@ export default function AdminProfile() {
     setSaving(true);
     setMessage(null);
     setError(null);
+
+    if (!String(formData.password || '').trim()) {
+      setSaving(false);
+      setError('Saisissez un nouveau mot de passe pour enregistrer.');
+      return;
+    }
+
     try {
       await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', {
         withCredentials: true,
         withXSRFToken: true,
       });
 
-      const res = await axios.put(apiBaseUrl + '/api/admin/profile', formData, {
+      const res = await axios.put(apiBaseUrl + '/api/admin/profile', {
+        password: formData.password,
+      }, {
         withCredentials: true,
         withXSRFToken: true,
         headers: { Accept: 'application/json' }
       });
-      updateAuthenticatedUser({ name: formData.name, email: formData.email });
+
       setMessage(res.data.message);
       setFormData(prev => ({ ...prev, password: '' })); // clear password field
     } catch (err) {
@@ -125,7 +134,7 @@ export default function AdminProfile() {
           <BiSolidUserDetail className="text-blue-600" />
           Mon Profil
         </h1>
-        <p>Gérez vos informations personnelles et votre mot de passe.</p>
+        <p>Modification du nom, prenom et email desactivee. Changement de mot de passe uniquement.</p>
       </header>
 
       <div className="card-panel" style={{ maxWidth: '600px', margin: '0 auto', padding: '30px' }}>
@@ -171,9 +180,9 @@ export default function AdminProfile() {
                 type="text"
                 name="name"
                 value={formData.name}
-                onChange={handleInputChange}
-                required
-                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }}
+                readOnly
+                disabled
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#f1f5f9', color: '#64748b', cursor: 'not-allowed' }}
               />
             </div>
 
@@ -185,9 +194,9 @@ export default function AdminProfile() {
                 type="email"
                 name="email"
                 value={formData.email}
-                onChange={handleInputChange}
-                required
-                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }}
+                readOnly
+                disabled
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', background: '#f1f5f9', color: '#64748b', cursor: 'not-allowed' }}
               />
             </div>
 

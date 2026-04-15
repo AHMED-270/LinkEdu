@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FiLogOut } from 'react-icons/fi';
@@ -10,10 +11,48 @@ export default function Header() {
   const { user, logout } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showLogoutAlert, setShowLogoutAlert] = useState(false);
-  const isSecretaire = String(user?.role || '').toLowerCase() === 'secretaire';
-  const profileRoute = isSecretaire ? '/secretaire/profil' : '/profil';
+  const role = String(user?.role || '').toLowerCase();
+  const isFinancePortalRole = role === 'secretaire' || role === 'comptable';
+  const profileRoute = isFinancePortalRole ? '/secretaire/profil' : '/profil';
 
-  const handleLogoutConfirm = async () => {
+  const logoutModal = showLogoutAlert && typeof document !== 'undefined'
+    ? createPortal(
+      <div className="header-logout-modal-backdrop">
+        <div className="header-logout-modal-card" role="dialog" aria-modal="true" aria-label="Confirmation deconnexion">
+          <h3>Deconnexion</h3>
+          {isLoggingOut ? (
+            <div className="header-logout-skeleton-wrap" aria-hidden="true">
+              <div className="header-logout-skeleton-line" />
+              <div className="header-logout-skeleton-line short" />
+            </div>
+          ) : (
+            <p>Voulez-vous vraiment vous deconnecter ?</p>
+          )}
+          <div className="header-logout-modal-actions">
+            <button
+              type="button"
+              className="header-logout-cancel"
+              onClick={() => setShowLogoutAlert(false)}
+              disabled={isLoggingOut}
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              className="header-logout-confirm"
+              onClick={handleLogoutConfirm}
+              disabled={isLoggingOut}
+            >
+              {isLoggingOut ? 'Deconnexion...' : 'Oui'}
+            </button>
+          </div>
+        </div>
+      </div>,
+      document.body
+    )
+    : null;
+
+  async function handleLogoutConfirm() {
     if (isLoggingOut) return;
 
     setIsLoggingOut(true);
@@ -43,43 +82,11 @@ export default function Header() {
       setShowLogoutAlert(false);
       navigate('/login', { replace: true });
     }
-  };
+  }
 
   return (
     <>
-      {showLogoutAlert && (
-        <div className="header-logout-modal-backdrop">
-          <div className="header-logout-modal-card" role="dialog" aria-modal="true" aria-label="Confirmation deconnexion">
-            <h3>Deconnexion</h3>
-            {isLoggingOut ? (
-              <div className="header-logout-skeleton-wrap" aria-hidden="true">
-                <div className="header-logout-skeleton-line" />
-                <div className="header-logout-skeleton-line short" />
-              </div>
-            ) : (
-              <p>Voulez-vous vraiment vous deconnecter ?</p>
-            )}
-            <div className="header-logout-modal-actions">
-              <button
-                type="button"
-                className="header-logout-cancel"
-                onClick={() => setShowLogoutAlert(false)}
-                disabled={isLoggingOut}
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                className="header-logout-confirm"
-                onClick={handleLogoutConfirm}
-                disabled={isLoggingOut}
-              >
-                {isLoggingOut ? 'Deconnexion...' : 'Oui'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {logoutModal}
 
       <header className="header">
         <div className="header-logo">

@@ -23,8 +23,47 @@ use Illuminate\Support\Str;
 
 class SecretaireController extends Controller
 {
-    public function dashboard(): JsonResponse
+    public function dashboard(Request $request): JsonResponse
     {
+        $role = strtolower((string) optional($request->user())->role);
+
+        if ($role === 'comptable') {
+            $academicYear = now()->month >= 9
+                ? now()->year
+                : now()->year - 1;
+
+            $totalStudents = Etudiant::count();
+            $paidStudents = (int) DB::table('paiements')
+                ->join('etudiants', 'paiements.id_etudiant', '=', 'etudiants.id_etudiant')
+                ->where('paiements.annee', $academicYear)
+                ->where('paiements.statut', 'paye')
+                ->distinct('paiements.id_etudiant')
+                ->count('paiements.id_etudiant');
+
+            $unpaidStudents = max($totalStudents - $paidStudents, 0);
+
+            return response()->json([
+                'mode' => 'comptable',
+                'annee' => $academicYear,
+                'stats' => [
+                    'etudiants_total' => $totalStudents,
+                    'classes' => Classe::count(),
+                    'etudiants_payes' => $paidStudents,
+                    'etudiants_non_payes' => $unpaidStudents,
+                ],
+                'paiements_par_statut' => [
+                    [
+                        'statut' => 'Payes',
+                        'total' => $paidStudents,
+                    ],
+                    [
+                        'statut' => 'Non payes',
+                        'total' => $unpaidStudents,
+                    ],
+                ],
+            ]);
+        }
+
         // Monthly absence averages for the last 12 months
         $monthNames = [
             1 => 'Jan', 2 => 'Fév', 3 => 'Mar', 4 => 'Avr',
@@ -71,12 +110,20 @@ class SecretaireController extends Controller
             ->orderBy('classes.niveau')
             ->get();
 
+        $currentDate = now();
+        $isAfterSchoolStart = $currentDate->month >= 9;
+        $startYear = $isAfterSchoolStart ? $currentDate->year : $currentDate->year - 1;
+        $academicYear = $startYear . '-' . ($startYear + 1);
+
         return response()->json([
+            'mode' => 'secretaire',
+            'academic_year' => $academicYear,
             'stats' => [
                 'etudiants' => Etudiant::count(),
                 'classes' => Classe::count(),
                 'absences_aujourdhui' => Absence::whereDate('date_abs', now()->toDateString())->count(),
                 'reclamations_envoyees' => Reclamation::count(),
+                'academic_year' => $academicYear,
             ],
             'absences_par_mois' => $absencesParMois,
             'etudiants_par_niveau' => $etudiantsParNiveau,

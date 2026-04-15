@@ -58,6 +58,11 @@ class StudentParentController extends Controller
             ->where('id_etudiant', $student->id_etudiant)
             ->count();
 
+        $currentDate = now();
+        $isAfterSchoolStart = $currentDate->month >= 9;
+        $startYear = $isAfterSchoolStart ? $currentDate->year : $currentDate->year - 1;
+        $academicYear = $startYear . '-' . ($startYear + 1);
+
         return response()->json([
             'student' => [
                 'id' => $student->id_etudiant,
@@ -65,14 +70,17 @@ class StudentParentController extends Controller
                 'classe_id' => $student->id_classe,
                 'classe_nom' => $student->classe?->nom,
                 'classe_niveau' => $student->classe?->niveau,
+                'academic_year' => $academicYear,
             ],
             'stats' => [
                 'moyenne_generale' => $average ? round((float) $average, 2) : null,
                 'nombre_absences' => $absenceCount,
                 'devoirs_a_venir' => $upcomingAssignments,
                 'annonces_recentes' => $recentAnnouncements->count(),
+                'academic_year' => $academicYear,
             ],
             'annonces' => $recentAnnouncements,
+            'academic_year' => $academicYear,
         ]);
     }
 
@@ -444,14 +452,21 @@ class StudentParentController extends Controller
             ->limit(3)
             ->get();
 
+        $currentDate = now();
+        $isAfterSchoolStart = $currentDate->month >= 9;
+        $startYear = $isAfterSchoolStart ? $currentDate->year : $currentDate->year - 1;
+        $academicYear = $startYear . '-' . ($startYear + 1);
+
         return response()->json([
             'annonces' => $annonces,
             'reclamations' => $reclamations,
+            'academic_year' => $academicYear,
             'stats' => [
                 'nombre_enfants' => $children->count(),
                 'moyenne_generale' => $notesAverage ? round((float) $notesAverage, 2) : null,
                 'nombre_absences' => $absences,
                 'reclamations_en_attente' => $pendingComplaints,
+                'academic_year' => $academicYear,
             ],
             'enfants' => $children->map(function (Etudiant $child) use ($schedules) {
                 $childSchedule = $schedules->get($child->id_classe) ?? collect();
