@@ -49,6 +49,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 // Admin routes
 Route::post('/login', [AdminLoginController::class, 'login']);
+Route::post('/test-login', [AdminLoginController::class, 'login']); // Debug route
 Route::post('/logout', [AdminLoginController::class, 'logout'])->middleware('auth:sanctum');
 Route::post('/admin/login', [AdminLoginController::class, 'login']);
 Route::post('/admin/logout', [AdminLoginController::class, 'logout'])->middleware('auth:sanctum');

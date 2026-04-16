@@ -15,6 +15,14 @@ class AdminLoginController extends Controller
     public function login(Request $request): JsonResponse
     {
         try {
+            \Log::info('Login attempt:', [
+                'email' => $request->input('email'),
+                'method' => $request->method(),
+                'headers' => $request->headers->all(),
+                'body' => $request->getContent(),
+                'all_input' => $request->all(),
+            ]);
+
             $validated = $request->validate([
                 "email" => ["required", "email"],
                 "password" => ["required", "string"],
@@ -68,12 +76,13 @@ class AdminLoginController extends Controller
                 "token" => $token
             ], 200);
         } catch (ValidationException $e) {
+            \Log::error('Login validation error:', $e->errors());
             return response()->json([
                 "message" => "Erreur de validation",
                 "errors" => $e->errors()
             ], 422);
         } catch (\Exception $e) {
-            \Log::error('Login error: ' . $e->getMessage());
+            \Log::error('Login error: ' . $e->getMessage() . ' ' . $e->getTraceAsString());
             return response()->json([
                 "message" => "Erreur lors de la connexion",
                 "error" => $e->getMessage()

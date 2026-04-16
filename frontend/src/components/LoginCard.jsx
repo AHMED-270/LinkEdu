@@ -31,18 +31,26 @@ export default function LoginCard({ onLoginSuccess }) {
 
     try {
       const performLogin = async () => {
-        await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', {
-          withCredentials: true,
-          withXSRFToken: true,
-        });
+        // Get CSRF token first
+        try {
+          await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', {
+            withCredentials: true,
+          });
+        } catch (e) {
+          console.warn('CSRF cookie fetch failed, continuing anyway:', e.message);
+        }
 
+        // Perform login  
         return axios.post(
           apiBaseUrl + '/api/login',
           { email: loginEmail.trim().toLowerCase(), password: loginPassword },
           {
             withCredentials: true,
-            withXSRFToken: true,
-            headers: { Accept: 'application/json' },
+            headers: { 
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest',
+            },
           }
         );
       };
@@ -51,6 +59,7 @@ export default function LoginCard({ onLoginSuccess }) {
       try {
         loginRes = await performLogin();
       } catch (firstError) {
+        console.error('Initial login error:', firstError.response?.data || firstError.message);
         if (firstError?.response?.status === 419) {
           loginRes = await performLogin();
         } else {

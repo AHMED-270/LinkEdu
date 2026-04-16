@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             ComprehensiveSchoolSeeder::class,
             StudentParentDemoSeeder::class,
             MultipleStudentsParentSeeder::class,
+            MultipleComptablesSeeder::class,
             SidebarClassesSeeder::class,
             PaiementsDemoSeeder::class,
         ]);
