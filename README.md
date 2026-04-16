@@ -82,4 +82,28 @@ Frontend service (`linkedu-frontend`):
 - Backend container waits briefly for database, runs migrations (if enabled), then starts on Railway `PORT`.
 - Frontend container builds with Vite and serves the static app on Railway `PORT`.
 
+### 4) If Railway shows `composer: not found`
+
+This means Railway is not building that service with the Dockerfile you expect.
+
+Use these exact settings per service:
+
+1. Backend service:
+	- Root directory: `backend`
+	- Builder: `Dockerfile`
+	- Dockerfile path: `Dockerfile`
+	- Build command in Railway UI: leave empty
+2. Frontend service:
+	- Root directory: `frontend`
+	- Builder: `Dockerfile`
+	- Dockerfile path: `Dockerfile`
+	- Build command in Railway UI: leave empty
+
+Then click `Redeploy` for both services.
+
+If you keep root directory as repository root instead, set Dockerfile path explicitly:
+
+- Backend: `backend/Dockerfile`
+- Frontend: `frontend/Dockerfile`
+
     
