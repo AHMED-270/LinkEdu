@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -631,7 +631,7 @@ export default function StudentPortal() {
 
   const dashboardScheduleEmptyMessage = shouldShowTomorrowSessions
     ? 'Aucune seance prevue pour demain.'
-    : 'Aucune seance restante aujourd\'hui. Profites-en !';
+    : 'Aucune seance aujourd\'hui. Profites-en !';
 
   const dashboardScheduleDateLabel = useMemo(
     () => dashboardTargetDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }),

@@ -10,7 +10,6 @@ import logo from '../assets/images/linkedu-logo.png';
 const navItems = [
   { path: '/secretaire/dashboard', label: 'Tableau de bord', icon: FiGrid },
   { path: '/secretaire/etudiants', label: 'Étudiants', icon: FiUsers },
-  { path: '/secretaire/paiements', label: 'Paiements', icon: FiCreditCard },
   { path: '/secretaire/classes', label: 'Classes', icon: FiBookOpen },
   { path: '/secretaire/absences', label: 'Absences', icon: FiCalendar },
   { path: '/secretaire/annonces', label: 'Annonces', icon: FiMessageCircle },
