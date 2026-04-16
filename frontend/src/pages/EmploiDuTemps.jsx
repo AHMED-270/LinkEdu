@@ -19,7 +19,7 @@ const CARD_COLORS = [
 export default function EmploiDuTemps() {
   const [schedule, setSchedule] = useState([]);
   const [classes, setClasses] = useState([]);
-  const [selectedClass, setSelectedClass] = useState('');
+  const [selectedClass, setSelectedClass] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -33,14 +33,13 @@ export default function EmploiDuTemps() {
     return name || level || 'Classe';
   };
 
-  const loadSchedule = async (classId = '') => {
+  const loadSchedule = async () => {
     setLoading(true);
     setError('');
     try {
-      const params = classId ? { class_id: classId } : {};
-      const data = await professorGet('/api/professeur/emploi-du-temps', params);
+      const data = await professorGet('/api/professeur/emploi-du-temps');
       setClasses(data.classes || []);
-      setSelectedClass(data.selectedClassId ? String(data.selectedClassId) : '');
+      setSelectedClass(data.selectedClassId ? String(data.selectedClassId) : 'all');
       setSchedule(data.schedule || []);
     } catch {
       setError("Impossible de charger l'emploi du temps.");
@@ -54,6 +53,13 @@ export default function EmploiDuTemps() {
   useEffect(() => {
     loadSchedule();
   }, []);
+
+  const filteredSchedule = useMemo(() => {
+    if (selectedClass === 'all') return schedule;
+    const classId = Number(selectedClass);
+    if (!Number.isFinite(classId) || classId <= 0) return schedule;
+    return schedule.filter((item) => Number(item?.id_classe) === classId);
+  }, [schedule, selectedClass]);
 
   // Helper functions for time calculation
   const normalizeTime = (value) => String(value || '').slice(0, 5);
@@ -106,18 +112,18 @@ export default function EmploiDuTemps() {
   // Convert raw schedule to timetable format
   const tableTimes = useMemo(() => {
     const defaultSlots = buildHourlySlots('08:30', 10);
-    const coveredTimes = schedule.flatMap((item) => {
+    const coveredTimes = filteredSchedule.flatMap((item) => {
       const startTime = normalizeTime(item?.heure_debut);
       const endTime = normalizeTime(item?.heure_fin) || addHoursTime(startTime, 1);
       return buildCoveredTimeSlots(startTime, endTime);
     });
     const uniqueTimes = [...new Set(coveredTimes.filter((time) => /^\d{2}:\d{2}$/.test(time)))].sort((a, b) => a.localeCompare(b));
     return [...new Set([...defaultSlots, ...uniqueTimes])].sort((a, b) => a.localeCompare(b));
-  }, [schedule]);
+  }, [filteredSchedule]);
 
   const scheduleData = useMemo(() => {
     const formatted = {};
-    schedule.forEach((item) => {
+    filteredSchedule.forEach((item) => {
       const day = String(item?.jour || '');
       const startTime = normalizeTime(item?.heure_debut);
       const endTime = normalizeTime(item?.heure_fin) || addHoursTime(startTime, 1);
@@ -125,20 +131,25 @@ export default function EmploiDuTemps() {
       if (!day || !/^\d{2}:\d{2}$/.test(startTime)) return;
 
       const coveredSlots = buildCoveredTimeSlots(startTime, endTime);
+      const classLabel = [String(item?.classe_nom || '').trim(), String(item?.classe_niveau || '').trim()]
+        .filter(Boolean)
+        .join(' - ');
+
       const cardData = {
         id: item.id_edt,
         raw: item,
         subject: item.matiere_nom || 'Matière Inconnue',
-        class: `${item.classe_nom} (${item.classe_niveau})` || 'Classe Inconnue'
+        class: classLabel || 'Classe Inconnue',
       };
 
       coveredSlots.forEach((slotTime) => {
         if (!formatted[slotTime]) formatted[slotTime] = {};
-        formatted[slotTime][day] = cardData;
+        if (!formatted[slotTime][day]) formatted[slotTime][day] = [];
+        formatted[slotTime][day].push(cardData);
       });
     });
     return formatted;
-  }, [schedule]);
+  }, [filteredSchedule]);
 
   const toCsvCell = (value) => {
     const safe = String(value ?? '').replace(/"/g, '""');
@@ -146,9 +157,9 @@ export default function EmploiDuTemps() {
   };
 
   const handleExportPdf = () => {
-    if (!schedule.length) return;
+    if (!filteredSchedule.length) return;
 
-    const rows = schedule.map((cours) => [
+    const rows = filteredSchedule.map((cours) => [
       cours.jour,
       `${cours.heure_debut || ''} - ${cours.heure_fin || ''}`,
       cours.matiere_nom,
@@ -185,7 +196,7 @@ export default function EmploiDuTemps() {
       return;
     }
 
-    const rows = schedule.map((cours) => `
+    const rows = filteredSchedule.map((cours) => `
       <tr>
         <td>${escapeHtml(cours.jour)}</td>
         <td>${escapeHtml(cours.heure_debut)} - ${escapeHtml(cours.heure_fin)}</td>
@@ -254,20 +265,21 @@ export default function EmploiDuTemps() {
             className="form-select min-w-[240px] !px-4 !py-2.5 rounded-xl border border-slate-300 bg-white shadow-sm backdrop-blur-xl border border-white/80 !shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgba(41,107,116,0.06)] transition-all duration-300"
             value={selectedClass}
             onChange={(e) => {
-              const value = e.target.value;
-              setSelectedClass(value);
-              loadSchedule(value);
+              setSelectedClass(e.target.value);
             }}
             disabled={loading || classes.length === 0}
           >
             {classes.length === 0 ? (
               <option value="">Aucune classe</option>
             ) : (
-              classes.map((classe) => (
-                <option key={classe.id} value={classe.id}>
-                  {formatClassLabel(classe)}
-                </option>
-              ))
+              <>
+                <option value="all">Vue globale - Toutes les classes</option>
+                {classes.map((classe) => (
+                  <option key={classe.id} value={classe.id}>
+                    {formatClassLabel(classe)}
+                  </option>
+                ))}
+              </>
             )}
           </select>
           <motion.button
@@ -275,7 +287,7 @@ export default function EmploiDuTemps() {
             whileTap={{ scale: 0.95 }}
             className="btn btn-outline bg-white shadow-sm"
             onClick={handleExportPdf}
-            disabled={!schedule.length}
+            disabled={!filteredSchedule.length}
           >
             <Download size={16} /> Exporter CSV
           </motion.button>
@@ -284,7 +296,7 @@ export default function EmploiDuTemps() {
             whileTap={{ scale: 0.95 }}
             className="btn btn-primary shadow-[0_4px_14px_rgba(59,130,246,0.25)]"
             onClick={handlePrint}
-            disabled={!schedule.length}
+            disabled={!filteredSchedule.length}
           >
             <Printer size={16} className="mr-2"/> Imprimer
           </motion.button>
@@ -318,15 +330,22 @@ export default function EmploiDuTemps() {
                     <tr key={time}>
                       <td className="time-cell" style={{ fontWeight: 600 }}>{`${time} - ${addOneHourTime(time)}`}</td>
                       {JOURS_SEMAINE.map(day => {
-                        const cellData = scheduleData[time]?.[day];
+                        const cellEntries = scheduleData[time]?.[day] || [];
                         return (
                           <td key={`${time}-${day}`} className={day.toLowerCase() === new Date().toLocaleDateString('fr-FR', { weekday: 'long' }).toLowerCase() ? 'current-day-col' : ''}>
-                            {cellData ? (
-                              <div className="course-card border-blue" style={{ cursor: 'default' }}>
-                                <strong className="course-subject">{cellData.subject}</strong>
-                                <div className="course-details">
-                                  <span className="course-class">{cellData.class}</span>
-                                </div>
+                            {cellEntries.length > 0 ? (
+                              <div className="space-y-2">
+                                {cellEntries.map((entry, index) => {
+                                  const colorClass = CARD_COLORS[index % CARD_COLORS.length];
+                                  return (
+                                    <div key={`${entry.id}-${index}`} className={`course-card ${colorClass}`} style={{ cursor: 'default' }}>
+                                      <strong className="course-subject">{entry.subject}</strong>
+                                      <div className="course-details">
+                                        <span className="course-class">{entry.class}</span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
                               </div>
                             ) : (
                               <div className="empty-cell"></div>
