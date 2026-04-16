@@ -18,6 +18,11 @@ const navItems = [
   { path: '/secretaire/demandes', label: 'Demandes', icon: FiFileText },
 ];
 
+const comptableNavItems = [
+  { path: '/comptable/dashboard', label: 'Tableau de bord', icon: FiGrid },
+  { path: '/comptable/paiements', label: 'Paiements', icon: FiCreditCard },
+];
+
 export default function SecretaireSidebar() {
   const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
   const { user, logout } = useAuth();
@@ -30,9 +35,7 @@ export default function SecretaireSidebar() {
   const isComptable = role === 'comptable';
   const displayRole = isComptable ? 'Comptable' : 'Secrétaire';
   const fallbackName = isComptable ? 'Comptable' : 'Secrétaire';
-  const visibleNavItems = role === 'comptable'
-    ? navItems.filter((item) => item.path === '/secretaire/dashboard' || item.path === '/secretaire/paiements')
-    : navItems.filter((item) => item.path !== '/secretaire/paiements');
+  const visibleNavItems = isComptable ? comptableNavItems : navItems;
 
   const handleLogoutConfirm = async () => {
     if (isLoggingOut) return;

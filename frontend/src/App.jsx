@@ -42,7 +42,8 @@ const getHomeRouteByRole = (role) => {
   if (normalizedRole === 'admin') return '/admin';
   if (normalizedRole === 'directeur') return '/directeur';
   if (normalizedRole === 'professeur') return '/dashboard';
-  if (normalizedRole === 'secretaire' || normalizedRole === 'comptable') return '/secretaire/dashboard';
+  if (normalizedRole === 'secretaire') return '/secretaire/dashboard';
+  if (normalizedRole === 'comptable') return '/comptable/dashboard';
   if (normalizedRole === 'etudiant') return '/student';
   if (normalizedRole === 'parent_eleve' || normalizedRole === 'parent') return '/parent';
   return '/login';
@@ -126,15 +127,18 @@ const AppRoutes = () => {
         <Route path="/profil" element={<ProtectedRoute allowedRoles={['professeur']}><Layout title="Profil"><Parametres /></Layout></ProtectedRoute>} />
         <Route path="/parametres" element={<ProtectedRoute allowedRoles={['professeur']}><Layout title="Parametres"><Parametres /></Layout></ProtectedRoute>} />
 
-        <Route path="/secretaire/dashboard" element={<ProtectedRoute allowedRoles={FINANCE_PORTAL_ROLES}><SecretaireLayout><SecretaireDashboard /></SecretaireLayout></ProtectedRoute>} />
+        <Route path="/secretaire/dashboard" element={<ProtectedRoute allowedRoles={['secretaire']}><SecretaireLayout><SecretaireDashboard /></SecretaireLayout></ProtectedRoute>} />
         <Route path="/secretaire/etudiants" element={<ProtectedRoute allowedRoles={SECRETARIAT_STAFF_ROLES}><SecretaireLayout><SecretaireEtudiants /></SecretaireLayout></ProtectedRoute>} />
         <Route path="/secretaire/classes" element={<ProtectedRoute allowedRoles={SECRETARIAT_STAFF_ROLES}><SecretaireLayout><SecretaireClasses /></SecretaireLayout></ProtectedRoute>} />
-        <Route path="/secretaire/paiements" element={<ProtectedRoute allowedRoles={COMPTABLE_ONLY_ROLES}><SecretaireLayout><Paiements /></SecretaireLayout></ProtectedRoute>} />
         <Route path="/secretaire/absences" element={<ProtectedRoute allowedRoles={SECRETARIAT_STAFF_ROLES}><SecretaireLayout><SecretaireAbsences /></SecretaireLayout></ProtectedRoute>} />
         <Route path="/secretaire/annonces" element={<ProtectedRoute allowedRoles={SECRETARIAT_STAFF_ROLES}><SecretaireLayout><SecretaireAnnonces /></SecretaireLayout></ProtectedRoute>} />
         <Route path="/secretaire/reclamations" element={<ProtectedRoute allowedRoles={SECRETARIAT_STAFF_ROLES}><SecretaireLayout><SecretaireReclamations /></SecretaireLayout></ProtectedRoute>} />
         <Route path="/secretaire/demandes" element={<ProtectedRoute allowedRoles={SECRETARIAT_STAFF_ROLES}><SecretaireLayout><SecretaireDemandes /></SecretaireLayout></ProtectedRoute>} />
-        <Route path="/secretaire/profil" element={<ProtectedRoute allowedRoles={FINANCE_PORTAL_ROLES}><SecretaireLayout><Parametres /></SecretaireLayout></ProtectedRoute>} />
+        <Route path="/secretaire/profil" element={<ProtectedRoute allowedRoles={['secretaire']}><SecretaireLayout><Parametres /></SecretaireLayout></ProtectedRoute>} />
+
+        <Route path="/comptable/dashboard" element={<ProtectedRoute allowedRoles={['comptable']}><SecretaireLayout><SecretaireDashboard /></SecretaireLayout></ProtectedRoute>} />
+        <Route path="/comptable/paiements" element={<ProtectedRoute allowedRoles={['comptable']}><SecretaireLayout><Paiements /></SecretaireLayout></ProtectedRoute>} />
+        <Route path="/comptable/profil" element={<ProtectedRoute allowedRoles={['comptable']}><SecretaireLayout><Parametres /></SecretaireLayout></ProtectedRoute>} />
 
         <Route path="/student" element={<ProtectedRoute allowedRoles={['etudiant']}><StudentPortal /></ProtectedRoute>} />
         <Route path="/etudiant" element={<ProtectedRoute allowedRoles={['etudiant']}><Navigate to="/student" replace /></ProtectedRoute>} />

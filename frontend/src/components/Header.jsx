@@ -16,7 +16,11 @@ export default function Header({ variant = 'full', profileRouteOverride = '', on
   
   const role = String(user?.role || '').toLowerCase();
   const isFinancePortalRole = role === 'secretaire' || role === 'comptable';
-  const profileRoute = profileRouteOverride || (isFinancePortalRole ? '/secretaire/profil' : '/profil');
+  const profileRoute = profileRouteOverride || (
+    role === 'comptable' ? '/comptable/profil' :
+    isFinancePortalRole ? '/secretaire/profil' : 
+    '/profil'
+  );
 
   const handleProfileClick = () => {
     if (onProfileClick) {

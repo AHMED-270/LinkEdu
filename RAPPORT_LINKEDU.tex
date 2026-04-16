@@ -1,0 +1,930 @@
+    \documentclass[12pt,a4paper]{report}
+
+    % ========= Encodage & Langue =========
+    \usepackage[utf8]{inputenc}
+    \usepackage[T1]{fontenc}
+    \usepackage[french]{babel}
+    \usepackage{lmodern}
+
+    % ========= Mise en page =========
+    \usepackage{geometry}
+\geometry{left=3cm, right=2cm, top=4.5cm, bottom=2.5cm, headheight=2cm}
+    \usepackage{graphicx}
+    \usepackage{float}
+    \usepackage{caption}
+    \usepackage{subcaption}
+
+    % ========= Tableaux =========
+    \usepackage{array}
+    \usepackage{longtable}
+    \usepackage{booktabs}
+
+    % ========= Typographie & mise en forme =========
+    \usepackage{xcolor}
+    \usepackage{setspace}
+    \usepackage{microtype}
+    \usepackage{enumitem}
+    \usepackage{multicol}
+    \usepackage{fancyhdr}
+    \usepackage{tikz}
+    \usepackage{tikzpagenodes}
+
+    % ========= Titres =========
+    \usepackage{titlesec}
+    \usepackage{tocloft}
+
+    % ========= Code =========
+    \usepackage{listings}
+    \usepackage{verbatim}
+
+    % ========= Liens =========
+    \usepackage[hidelinks,bookmarksnumbered=true]{hyperref}
+
+    % ========= Couleurs =========
+    \definecolor{maincolor}{HTML}{0F4C81}
+    \definecolor{darktext}{HTML}{1F1F1F}
+    \definecolor{softgray}{HTML}{F3F5F7}
+    \definecolor{accentcolor}{HTML}{1A6FAF}
+
+    % ========= Couleur du texte principal =========
+    \color{darktext}
+    \onehalfspacing
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{5pt}
+
+    % ========= En-tête / Pied de page =========
+    \pagestyle{fancy}
+    \fancyhf{}
+    \fancyhead[L]{\includegraphics[width=1.8cm]{ofppt_logo.png}}
+    \fancyhead[R]{\includegraphics[width=1.8cm]{linkedu_logo.png}}
+    \fancyfoot[C]{\thepage}
+    \renewcommand{\headrulewidth}{0pt}
+
+    \fancypagestyle{plain}{
+    \fancyhf{}
+    \fancyhead[L]{\includegraphics[width=1.8cm]{ofppt_logo.png}}
+    \fancyhead[R]{\includegraphics[width=1.8cm]{linkedu_logo.png}}
+    \fancyfoot[C]{\thepage}
+    \renewcommand{\headrulewidth}{0pt}
+    }
+
+    % ========= Format des titres numérotés =========
+    \titleformat{\chapter}[display]
+    {\normalfont\bfseries\Huge\color{maincolor}}
+    {\chaptertitlename\ \thechapter}{12pt}{\Huge\color{maincolor}}
+    \titlespacing*{\chapter}{0pt}{-10pt}{28pt}
+
+    \titleformat{\section}
+    {\normalfont\Large\bfseries\color{maincolor}}
+    {\thesection}{0.8em}{}
+
+    \titleformat{\subsection}
+    {\normalfont\large\bfseries\color{accentcolor}}
+    {\thesubsection}{0.8em}{}
+
+    \titleformat{\subsubsection}
+    {\normalfont\normalsize\bfseries\color{accentcolor}}
+    {\thesubsubsection}{0.8em}{}
+
+    % ========= Format des titres NON numérotés =========
+    \titleformat{name=\chapter,numberless}[display]
+    {\normalfont\bfseries\Huge\color{maincolor}}
+    {}{0pt}{\Huge\color{maincolor}}
+
+    \titleformat{name=\section,numberless}
+    {\normalfont\Large\bfseries\color{maincolor}}
+    {}{0pt}{}
+
+    % ========= Sommaire =========
+    \renewcommand{\cfttoctitlefont}{\Huge\bfseries\color{maincolor}}
+    \renewcommand{\cftloftitlefont}{\Huge\bfseries\color{maincolor}}
+    \renewcommand{\cftchapfont}{\bfseries}
+    \renewcommand{\cftchappagefont}{\bfseries}
+    \setlength{\cftbeforechapskip}{6pt}
+
+    % ========= Captions =========
+    \captionsetup{
+    labelfont={bf,color=maincolor},
+    textfont=small,
+    skip=8pt
+    }
+    \renewcommand{\arraystretch}{1.2}
+
+    % ========= Listes =========
+    \setlist[itemize]{leftmargin=2em, itemsep=2pt, topsep=4pt}
+    \setlist[enumerate]{leftmargin=2em, itemsep=2pt, topsep=4pt}
+
+    % ========= Blocs de code =========
+    \lstset{
+    basicstyle=\ttfamily\small,
+    keywordstyle=\bfseries\color{maincolor},
+    showstringspaces=false,
+    breaklines=true,
+    frame=single,
+    rulecolor=\color{maincolor!50},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    numbersep=8pt,
+    backgroundcolor=\color{softgray}
+    }
+
+    % ========= Double cadre de page avec TikZ =========
+    \AddToHook{shipout/background}{
+    \begin{tikzpicture}[remember picture, overlay]
+        % Cadre extérieur (noir épais)
+        \draw[line width=3pt, color=black] 
+        ([xshift=-0.3cm, yshift=0.3cm]current page.north west) 
+        rectangle 
+        ([xshift=0.3cm, yshift=-0.3cm]current page.south east);
+        
+        % Cadre intérieur (bleu, plus fin)
+        \draw[line width=1pt, color=maincolor] 
+        ([xshift=-0.15cm, yshift=0.15cm]current page.north west) 
+        rectangle 
+        ([xshift=0.15cm, yshift=-0.15cm]current page.south east);
+    \end{tikzpicture}
+    }
+
+
+    % ========================================================
+    %                     DOCUMENT
+    % ========================================================
+    \begin{document}
+
+    % --------------------------------------------------------
+    %                     PAGE DE TITRE
+    % --------------------------------------------------------
+    \begin{titlepage}
+    \thispagestyle{empty}
+    \centering
+
+    \vspace*{-0.5cm}
+    % ===== LOGOS EN HAUT DE PAGE =====
+    \noindent
+    \includegraphics[width=2.5cm]{ofppt_logo.png}
+    \hfill
+    \includegraphics[width=2.5cm]{linkedu_logo.png}\par
+
+    \vspace{1cm}
+    % ===== Ancien logo (conservé pour compatibilité, peut être supprimé) =====
+    % \includegraphics[width=3.2cm]{logo_institution.png}\par
+    \vspace{0.5cm}
+
+    {\large\textbf{\color{darktext}PROJET DE GESTION SCOLAIRE INTÉGRÉE}}\\[0.2cm]
+    {\normalsize Plateforme de Technologie Informatique Appliquée — Formation Professionnelle}\\[0.3cm]
+
+    {\large\bfseries\color{black} Rapport De Projet De Synthèse Pour L'obtention Du Diplôme Technicien Spécialisé En Développement Digital — Option Web Full Stack}\\[0.3cm]
+
+    {\color{maincolor}\rule{0.92\textwidth}{1.2pt}}\\[0.5cm]
+
+
+    \colorbox{softgray}{%
+    \parbox{0.9\textwidth}{%
+        \centering\vspace{0.25cm}
+        {\Large\bfseries\color{darktext}Conception et Développement de LinkEdu : Plateforme Intégrée de Gestion Scolaire}
+        \vspace{0.25cm}
+    }%
+    }\\[0.7cm]
+
+    {\color{maincolor}\rule{0.92\textwidth}{0.8pt}}\\[0.8cm]
+
+    \vspace{0.5cm}
+    {\large\textbf{EXEMPLAIRE DE :}}\\[0.15cm]
+    {\Large\textbf{BAROUT Youssef}}\\[0.8cm]
+
+    {\large\textbf{RÉALISÉ PAR :}}\\[0.15cm]
+    BAROUT Youssef - FAHIMI Ahmed Yassine \\
+    JANAH Mohamed Ali - FETTAH Sohaib\\[0.8cm]
+
+    {\large\textbf{ENCADRÉ PAR :}}\\[0.15cm]
+    Mme. SABOUR EL IDRISSI Rabia
+
+    \vfill
+    {\normalsize\textbf{Année Universitaire : 2025-2026}}
+    \end{titlepage}
+
+
+    % --------------------------------------------------------
+    %                     DÉDICACES
+    % --------------------------------------------------------
+    \cleardoublepage
+    \chapter*{Dédicaces}
+    \addcontentsline{toc}{chapter}{Dédicaces}
+
+    Je dédie ce travail, avant tout, à mes très chers parents pour leur soutien constant, leurs sacrifices incommensurables et leur confiance inébranlable en mes capacités. Leur dévouement et leurs encouragements permanents ont été la force motrice qui m'a permis de persévérer face aux défis techniques et académiques rencontrés lors de la réalisation de ce projet ambitieux.
+    
+    À ma famille dans son intégralité, qui m'a accompagné avec bienveillance tout au long de cette période exigeante de projet de synthèse. Leur compréhension face aux longues heures de travail, leurs encouragements lors des moments de doute et leur intérêt pour mes objectifs académiques ont constitué un pilier fondamental de ma motivation continue.
+    
+    À mes camarades de promotion et amis, qui ont enrichi cette expérience de formation par leurs échanges d'idées, leurs suggestions constructives et leur soutien moral. Les discussions techniques, les sessions d'entraide et les moments partagés ont contribué à renforcer non seulement mes apprentissages techniques mais aussi mes compétences collaboratives essentielles au succès d'un projet professionnel.
+    
+    À tous les professeurs et formateurs qui se sont investis dans notre formation, transmettant leur expertise, partageant leur expérience professionnelle et nous préparant à relever les défis du monde du développement informatique.
+    
+    À toute personne qui a contribué de près ou de loin à la réalisation de cette application, qu'il s'agisse d'aide technique, de conseils méthodologiques ou simplement de soutien moral, merci pour votre confiance et votre collaboration précieuse.
+
+
+    % --------------------------------------------------------
+    %                     REMERCIEMENTS
+    % --------------------------------------------------------
+    \clearpage
+    \chapter*{Remerciements}
+    \addcontentsline{toc}{chapter}{Remerciements}
+
+    Au terme de ce projet de fin d'études, je tiens à adresser mes plus sincères remerciements à toutes les personnes qui ont contribué à son aboutissement.
+    
+    Je remercie mon encadrant professionnel pour la qualité de son encadrement, sa disponibilité constante et ses orientations pertinentes tout au long de ce projet. Ses retours ont grandement amélioré la qualité technique du travail réalisé.
+    
+    Je remercie très particulièrement Mme. SABOUR EL IDRISSI Rabia, mon encadrante pédagogique, pour son suivi régulier, ses encouragements constants et ses remarques constructives qui ont enrichi la qualité académique de ce rapport.
+    
+    Mes remerciements s'adressent aussi à l'ensemble du personnel et des équipes pédagogiques de l'OFPPT pour leur accueil chaleureux et leur collaboration précieuse.
+    
+    Je remercie sincèrement ma famille et mes amis pour leur soutien moral indéfectible durant cette période de projet de synthèse.
+    
+    Enfin, je remercie la communauté open-source pour les frameworks et outils qui ont rendu ce projet possible.
+
+
+    % --------------------------------------------------------
+    %                     RÉSUMÉ
+    % --------------------------------------------------------
+    \chapter*{Résumé}
+    \addcontentsline{toc}{chapter}{Résumé}
+    \setlength{\parskip}{3pt}
+    \small
+
+    Ce rapport présente le travail réalisé dans le cadre de mon projet de synthèse, portant sur la conception et le développement d'une plateforme intégrée hypothétique de gestion scolaire appelée \textbf{LinkEdu}, à titre d'étude de cas pédagogique.
+
+    L'objectif principal de ce projet académique était de concevoir et développer une plateforme web complète démontrant comment gérer efficacement les aspects administratifs et pédagogiques d'un établissement d'enseignement, incluant la gestion des ressources humaines, des classes, des emplois du temps, des matières, des devoirs, des notes, des absences et des annonces.
+
+    L'application développée s'appuie sur les technologies modernes du web : \textbf{Laravel 13} pour le backend, \textbf{React 18 avec Vite} pour le frontend, une base de données \textbf{MySQL} pour la persistance des données, et \textbf{TailwindCSS} pour la conception responsive de l'interface utilisateur.
+
+    Le système implémente plusieurs niveaux d'accès distincts — Directeur, Professeur, Étudiant, Parent, Secrétaire — avec des fonctionnalités spécifiques et des permissions adaptées à chaque rôle utilisateur.
+
+    Les principales fonctionnalités réalisées incluent :
+    \begin{itemize}
+        \item Un système d'authentification sécurisé et multi-rôles
+        \item Une gestion complète des classes et des emplois du temps
+        \item Un système de gestion des devoirs avec suivi de soumission
+        \item Un système intégré de notation et de suivi académique
+        \item Une gestion des absences et de la présence
+        \item Un système de paiement des frais scolaires
+        \item Un portail parent pour le suivi académique
+        \item Un système d'annonces et de ressources pédagogiques
+        \item Un système de réclamations et de support
+    \end{itemize}
+
+    \vspace{0.8cm}
+    \noindent\textbf{Mots-clés :} Gestion Scolaire, Plateforme Web, Laravel, React, MySQL, Système de Gestion, Application Web, Éducation
+
+    \vspace{1cm}
+
+
+    % --------------------------------------------------------
+    %                  INTRODUCTION GÉNÉRALE
+    % --------------------------------------------------------
+    \newpage
+    \chapter*{Introduction Générale}
+    \addcontentsline{toc}{chapter}{Introduction Générale}
+
+    Pour ce projet de synthèse, je me suis intéressé à un défi pédagogique hypothétique : comment les établissements d'enseignement pourraient mieux gérer les données provenant de multiples acteurs — étudiants, professeurs, parents, directeurs et secrétaires. Ce projet académique explore une solution intégrée et complète à titre d'étude de cas.
+
+    Dans ce scénario pédagogique, j'ai considéré comment l'absence d'outils intégrés et performants pour centraliser, gérer et analyser ces informations limiterait la capacité d'une institution à prendre des décisions éclairées, à assurer un suivi académique optimal et à optimiser l'allocation des ressources humaines et matérielles.
+
+    De plus, les responsables administratifs rencontrent des difficultés récurrentes à obtenir une vision globale, actualisée et fiable du fonctionnement pédagogique et administratif de l'établissement. Les méthodes traditionnelles reposant sur des fichiers dispersés ou des traitements manuels limitent considérablement leur efficacité et leur capacité à impulser une gestion stratégique cohérente.
+
+    Ainsi, la mise en place d'une plateforme intégrée de gestion scolaire constitue une nécessité impérieuse pour moderniser l'administration scolaire, accroître la transparence institutionnelle, faciliter la communication entre tous les acteurs du système éducatif, et favoriser l'amélioration continue de la qualité pédagogique.
+
+    \vspace{0.8cm}
+
+    Le travail présenté dans ce rapport s'articule selon trois axes principaux :
+
+    Tout d'abord, une présentation du contexte général et des objectifs du projet permet de définir le problème et les solutions proposées.
+
+    Ensuite, une phase d'analyse et de conception détaille la modélisation des données et la structure technique répondant aux besoins identifiés.
+
+    Enfin, la réalisation technique expose le développement de la solution, le choix des technologies Full Stack et les fonctionnalités mises en œuvre.
+
+
+    % --------------------------------------------------------
+    %                  TABLES DES MATIÈRES
+    % --------------------------------------------------------
+    \newpage
+    \tableofcontents
+    \newpage
+    \listoffigures
+
+
+    % ========================================================
+    %          CHAPITRE 1 : CONTEXTE DU PROJET
+    % ========================================================
+    \chapter{Contexte et Objectifs du Projet}
+
+    \section{Problématique}
+
+    Pour illustrer ce défi, j'ai considéré comment l'évolution du contexte éducatif engendre une complexité croissante dans la gestion des informations liées aux classes, aux emplois du temps, aux matières, aux devoirs, aux notes, aux absences et à la communication. Les méthodes traditionnelles reposant sur des fichiers Excel dispersés ou des traitements manuels présentent plusieurs limites :
+
+    \begin{itemize}
+        \item Mise à jour difficile et chronophage
+        \item Risques d'erreurs et d'incohérences
+        \item Absence de vision globale et centralisée
+        \item Communication fragmentée entre acteurs
+        \item Manque de traçabilité des opérations
+        \item Absence de suivi académique en temps réel
+    \end{itemize}
+
+    \vspace{0.3cm}
+    \begin{center}
+    \colorbox{softgray}{%
+    \parbox{0.88\textwidth}{%
+        \vspace{0.3cm}
+        \centering\itshape
+        Comment concevoir et développer une application web centralisée qui démontrerait la possibilité de gérer efficacement l'ensemble des opérations administratives et pédagogiques d'un établissement scolaire, tout en offrant une interface conviviale et sécurisée pour tous les acteurs du système éducatif ?
+        \vspace{0.3cm}
+    }%
+    }
+    \end{center}
+    \vspace{0.3cm}
+
+    \section{Objectifs Généraux}
+
+    Afin de répondre à cette problématique, les objectifs suivants ont été définis :
+
+    \begin{itemize}
+        \item Concevoir et mettre en place une plateforme centralisée pour la gestion scolaire
+        \item Assurer la fiabilité, la cohérence et la mise à jour en temps réel des informations
+        \item Mettre en place un système d'authentification sécurisé avec gestion granulaire des rôles
+        \item Implémenter des modules de gestion complets pour les aspects clés de l'établissement
+        \item Faciliter la communication et la collaboration entre les différents acteurs
+        \item Offrir des interfaces conviviales et adaptées à chaque profil utilisateur
+        \item Assurer la scalabilité et la maintenabilité de la solution
+    \end{itemize}
+
+    \section{Objectifs Spécifiques}
+
+    Les objectifs spécifiques du projet incluent :
+
+    \begin{itemize}
+        \item Développer un système d'authentification multi-rôles robuste et sécurisé
+        \item Créer des modules de gestion pour les classes, emplois du temps et matières
+        \item Implémenter un système complet de gestion des devoirs avec suivi de soumission
+        \item Mettre en place un système de notation et de suivi académique
+        \item Développer un module de gestion des absences
+        \item Créer un système de paiement des frais scolaires
+        \item Implémenter un portail parent pour le suivi académique
+        \item Créer un système d'annonces et de ressources pédagogiques
+        \item Mettre en place un système de réclamations et de support
+    \end{itemize}
+
+
+    % ========================================================
+    %          CHAPITRE 2 : ANALYSE ET CONCEPTION
+    % ========================================================
+    \chapter{Analyse et Conception}
+
+    \section{Étude de l'existant}
+
+    Avant le développement de LinkEdu, la gestion des établissements scolaires reposait sur des méthodes disparates : fichiers Excel, cahiers papier, communications par email et SMS. Le tableau suivant résume les principales limites de cette situation et les améliorations apportées par la nouvelle solution.
+
+    \vspace{0.4cm}
+    \begin{center}
+    \begin{tabular}{>{\bfseries}p{4cm} p{5cm} p{5cm}}
+    \toprule
+    \textbf{Critère} & \textbf{Situation avant} & \textbf{Solution apportée} \\
+    \midrule
+    Centralisation & Données dispersées & Base de données centralisée \\
+    \midrule
+    Cohérence & Risques élevés d'erreurs & Contraintes d'intégrité \\
+    \midrule
+    Mise à jour & Manuelle, chronophage & Interfaces en temps réel \\
+    \midrule
+    Accessibilité & Limitée, locale & Application web multi-appareils \\
+    \midrule
+    Communication & Manquante ou fragmentée & Système d'annonces intégré \\
+    \midrule
+    Traçabilité & Inexistante & Audit complet des opérations \\
+    \bottomrule
+    \end{tabular}
+    \end{center}
+    \vspace{0.4cm}
+
+    \section{Spécification des Besoins}
+
+    \subsection{Besoins Fonctionnels}
+
+    Pour cette étude de cas, j'ai défini sept profils d'utilisateurs hypothétiques, chacun avec ses propres fonctionnalités et permissions :
+
+    \textbf{Directeur :} Accès complet au système, gestion des utilisateurs, des classes, des emplois du temps, suivi global des performances académiques, gestion administrative complète et consultation des statistiques.
+
+    \textbf{Professeur :} Gestion de ses classes et matières, création et évaluation des devoirs, entrée des notes, suivi des absences, consultation des emplois du temps et communication avec les parents.
+
+    \textbf{Étudiant :} Consultation des emplois du temps, visualisation des devoirs à faire, soumission des devoirs, consultation des notes et absences, accès aux ressources pédagogiques.
+
+    \textbf{Parent :} Suivi académique de son enfant, consultation des notes, des absences, des devoirs, réception des annonces de l'établissement et communication avec l'établissement.
+
+    \textbf{Secrétaire :} Gestion administrative des inscriptions, gestion des frais scolaires, suivi des paiements et gestion administrative générale.
+
+    \textbf{Comptable :} Suivi complet des transactions financières, gestion des factures et des frais scolaires, comptabilité générale, enregistrement des paiements, génération des rapports financiers, audit des opérations financières et consultation des états comptables.
+
+    \textbf{Administrateur :} Gestion complète du système, administration des utilisateurs et des comptes, gestion des services d'authentification, maintenance de la base de données, conservation des logs d'audit, gestion des sauvegardes, configuration du système et suivi des performances.
+
+    \subsection{Besoins Non Fonctionnels}
+
+    Les exigences non fonctionnelles retenues sont :
+
+    \begin{itemize}
+        \item \textbf{Performance} : Chargement rapide des pages et des données
+        \item \textbf{Sécurité} : Authentification robuste, gestion des rôles, protection des données
+        \item \textbf{Ergonomie} : Interface claire, intuitive et responsive
+        \item \textbf{Compatibilité} : Fonctionnement sur tous les navigateurs modernes
+        \item \textbf{Scalabilité} : Capacité à supporter une croissance future
+        \item \textbf{Maintenabilité} : Code bien structuré et documenté
+    \end{itemize}
+
+    \section{Cas d'Utilisation Détaillés par Acteur}
+
+    \subsection{DIRECTEUR}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.85\textwidth]{directeur_usecase.png}
+        \caption{Use Cases du Directeur}
+    \end{figure}
+
+
+    \vspace{0.8cm}
+
+    \subsection{PROFESSEUR}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.85\textwidth]{professeur_usecase.png}
+        \caption{Use Cases du Professeur}
+    \end{figure}
+
+    \vspace{0.8cm}
+
+    \subsection{ÉTUDIANT}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.85\textwidth]{etudiant_usecase.png}
+        \caption{Use Cases de l'Étudiant}
+    \end{figure}
+
+    \vspace{0.8cm}
+
+    \subsection{PARENT}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.85\textwidth]{parent_usecase.png}
+        \caption{Use Cases du Parent}
+    \end{figure}
+
+    \vspace{0.8cm}
+
+    \subsection{SECRÉTAIRE}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.85\textwidth]{secretaire_usecase.png}
+        \caption{Use Cases de la Secrétaire}
+    \end{figure}
+
+    \vspace{0.8cm}
+
+    \subsection{COMPTABLE}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.85\textwidth]{comptable_usecase.png}
+        \caption{Use Cases du Comptable}
+    \end{figure}
+
+    \vspace{0.8cm}
+
+    \subsection{ADMINISTRATEUR}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.85\textwidth]{admin_usecase.png}
+        \caption{Use Cases de l'Administrateur Système}
+    \end{figure}
+
+    \vspace{0.8cm}
+
+    \section{Diagramme de Classes}
+
+    \begin{figure}[H]
+        \centering
+        % ===== REMPLACEZ class_diagram.png PAR LE NOM DE VOTRE DIAGRAMME =====
+        \includegraphics[width=1.0\textwidth]{class_diagram.png}
+        \caption{Diagramme de Classes - Architecture du Système}
+    \end{figure}
+
+    \vspace{0.5cm}
+
+    \textbf{Classes principales et leurs relations :}
+
+    \begin{itemize}
+        \item La classe \texttt{User} est la base de tous les utilisateurs du système
+        \item Les classes \texttt{Professeur}, \texttt{Étudiant} et \texttt{ParentEleve} héritent de \texttt{User}
+        \item La classe \texttt{Classe} agrège plusieurs \texttt{Étudiant}
+        \item La classe \texttt{Professeur} peut enseigner plusieurs \texttt{Matière}
+        \item Les \texttt{Devoir} sont créés par des \texttt{Professeur} et soumis par des \texttt{Étudiant}
+        \item Les \texttt{Note} représentent les évaluations liées aux \texttt{Devoir} et aux \texttt{Étudiant}
+    \end{itemize}
+
+    \section{Modèle Conceptuel de Données (MCD)}
+
+    \begin{figure}[H]
+        \centering
+        % ===== REMPLACEZ mcd_diagram.png PAR LE NOM DE VOTRE CAPTURE D'ÉCRAN =====
+        \includegraphics[width=0.95\textwidth]{mcd_diagram.png}
+        \caption{Modèle Conceptuel de Données - Entités et Relations}
+    \end{figure}
+
+    \vspace{0.5cm}
+
+    \textbf{Entités principales représentées :}
+
+    \begin{itemize}
+        \item \textbf{User} : Utilisateurs du système (Directeur, Professeur, Étudiant, Parent, Secrétaire)
+        \item \textbf{Classe} : Classes de l'établissement
+        \item \textbf{Matière} : Disciplines enseignées
+        \item \textbf{Professeur} : Informations des professeurs
+        \item \textbf{Étudiant} : Informations des étudiants
+        \item \textbf{ParentEleve} : Informations des parents
+        \item \textbf{Enseigner} : Relation entre Professeur et Matière
+        \item \textbf{EmploiDuTemps} : Planification des cours
+        \item \textbf{Devoir} : Devoirs assignés par les professeurs
+        \item \textbf{DevoirSoumission} : Soumissions des devoirs par les étudiants
+        \item \textbf{Note} : Évaluations des étudiants
+        \item \textbf{Absence} : Suivi des absences
+        \item \textbf{Paiement} : Gestion des frais scolaires
+        \item \textbf{Annonce} : Annonces de l'établissement
+    \end{itemize}
+
+    \begin{figure}[H]
+        \centering
+        % ===== REMPLACEZ mld_diagram.png PAR LE NOM DE VOTRE DIAGRAMME =====
+        \includegraphics[width=0.95\textwidth]{mld_diagram.png}
+        \caption{Modèle Logique de Données - Schema Relationnel}
+    \end{figure}
+
+    \vspace{0.5cm}
+
+    \textbf{Tables principales et structures :}
+
+    \begin{itemize}
+        \item \textbf{users} : stocke tous les utilisateurs avec identifiant, email, mot de passe et rôle
+        \item \textbf{classes} : informations sur les classes (nom, niveau, année scolaire)
+        \item \textbf{matieres} : disciplines enseignées (code, nom français et arabe)
+        \item \textbf{professeurs} : détails spécifiques aux professeurs
+        \item \textbf{etudiants} : détails spécifiques aux étudiants et leur classe
+        \item \textbf{parent\_eleves} : relations entre parents et étudiants
+        \item \textbf{enseigner} : table de liaison Professeur-Matière
+        \item \textbf{emploi\_du\_temps} : planification des cours avec horaires et salles
+        \item \textbf{devoirs} : devoirs assignés avec dates limites
+        \item \textbf{devoir\_soumissions} : tracé des soumissions avec fichiers
+        \item \textbf{notes} : évaluations des étudiants par matière
+        \item \textbf{absences} : enregistrement des présences et absences
+        \item \textbf{paiements} : gestion des frais scolaires et transactions
+        \item \textbf{annonces} : messages diffusés par l'établissement
+    \end{itemize}
+
+
+    % ========================================================
+    %          CHAPITRE 3 : ARCHITECTURE DU SYSTÈME
+    % ========================================================
+    \chapter{Architecture du Système}
+
+    \section{Choix Technologiques}
+
+    Le projet repose sur un écosystème moderne, sélectionné pour sa robustesse et sa facilité de développement.
+
+    \subsection{Backend}
+
+    \begin{itemize}
+        \item \begin{center}
+        % ===== REMPLACEZ php_logo.png PAR LE NOM DE VOTRE IMAGE =====
+        \includegraphics[width=0.15\textwidth]{php_logo.png}
+        \end{center}
+        \textbf{PHP 8.3} — Langage serveur performant et type-safe
+        
+        \item \begin{center}
+        % ===== REMPLACEZ laravel_logo.png PAR LE NOM DE VOTRE IMAGE =====
+        \includegraphics[width=0.2\textwidth]{laravel_logo.png}
+        \end{center}
+        \textbf{Laravel 13} — Framework web complet avec ORM Eloquent, systèmes d'authentification et d'autorisation intégrés
+        
+        \item \begin{center}
+        % ===== REMPLACEZ mysql_logo.png PAR LE NOM DE VOTRE IMAGE =====
+        \includegraphics[width=0.25\textwidth]{mysql_logo.png}
+        \end{center}
+        \textbf{MySQL} — Système de gestion de base de données relationnel robuste et éprouvé
+    \end{itemize}
+
+    \subsection{Frontend}
+
+    \begin{itemize}
+        \item \begin{center}
+        % ===== REMPLACEZ react_logo.png PAR LE NOM DE VOTRE IMAGE =====
+        \includegraphics[width=0.15\textwidth]{react_logo.png}
+        \end{center}
+        \textbf{React 18} — Bibliothèque JavaScript pour la construction d'interfaces utilisateur réactives
+        
+        \item \begin{center}
+        % ===== REMPLACEZ vite_logo.png PAR LE NOM DE VOTRE IMAGE =====
+        \includegraphics[width=0.15\textwidth]{vite_logo.png}
+        \end{center}
+        \textbf{Vite} — Build tool ultra-rapide pour les applications modernes
+        
+        \item \begin{center}
+        % ===== REMPLACEZ tailwind_logo.png PAR LE NOM DE VOTRE IMAGE =====
+        \includegraphics[width=0.18\textwidth]{tailwind_logo.png}
+        \end{center}
+        \textbf{TailwindCSS} — Framework utilitaire pour la conception responsive
+        
+        \item \begin{center}
+        % ===== REMPLACEZ javascript_logo.png PAR LE NOM DE VOTRE IMAGE =====
+        \includegraphics[width=0.12\textwidth]{javascript_logo.png}
+        \end{center}
+        \textbf{JavaScript ES6+} — Langage de programmation côté client
+    \end{itemize}
+
+    \subsection{Outils de Développement}
+
+    \begin{itemize}
+        \item \begin{center}
+        % ===== REMPLACEZ vscode_logo.png PAR LE NOM DE VOTRE IMAGE =====
+        \includegraphics[width=0.12\textwidth]{vscode_logo.png}
+        \end{center}
+        \textbf{Visual Studio Code} — Éditeur de code
+        
+        \item \begin{center}
+        % ===== REMPLACEZ github_logo.png PAR LE NOM DE VOTRE IMAGE =====
+        \includegraphics[width=0.2\textwidth]{github_logo.png}
+        \end{center}
+        \textbf{GitHub} — Gestion de versions
+        
+        \item \begin{center}
+        % ===== REMPLACEZ composer_logo.png PAR LE NOM DE VOTRE IMAGE =====
+        \includegraphics[width=0.2\textwidth]{composer_logo.png}
+        \end{center}
+        \textbf{Composer} — Gestionnaire de dépendances PHP
+        
+        \item \begin{center}
+        % ===== REMPLACEZ npm_logo.png PAR LE NOM DE VOTRE IMAGE =====
+        \includegraphics[width=0.12\textwidth]{npm_logo.png}
+        \end{center}
+        \textbf{NPM} — Gestionnaire de dépendances JavaScript
+        
+        \item \begin{center}
+        % ===== REMPLACEZ jira_logo.png PAR LE NOM DE VOTRE IMAGE =====
+        \includegraphics[width=0.15\textwidth]{jira_logo.png}
+        \end{center}
+        \textbf{JIRA} — Gestion de projet et suivi des tâches
+        
+        \item \begin{center}
+        % ===== REMPLACEZ postman_logo.png PAR LE NOM DE VOTRE IMAGE =====
+        \includegraphics[width=0.15\textwidth]{postman_logo.png}
+        \end{center}
+        \textbf{Postman} — Plateforme de test et documentation d'API
+        
+        \item \begin{center}
+        % ===== REMPLACEZ sonarqube_logo.png PAR LE NOM DE VOTRE IMAGE =====
+        \includegraphics[width=0.27\textwidth]{sonarqube_logo.png}
+        \end{center}
+        \textbf{SonarQube} — Analyse de qualité et sécurité du code
+    \end{itemize}
+
+    \section{Architecture Technique}
+
+    \subsection{Pattern MVC dans Laravel}
+
+    L'application backend suit le pattern \textbf{MVC (Modèle-Vue-Contrôleur)} :
+
+    \begin{itemize}
+        \item \textbf{Modèle} : Gestion des données via l'ORM Eloquent
+        \item \textbf{Vue} : Sérialisation JSON pour les APIs
+        \item \textbf{Contrôleur} : Traitement des requêtes HTTP et orchestration de la logique métier
+    \end{itemize}
+
+    \subsection{Architecture Frontend Réactive}
+
+    Le frontend utilise l'approche composant de React avec :
+
+    \begin{itemize}
+        \item \textbf{Composants} : Briques réutilisables de l'interface
+        \item \textbf{Context API} : Gestion d'état global
+        \item \textbf{Hooks} : useState, useEffect pour la gestion de l'état et des cycles de vie
+        \item \textbf{Services} : Couche de communication avec l'API backend
+    \end{itemize}
+
+    \subsection{Système d'Authentification et de Sécurité}
+
+    Le système utilise les mécanismes natifs de sécurité de Laravel :
+
+    \begin{itemize}
+        \item \textbf{Hachage Bcrypt} pour le stockage sécurisé des mots de passe
+        \item \textbf{Protection CSRF} pour sécuriser toutes les requêtes
+        \item \textbf{Middlewares personnalisés} pour filtrer l'accès selon les rôles
+        \item \textbf{Sanctum} pour l'authentification API par tokens
+        \item \textbf{Sessions sécurisées} avec redirection selon le profil
+    \end{itemize}
+
+
+    % ========================================================
+    %          CHAPITRE 4 : INTERFACES DU SYSTÈME
+    % ========================================================
+    \chapter{Interfaces du Système}
+
+    \section{Interface 1 : Page de Connexion}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{interface_login.png.jpeg}
+        \caption{Interface 1 : Page de Connexion - Point d'entrée du système}
+    \end{figure}
+
+    La page de connexion est le point d'entrée unique et sécurisé de l'application LinkEdu. Cette interface présente un formulaire épuré et intuitif demandant l'adresse email et le mot de passe de l'utilisateur. Le design utilise la charte graphique institutionnelle avec logo, couleurs coordonnées et typographie professionnelle.
+    
+    Chaque tentative de connexion bénéficie d'une protection CSRF (Cross-Site Request Forgery), d'une validation côté serveur rigoureuse et d'une gestion adaptée des erreurs. En cas d'identifiants invalides, le système affiche un message d'erreur clair sans révéler si l'email existe ou non (sécurité renforcée). Un lien "Mot de passe oublié" permet la réinitialisation sécurisée du mot de passe.
+    
+    Après authentification réussie, l'utilisateur est redirigé automatiquement vers son tableau de bord spécifique en fonction de son rôle (Directeur, Professeur, Étudiant, Parent, Secrétaire, Comptable ou Administrateur). Cette redirection intelligente garantit que chaque profil accède immédiatement aux fonctionnalités pertinentes.
+
+    \vspace{0.8cm}
+
+    \section{Interface 2 : Tableau de Bord Directeur}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.95\textwidth]{dashboard_directeur.jpeg}
+        \caption{Interface 2 : Tableau de Bord Directeur - Vue d'ensemble managériale}
+    \end{figure}
+
+    Le tableau de bord Directeur est conçu comme un centre de contrôle stratégique offrant une visibilité complète sur l'établissement. Le système affiche en temps réel des cartes de statistiques clés : nombre total d'étudiants, effectif par classe, taux de présence global, performance académique moyenne et taux de paiement des frais scolaires.
+    
+    Des graphiques dynamiques illustrent les tendances académiques par semestre, les performances comparatives par classe et l'évolution des indicateurs de suivi. Un système d'alertes critiques signale immédiatement les situations problématiques (absences anormales, impayés importants, incidents signalés).
+    
+    La navigation rapide via menu intégré permet d'accéder en un clic à tous les modules administratifs : gestion des classes, des utilisateurs, des emplois du temps, suivi financier et consultation des rapports. Un historique des opérations récentes affiche les actions importantes effectuées dans le système, offrant une traçabilité complète de l'activité administrative.
+
+    \vspace{0.8cm}
+
+    \section{Interface 3 : Tableau de Bord Professeur}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.95\textwidth]{dashboard_professeur.jpeg}
+        \caption{Interface 3 : Tableau de Bord Professeur - Gestion pédagogique}
+    \end{figure}
+
+    Le tableau de bord Professeur est optimisé pour les besoins pédagogiques quotidiens. L'interface affiche d'abord l'emploi du temps personnel de la semaine en cours avec détails de salle, matière et classe. Un widget récapitulatif montre les classes assignées au professeur avec l'effectif actuel et le taux de présence.
+    
+    Une section dédiée liste les devoirs en attente de correction avec nombre de soumissions, délai restant et accès direct à chaque devoir. Un tableau de suivi des absences permet de consulter rapidement qui est absent dans chaque classe et de documenter les justifications.
+    
+    Le tableau de bord inclut également une zone de saisie des notes avec interface intuitive (tableau avec auto-calcul des moyennes), un système de messagerie pour communiquer avec les étudiants et les parents, et un accès aux ressources pédagogiques (fichiers, documents partagés, contenus de cours) utilisables en classe ou pour la préparation.
+
+    \vspace{0.8cm}
+
+    \section{Interface 4 : Tableau de Bord Étudiant}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.95\textwidth]{dashboard_etudiant.jpeg}
+        \caption{Interface 4 : Tableau de Bord Étudiant - Espace personnel d'apprentissage}
+    \end{figure}
+
+    Le tableau de bord Étudiant personnalisé adapte son contenu à la classe et aux besoins d'apprentissage spécifiques. L'emploi du temps affiche la semaine complète avec mise en évidence du jour actuel, permettant à l'étudiant de connaître ses prochains cours.
+    
+    Une section visuelle "Vos devoirs" affiche les assignations en cours avec code couleur : vert pour les devoirs avec délai confortable, orange pour ceux dus bientôt, rouge pour les échéances urgentes. Chaque devoir montre la description, les ressources attachées et un bouton d'accès direct au formulaire de soumission.
+    
+    Le suivi académique apparaît sous forme de tableau montrant les notes récentes par matière avec graphique de progression. Les absences sont visualisées en calendrier interactif indiquant les jours manqués et statut de justification. Un widget d'accès rapide donne accès aux ressources pédagogiques partagées, aux annonces de l'établissement et à un système de messagerie pour poser des questions aux professeurs.
+
+    \vspace{0.8cm}
+
+    \section{Interface 5 : Tableau de Bord Parent}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.95\textwidth]{dashboard_parent.jpeg}
+        \caption{Interface 5 : Tableau de Bord Parent - Suivi académique de l'enfant}
+    \end{figure}
+
+    Le tableau de bord Parent propose une interface rassurante et complète pour suivre la scolarité de son enfant. Un système de sélection multi-enfants permet aux parents avec plusieurs étudiants de basculer rapidement entre chaque enfant sans se reconnecter.
+    
+    La section "Performance académique" affiche un graphique en radar montrant les forces et faiblesses par matière, les notes récentes avec comparaison à la moyenne de classe, et la moyenne générale trimestrielle. Une section dédiée visualise les absences : calendrier annuel codé par couleur, nombre total, taux de présence et alertes de seuil critique d'absentéisme.
+    
+    Les devoirs actifs sont listés avec date limite et statut de soumission. Un système d'alertes notifie les parents des absences, des notes critiques, des devoirs non remis et des incidents signalés. La section communication facilite l'envoi de messages aux professeurs et à l'administration. Les annonces institutionnelles importantes sont affichées en évidence pour éviter de manquer des dates ou changements importants.
+
+    \vspace{0.8cm}
+
+    \section{Interface 6 : Tableau de Bord Secrétaire}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.95\textwidth]{dashboard_secretaire.jpeg}
+        \caption{Interface 6 : Tableau de Bord Secrétaire - Gestion administrative}
+    \end{figure}
+
+    Le tableau de bord Secrétaire organise les tâches administratives essentielles de manière ergonomique. Un widget de statut affiche les inscriptions en cours de traitement, les dossiers incomplets nécessitant suivi, et les documents manquants.
+    
+    La gestion des frais scolaires est au cœur avec un tableau de suivi des paiements par statut : non commencé, en cours, payé, en retard. Des graphiques montrent les recettes cumulées vs budget prévisionnel. Un module de génération de factures permet de créer rapidement des factures individuelles ou en masse.
+    
+    Le système de gestion des absences justifiées offre une interface d'approbation des justificatifs soumis, avec possibilité d'ajouter des notes. Les réclamations étudiantes apparaissent dans une queue de traitement avec priorité et date de soumission. Un accès rapide aux rapports administratifs permet de générer des certificats de scolarité, relevés de notes, attestations de présence, et statistiques pour la direction.
+
+    \vspace{0.8cm}
+
+    \section{Interface 7 : Tableau de Bord Comptable}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.95\textwidth]{dashboard_comptable.jpeg}
+        \caption{Interface 7 : Tableau de Bord Comptable - Gestion financière}
+    \end{figure}
+
+    Le tableau de bord Comptable centralise tous les aspects financiers de l'établissement. L'interface affiche en premier lieu un tableau de bord financier synoptique : revenus du mois, dépenses engagées, solde de trésorerie, et comparaison aux prévisions budgétaires.
+    
+    Une section transactionnelle détaille toutes les entrées et sorties d'argent : paiements étudiants reçus, remboursements, frais divers, virements. Chaque transaction est traçable avec date, montant, étudiant concerné, mode de paiement et date de comptabilisation.
+    
+    Le module de gestion des frais scolaires permet de consulter la facture globale par étudiant, les paiements reçus et les soldes dus. Un outil genère automatiquement des rapports financiers détaillés : bilan mensuel, états de trésorerie, analyses par catégorie de revenu. Un système d'audit complet journalise chaque opération avec identifiant de l'utilisateur, timestamp and détails de la modification. Les états comptables consolidés peuvent être exportés pour archivage ou audit externe.
+
+    \vspace{0.8cm}
+
+    \section{Interface 8 : Tableau de Bord Administrateur}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.95\textwidth]{dahsboard_admin.jpeg}
+        \caption{Interface 8 : Tableau de Bord Administrateur - Gestion système}
+    \end{figure}
+
+    Le tableau de bord Administrateur système est l'espace de contrôle technique de l'infrastructure LinkEdu. L'interface affiche des indicateurs de santé système : charge serveur, utilisation mémoire, espace disque disponible, vitesse de réponse API et taux de disponibilité.
+    
+    La gestion des utilisateurs permet de créer, modifier ou supprimer des comptes, réinitialiser les mots de passe, assigner des rôles et définir les permissions. Un système d'authentification configurable supporte différentes méthodes d'authentification et de contrôle d'accès.
+    
+    La maintenance système offre des outils de gestion de base de données : optimisation, défragmentation, vérification d'intégrité. La console de logs d'audit centralise tous les événements du système (connexions, modifications de données, erreurs) dans une interface consultable et filtrable. Un gestionnaire de sauvegardes assure la création automatique de sauvegardes complètes et incrémentielles, avec téléchargement et restauration manuelles possibles. Les paramètres de configuration système (email du service, paramètres de session, règles de sécurité) sont tous centralisés et facilement modifiables.
+
+
+
+
+    % ========================================================
+    %                     CONCLUSION
+    % ========================================================
+
+    \chapter*{Conclusion}
+    \addcontentsline{toc}{chapter}{Conclusion}
+    \markboth{Conclusion}{Conclusion}
+    \thispagestyle{plain}
+
+    Ce projet de synthèse m'a permis de concevoir et développer LinkEdu, une plateforme web complète de gestion scolaire intégrée présentée à titre d'étude de cas pédagogique. L'application démontre comment centraliser efficacement l'ensemble des opérations administratives et pédagogiques d'un établissement d'enseignement en une seule plateforme cohérente et sécurisée.
+
+    Les objectifs pédagogiques du projet ont été pleinement atteints :
+
+    \begin{itemize}
+        \item \textbf{Plateforme centralisée opérationnelle} : système complet de gestion scolaire
+        \item \textbf{Système d'authentification robuste} : multi-rôles avec contrôle d'accès granulaire
+        \item \textbf{Modules fonctionnels intégrés} : classes, emplois du temps, devoirs, notes, absences, paiements
+        \item \textbf{Interfaces adaptées} : tableau de bords spécifiques selon le rôle de l'utilisateur
+        \item \textbf{Sécurité} : protection contre les attaques courantes (SQL injection, XSS, CSRF)
+        \item \textbf{Performance} : chargement rapide et gestion efficace des données
+    \end{itemize}
+
+    Sur le plan \textbf{technique}, ce projet de synthèse m'a permis d'apprendre et d'appliquer Laravel 13 dans toutes ses composantes (routing, Eloquent, Middleware, Sanctum), React 18 avec les hooks modernes, et les principes du développement d'une API RESTful complète.
+
+    Sur le plan \textbf{méthodologique}, j'ai pu pratiquer et démontrer ma maîtrise de l'analyse des besoins, la modélisation UML, le développement itératif et la rédaction de documentation technique professionnelle.
+
+    Parmi les principales difficultés surmontées : la modélisation des relations complexes entre les entités, l'implémentation d'un système d'authentification multi-rôles robuste, et l'harmonisation des contrôles d'accès à travers tous les modules.
+
+    Cette expérience académique représente une base solide pour mes futurs projets professionnels dans le développement web. Concevoir et développer LinkEdu m'a permis de renforcer ma maturité technique et ma capacité à gérer de manière autonome des projets complexes et multidisciplinaires en suivant une approche professionnelle.
+
+    \newpage
+    \addcontentsline{toc}{chapter}{Références et Bibliographies}
+    \begin{thebibliography}{99}
+
+    \bibitem{laravel} 
+    Documentation Laravel 13 : \\
+    \url{https://laravel.com/docs}
+
+    \bibitem{react} 
+    Documentation React 18 : \\
+    \url{https://react.dev}
+
+    \bibitem{mysql} 
+    Manuel de référence MySQL : \\
+    \url{https://dev.mysql.com/doc/}
+
+    \bibitem{tailwind} 
+    Documentation TailwindCSS : \\
+    \url{https://tailwindcss.com/docs}
+
+    \bibitem{vite} 
+    Documentation Vite : \\
+    \url{https://vitejs.dev}
+
+    \bibitem{github} 
+    Gestion de version avec GitHub : \\
+    \url{https://docs.github.com/fr}
+
+    \end{thebibliography}
+
+    \end{document}
