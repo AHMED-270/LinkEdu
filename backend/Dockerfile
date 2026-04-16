@@ -8,6 +8,7 @@ RUN apk add --no-cache \
     libzip-dev \
     oniguruma-dev \
     icu-dev \
+    netcat-openbsd \
     postgresql-dev \
     && docker-php-ext-install pdo_pgsql mbstring bcmath intl zip
 
@@ -22,13 +23,18 @@ COPY . .
 # Install PHP dependencies
 RUN composer install --no-interaction --no-dev --prefer-dist --optimize-autoloader \
     && mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views bootstrap/cache \
-    && chown -R www-data:www-data storage bootstrap/cache
+    && chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R ug+rwx storage bootstrap/cache
 
-ENV APP_ENV=production
-ENV APP_DEBUG=false
-ENV PORT=10000
+COPY docker/start.sh /usr/local/bin/start.sh
+RUN chmod +x /usr/local/bin/start.sh
 
-EXPOSE 10000
+ENV APP_ENV=production \
+    APP_DEBUG=false \
+    PORT=8080 \
+    RUN_MIGRATIONS=true
 
-# Run migrations at container start, ensure storage symlink, then launch app.
-CMD ["sh", "-lc", "php artisan migrate --force && php artisan storage:link || true; php artisan serve --host=0.0.0.0 --port=${PORT:-10000}"]
+EXPOSE 8080
+
+# Railway starts this container using the injected PORT value.
+CMD ["start.sh"]

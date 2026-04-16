@@ -37,4 +37,49 @@ If Render gives different generated URLs than the defaults in [render.yaml](rend
 - Frontend uses SPA rewrite to `index.html`.
 - CORS allows local development and `*.onrender.com` domains.
 
+## Deploy On Railway (Docker)
+
+This repository now includes Docker support for both services:
+
+- [backend/Dockerfile](backend/Dockerfile)
+- [frontend/Dockerfile](frontend/Dockerfile)
+
+### 1) Create two Railway services from same repository
+
+1. `linkedu-backend`
+	- Root directory: `backend`
+	- Builder: `Dockerfile`
+2. `linkedu-frontend`
+	- Root directory: `frontend`
+	- Builder: `Dockerfile`
+
+### 2) Required Railway environment variables
+
+Backend service (`linkedu-backend`):
+
+- `APP_NAME=LinkEdu`
+- `APP_ENV=production`
+- `APP_DEBUG=false`
+- `APP_KEY=<generate with: php artisan key:generate --show>`
+- `APP_URL=https://<your-backend-domain>.up.railway.app`
+- `FRONTEND_URL=https://<your-frontend-domain>.up.railway.app`
+- `LOG_CHANNEL=stderr`
+- `LOG_LEVEL=info`
+- `DB_CONNECTION=pgsql`
+- `DB_URL=<Railway Postgres connection string>`
+- `CACHE_STORE=database`
+- `SESSION_DRIVER=database`
+- `QUEUE_CONNECTION=sync`
+- `SANCTUM_STATEFUL_DOMAINS=<your-frontend-domain>.up.railway.app`
+- Optional: `RUN_MIGRATIONS=true`
+
+Frontend service (`linkedu-frontend`):
+
+- `VITE_API_URL=https://<your-backend-domain>.up.railway.app`
+
+### 3) Runtime behavior
+
+- Backend container waits briefly for database, runs migrations (if enabled), then starts on Railway `PORT`.
+- Frontend container builds with Vite and serves the static app on Railway `PORT`.
+
     
