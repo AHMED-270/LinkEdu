@@ -7,8 +7,29 @@ import { getHomeRouteByRole } from '../constants/roles';
 import logo from '../assets/images/linkedu-logo.png';
 
 const AUTH_TOKEN_KEY = 'linkedu_token';
-const browserHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
-const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://' + browserHost + ':8000';
+
+const getApiBaseUrl = () => {
+  // If explicitly configured, use it
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  
+  // Detect environment and protocol
+  if (typeof window !== 'undefined') {
+    const isProduction = window.location.protocol === 'https:';
+    
+    if (isProduction) {
+      // Production: use Laravel Cloud backend
+      return 'https://backendlinkededu-main-oied8k.free.laravel.cloud';
+    }
+  }
+  
+  // Development: use localhost
+  const browserHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
+  return 'http://' + browserHost + ':8000';
+};
+
+const apiBaseUrl = getApiBaseUrl();
 
 export default function LoginCard({ onLoginSuccess }) {
   const [isForgotMode, setIsForgotMode] = useState(false);
