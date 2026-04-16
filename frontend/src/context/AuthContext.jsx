@@ -19,6 +19,14 @@ const resolveApiOrigin = () => {
     }
   }
 
+  // Detect environment and protocol
+  const isProduction = window.location.protocol === 'https:';
+  if (isProduction) {
+    // Production: use Laravel Cloud backend
+    return 'https://backendlinkededu-main-oied8k.free.laravel.cloud';
+  }
+
+  // Development: use localhost
   return `${window.location.protocol}//${window.location.hostname}:8000`;
 };
 

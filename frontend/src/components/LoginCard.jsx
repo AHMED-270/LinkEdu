@@ -8,25 +8,16 @@ import logo from '../assets/images/linkedu-logo.png';
 
 const AUTH_TOKEN_KEY = 'linkedu_token';
 
+// Get API base URL with intelligent fallback
 const getApiBaseUrl = () => {
-  // If explicitly configured, use it
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
-  }
+  const envUrl = import.meta.env.VITE_API_URL?.trim();
+  if (envUrl) return envUrl;
   
-  // Detect environment and protocol
-  if (typeof window !== 'undefined') {
-    const isProduction = window.location.protocol === 'https:';
-    
-    if (isProduction) {
-      // Production: use Laravel Cloud backend
-      return 'https://backendlinkededu-main-oied8k.free.laravel.cloud';
-    }
-  }
+  const isProduction = typeof window !== 'undefined' && window.location.protocol === 'https:';
+  if (isProduction) return 'https://backendlinkededu-main-oied8k.free.laravel.cloud';
   
-  // Development: use localhost
-  const browserHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
-  return 'http://' + browserHost + ':8000';
+  const host = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
+  return `http://${host}:8000`;
 };
 
 const apiBaseUrl = getApiBaseUrl();
