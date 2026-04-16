@@ -2,6 +2,7 @@
 import axios from 'axios';
 import { Pencil, Trash2 } from 'lucide-react';
 import { BiImageAdd, BiNews, BiSearchAlt2 } from 'react-icons/bi';
+import LinkEduPopup from './LinkEduPopup';
 import './DirectoryAnnonces.css';
 
 function normalizeCible(rawCible) {
@@ -67,6 +68,8 @@ function DirectoryAnnonces() {
   const [searchTitle, setSearchTitle] = useState('');
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState('');
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -141,21 +144,25 @@ function DirectoryAnnonces() {
     setActionMsg({ type: '', text: '' });
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Etes-vous sur de vouloir supprimer cette annonce ?')) {
-      return;
-    }
+  const handleDelete = async () => {
+    if (!deleteTargetId) return;
+    setDeletingId(deleteTargetId);
 
     try {
-      await axios.delete(`${apiBaseUrl}/api/directeur/annonces/${id}`, axiosAuthConfig);
+      await axios.delete(`${apiBaseUrl}/api/directeur/annonces/${deleteTargetId}`, axiosAuthConfig);
       await fetchAnnonces();
-      if (editingId === id) {
+
+      if (String(editingId) === String(deleteTargetId)) {
         resetForm();
       }
+
       setActionMsg({ type: 'success', text: 'Annonce supprimee avec succes.' });
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
       setActionMsg({ type: 'error', text: error?.response?.data?.message || 'Erreur lors de la suppression de l annonce.' });
+    } finally {
+      setDeletingId(null);
+      setDeleteTargetId(null);
     }
   };
 
@@ -300,7 +307,8 @@ function DirectoryAnnonces() {
                           </button>
                           <button
                             className="btn-delete-annonce"
-                            onClick={() => handleDelete(annonce.id)}
+                            onClick={() => setDeleteTargetId(annonce.id)}
+                            disabled={String(deletingId) === String(annonce.id)}
                             title="Supprimer"
                             aria-label="Supprimer"
                           >
@@ -370,6 +378,20 @@ function DirectoryAnnonces() {
           </form>
         </aside>
       </div>
+
+      <LinkEduPopup
+        open={Boolean(deleteTargetId)}
+        title="Confirmer la suppression"
+        message="Etes-vous sur de vouloir supprimer cette annonce ?"
+        tone="danger"
+        confirmText="Oui, supprimer"
+        cancelText="Annuler"
+        onConfirm={handleDelete}
+        onClose={() => {
+          if (!deletingId) setDeleteTargetId(null);
+        }}
+        loading={Boolean(deletingId)}
+      />
     </div>
   );
 }

@@ -1,9 +1,8 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 import { 
   Search, 
   Filter, 
-  Plus, 
   Zap, 
   Edit2, 
   Trash2, 
@@ -13,6 +12,8 @@ import {
   Inbox
 } from 'lucide-react';
 import TableSkeletonRows from '../components/TableSkeletonRows';
+import LinkEduPopup from '../components/LinkEduPopup';
+import GlassModal from '../components/GlassModal';
 
 const emptyForm = { titre: '', contenu: '', cible: 'Tous' };
 
@@ -28,6 +29,35 @@ export default function SecretaireAnnonces() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCible, setFilterCible] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [popupNotice, setPopupNotice] = useState({
+    open: false,
+    title: '',
+    message: '',
+    tone: 'info',
+  });
+
+  const csrfReadyRef = useRef(false);
+
+  const ensureCsrfCookie = async () => {
+    if (csrfReadyRef.current) return;
+    await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', {
+      withCredentials: true,
+      withXSRFToken: true,
+    });
+    csrfReadyRef.current = true;
+  };
+
+  const showNotice = (title, message, tone = 'info') => {
+    setPopupNotice({
+      open: true,
+      title,
+      message,
+      tone,
+    });
+  };
 
   useEffect(() => {
     if (!selectedAnnonce) return;
@@ -38,12 +68,9 @@ export default function SecretaireAnnonces() {
       }
     };
 
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
     window.addEventListener('keydown', onKeyDown);
 
     return () => {
-      document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', onKeyDown);
     };
   }, [selectedAnnonce]);
@@ -71,6 +98,12 @@ export default function SecretaireAnnonces() {
 
   useEffect(() => {
     loadData();
+  }, []);
+
+  useEffect(() => {
+    ensureCsrfCookie().catch(() => {
+      // No-op: requests will retry csrf setup before mutation actions.
+    });
   }, []);
 
   const resetForm = () => {
@@ -113,9 +146,12 @@ export default function SecretaireAnnonces() {
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', { withCredentials: true, withXSRFToken: true });
-    
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
     try {
+      await ensureCsrfCookie();
+
       const isEditMode = Boolean(editingId);
       const payload = new FormData();
       payload.append('titre', form.titre);
@@ -143,28 +179,46 @@ export default function SecretaireAnnonces() {
         });
         console.log("Annonce créée avec succès:", response.data);
       }
+
       await loadData();
       resetForm();
-      alert(isEditMode ? "Annonce mise Ã  jour avec succès !" : "Annonce publiée avec succès !");
+      showNotice(
+        isEditMode ? 'Annonce mise a jour' : 'Annonce publiee',
+        isEditMode ? 'Les modifications ont ete enregistrees.' : 'Votre annonce a ete envoyee avec succes.',
+        'success'
+      );
     } catch (err) {
       console.error("Erreur complète:", err);
       const msg = err.response?.data?.message || "Erreur lors de l'enregistrement";
       const detail = err.response?.data?.error || "";
-      alert(`${msg} ${detail}`);
+      showNotice('Echec de l enregistrement', `${msg} ${detail}`.trim(), 'danger');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const onDelete = async (id) => {
-    if (!window.confirm("Voulez-vous vraiment supprimer cette annonce ?")) return;
-    await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', { withCredentials: true, withXSRFToken: true });
+  const onDelete = async () => {
+    if (!deleteTargetId) return;
+    setDeletingId(deleteTargetId);
+
     try {
-      await axios.delete(`${apiBaseUrl}/api/secretaire/annonces/${id}`, {
+      await ensureCsrfCookie();
+      await axios.delete(`${apiBaseUrl}/api/secretaire/annonces/${deleteTargetId}`, {
         withCredentials: true,
         withXSRFToken: true,
       });
-      await loadData();
+
+      setAnnonces((prev) => prev.filter((item) => String(item.id_annonce) !== String(deleteTargetId)));
+      if (String(selectedAnnonce?.id_annonce) === String(deleteTargetId)) {
+        setSelectedAnnonce(null);
+      }
+      showNotice('Annonce supprimee', 'L annonce a ete retiree.', 'success');
     } catch (err) {
       console.error("Erreur lors de la suppression", err);
+      showNotice('Suppression impossible', 'Une erreur est survenue pendant la suppression.', 'danger');
+    } finally {
+      setDeletingId(null);
+      setDeleteTargetId(null);
     }
   };
 
@@ -322,7 +376,8 @@ export default function SecretaireAnnonces() {
                                 <Edit2 className="w-4 h-4" />
                              </button>
                              <button
-                               onClick={() => onDelete(a.id_annonce)}
+                               onClick={() => setDeleteTargetId(a.id_annonce)}
+                               disabled={deletingId === a.id_annonce}
                                className="p-1.5 text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors"
                              >
                                <Trash2 className="w-4 h-4" />
@@ -430,9 +485,10 @@ export default function SecretaireAnnonces() {
                 <div className="flex gap-2 mt-2">
                   <button
                     type="submit"
+                    disabled={isSubmitting}
                     className="flex-1 py-3 bg-brand-teal hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-sm transition-colors"
                   >
-                    {editingId ? 'Mettre Ã  jour' : 'Envoyer l\'annonce'}
+                    {isSubmitting ? 'Traitement...' : (editingId ? 'Mettre a jour' : 'Envoyer l\'annonce')}
                   </button>
                   {editingId && (
                     <button
@@ -455,14 +511,8 @@ export default function SecretaireAnnonces() {
       </div>
 
       {selectedAnnonce && (
-        <div
-          className="fixed inset-0 z-[130] flex items-center justify-center bg-black/55 p-4 backdrop-blur-[1px]"
-          onClick={() => setSelectedAnnonce(null)}
-        >
-          <div
-            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-xl border border-gray-100"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <GlassModal open={Boolean(selectedAnnonce)} onClose={() => setSelectedAnnonce(null)} panelClassName="max-w-2xl p-0">
+          <div className="linkedu-glass-form max-h-[90vh] overflow-y-auto">
             <div className="flex items-start justify-between px-6 py-4 border-b border-gray-100">
               <div>
                 <h2 className="text-lg font-bold text-gray-900">Détails de l'annonce</h2>
@@ -519,8 +569,31 @@ export default function SecretaireAnnonces() {
               </div>
             </div>
           </div>
-        </div>
+        </GlassModal>
       )}
+
+      <LinkEduPopup
+        open={Boolean(deleteTargetId)}
+        title="Confirmer la suppression"
+        message="Voulez-vous vraiment supprimer cette annonce ?"
+        tone="danger"
+        confirmText="Oui, supprimer"
+        cancelText="Annuler"
+        onConfirm={onDelete}
+        onClose={() => {
+          if (!deletingId) setDeleteTargetId(null);
+        }}
+        loading={Boolean(deletingId)}
+      />
+
+      <LinkEduPopup
+        open={popupNotice.open}
+        title={popupNotice.title}
+        message={popupNotice.message}
+        tone={popupNotice.tone}
+        confirmText="Fermer"
+        onClose={() => setPopupNotice((prev) => ({ ...prev, open: false }))}
+      />
     </div>
   );
 }

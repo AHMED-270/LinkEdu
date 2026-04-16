@@ -88,16 +88,44 @@
     box-shadow: 0 4px 30px rgba(0,0,0,0.03);
   }
 
+  /* ── LinkEdu Global Glass Modal ── */
+  .linkedu-modal-overlay {
+    @apply fixed inset-0 z-[1200] flex items-center justify-center p-4 sm:p-6;
+  }
+  .linkedu-modal-backdrop {
+    @apply absolute inset-0;
+    background:
+      radial-gradient(circle at 12% 18%, rgba(64, 161, 216, 0.26), transparent 40%),
+      radial-gradient(circle at 86% 76%, rgba(20, 39, 78, 0.3), transparent 44%),
+      linear-gradient(140deg, rgba(9, 20, 38, 0.45), rgba(18, 36, 67, 0.62));
+    backdrop-filter: blur(14px) saturate(140%);
+  }
+  .linkedu-modal-shell {
+    @apply relative z-10 w-full max-h-[92vh] overflow-y-auto rounded-[30px] border border-white/50 bg-white/70 text-slate-900;
+    box-shadow: 0 34px 75px rgba(15, 32, 61, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(18px) saturate(145%);
+  }
+  .linkedu-glass-form {
+    @apply rounded-[26px] border border-white/70 bg-white/70;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+
   /* ── Premium Modal ── */
   .premium-modal-overlay {
-    @apply fixed inset-0 z-[200] flex items-center justify-center p-4;
+    @apply fixed inset-0 z-[1200] flex items-center justify-center p-4 sm:p-6;
   }
   .premium-modal-backdrop {
-    @apply absolute inset-0 bg-brand-navy/40 backdrop-blur-md;
+    @apply absolute inset-0;
+    background:
+      radial-gradient(circle at 10% 18%, rgba(64, 161, 216, 0.24), transparent 42%),
+      radial-gradient(circle at 90% 82%, rgba(20, 39, 78, 0.28), transparent 45%),
+      linear-gradient(135deg, rgba(7, 18, 38, 0.43), rgba(17, 34, 63, 0.6));
+    backdrop-filter: blur(13px) saturate(138%);
   }
   .premium-modal-card {
-    @apply relative z-10 w-full max-w-md bg-white/90 backdrop-blur-xl border border-white/70 rounded-3xl p-8 text-center;
-    box-shadow: 0 24px 60px rgba(20,39,78,0.18);
+    @apply relative z-10 w-full max-w-md rounded-[30px] border border-white/60 bg-white/75 p-8 text-center;
+    box-shadow: 0 30px 72px rgba(12, 28, 56, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(17px) saturate(145%);
   }
 
   /* ── Premium Header ── */

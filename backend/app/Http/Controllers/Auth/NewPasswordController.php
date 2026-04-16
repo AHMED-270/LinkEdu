@@ -5,14 +5,12 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
-use Illuminate\View\View;
 
 class NewPasswordController extends Controller
 {
@@ -41,8 +39,16 @@ class NewPasswordController extends Controller
             }
         );
 
-        return $status == Password::PASSWORD_RESET
-                    ? response()->json(['status' => __($status)])
-                    : response()->json(['email' => [__($status)]], 422);
+        if ($status === Password::PASSWORD_RESET) {
+            return response()->json([
+                'status' => 'ok',
+                'message' => 'Mot de passe reinitialise avec succes.',
+            ]);
+        }
+
+        return response()->json([
+            'message' => __($status),
+            'email' => [__($status)],
+        ], 422);
     }
 }

@@ -3,6 +3,8 @@ import axios from 'axios';
 import { CreditCard, PlusCircle, RefreshCw, X, Printer } from 'lucide-react';
 import FilterClasse from '../components/FilterClasse';
 import PaiementTable from '../components/PaiementTable';
+import LinkEduPopup from '../components/LinkEduPopup';
+import GlassModal from '../components/GlassModal';
 
 const getDefaultAcademicYear = () => {
   const date = new Date();
@@ -38,6 +40,13 @@ export default function Paiements() {
   const [submitting, setSubmitting] = useState(false);
   const [busyKey, setBusyKey] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [popupNotice, setPopupNotice] = useState({
+    open: false,
+    title: '',
+    message: '',
+    tone: 'info',
+  });
 
   const [classFilter, setClassFilter] = useState('all');
   const [search, setSearch] = useState('');
@@ -48,6 +57,25 @@ export default function Paiements() {
   const [receiptData, setReceiptData] = useState(null);
   const previousTypeRef = useRef(form.type);
   const previousClassRef = useRef(form.id_classe);
+  const csrfReadyRef = useRef(false);
+
+  const ensureCsrfCookie = async () => {
+    if (csrfReadyRef.current) return;
+    await axios.get(`${apiBaseUrl}/sanctum/csrf-cookie`, {
+      withCredentials: true,
+      withXSRFToken: true,
+    });
+    csrfReadyRef.current = true;
+  };
+
+  const showNotice = (title, message, tone = 'info') => {
+    setPopupNotice({
+      open: true,
+      title,
+      message,
+      tone,
+    });
+  };
 
   const studentsForSelect = useMemo(() => {
     return students.map((student) => ({
@@ -149,6 +177,12 @@ export default function Paiements() {
   useEffect(() => {
     loadData();
   }, [classFilter, search, annee]);
+
+  useEffect(() => {
+    ensureCsrfCookie().catch(() => {
+      // No-op: csrf setup will retry before mutation calls.
+    });
+  }, []);
 
   const resetForm = () => {
     setEditingId(null);
@@ -270,10 +304,7 @@ export default function Paiements() {
     setErrorMessage('');
 
     try {
-      await axios.get(`${apiBaseUrl}/sanctum/csrf-cookie`, {
-        withCredentials: true,
-        withXSRFToken: true,
-      });
+      await ensureCsrfCookie();
 
       const payload = {
         annee: Number(annee),
@@ -303,6 +334,11 @@ export default function Paiements() {
 
       await loadData();
       resetForm();
+      showNotice(
+        editingId ? 'Paiement mis a jour' : 'Paiement ajoute',
+        editingId ? 'Le paiement a ete modifie avec succes.' : 'Le paiement a ete enregistre avec succes.',
+        'success'
+      );
     } catch (error) {
       setErrorMessage(error?.response?.data?.message || 'Erreur lors de l enregistrement du paiement.');
     } finally {
@@ -315,10 +351,7 @@ export default function Paiements() {
     setBusyKey(key);
 
     try {
-      await axios.get(`${apiBaseUrl}/sanctum/csrf-cookie`, {
-        withCredentials: true,
-        withXSRFToken: true,
-      });
+      await ensureCsrfCookie();
 
       if (payment?.id_paiement) {
         await axios.put(`${apiBaseUrl}/api/secretaire/paiements/${payment.id_paiement}/toggle`, {}, {
@@ -423,26 +456,34 @@ export default function Paiements() {
     popup.document.close();
   };
 
-  const handleDelete = async (_student, _month, payment) => {
+  const handleDelete = (student, month, payment) => {
     if (!payment?.id_paiement) return;
-    if (!window.confirm('Supprimer ce paiement ?')) return;
+    setDeleteTarget({ student, month, payment });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget?.payment?.id_paiement) return;
+    const targetPaymentId = deleteTarget.payment.id_paiement;
+
+    setBusyKey(`delete-${targetPaymentId}`);
 
     try {
-      await axios.get(`${apiBaseUrl}/sanctum/csrf-cookie`, {
-        withCredentials: true,
-        withXSRFToken: true,
-      });
-      await axios.delete(`${apiBaseUrl}/api/secretaire/paiements/${payment.id_paiement}`, {
+      await ensureCsrfCookie();
+      await axios.delete(`${apiBaseUrl}/api/secretaire/paiements/${targetPaymentId}`, {
         withCredentials: true,
         withXSRFToken: true,
       });
 
       await loadData();
-      if (editingId === payment.id_paiement) {
+      if (editingId === targetPaymentId) {
         resetForm();
       }
+      showNotice('Paiement supprime', 'Le paiement a ete supprime avec succes.', 'success');
     } catch (error) {
       setErrorMessage(error?.response?.data?.message || 'Erreur lors de la suppression du paiement.');
+    } finally {
+      setDeleteTarget(null);
+      setBusyKey('');
     }
   };
 
@@ -668,8 +709,8 @@ export default function Paiements() {
       </div>
 
       {receiptData && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl">
+        <GlassModal open={Boolean(receiptData)} onClose={() => setReceiptData(null)} panelClassName="max-w-2xl p-0">
+          <div className="linkedu-glass-form rounded-2xl">
             <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
               <h3 className="text-lg font-bold text-gray-900">Details du paiement</h3>
               <button
@@ -750,8 +791,31 @@ export default function Paiements() {
               </button>
             </div>
           </div>
-        </div>
+        </GlassModal>
       )}
+
+      <LinkEduPopup
+        open={Boolean(deleteTarget)}
+        title="Confirmer la suppression"
+        message={deleteTarget ? `Voulez-vous supprimer le paiement de ${deleteTarget.student?.nom || ''} ${deleteTarget.student?.prenom || ''} ?` : ''}
+        tone="danger"
+        confirmText="Oui, supprimer"
+        cancelText="Annuler"
+        onConfirm={confirmDelete}
+        onClose={() => {
+          if (!busyKey.startsWith('delete-')) setDeleteTarget(null);
+        }}
+        loading={busyKey.startsWith('delete-')}
+      />
+
+      <LinkEduPopup
+        open={popupNotice.open}
+        title={popupNotice.title}
+        message={popupNotice.message}
+        tone={popupNotice.tone}
+        confirmText="Fermer"
+        onClose={() => setPopupNotice((prev) => ({ ...prev, open: false }))}
+      />
     </div>
   );
 }

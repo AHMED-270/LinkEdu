@@ -25,8 +25,20 @@ class AppServiceProvider extends ServiceProvider
         Schema::defaultStringLength(191);
 
         ResetPassword::createUrlUsing(function (object $notifiable, string $token) {
+            $frontendUrl = trim((string) config('app.frontend_url', ''));
+            $origin = request()?->headers->get('origin');
+
+            if (is_string($origin) && filter_var($origin, FILTER_VALIDATE_URL)) {
+                $frontendUrl = $origin;
+            }
+
+            if ($frontendUrl === '' || !filter_var($frontendUrl, FILTER_VALIDATE_URL)) {
+                $frontendUrl = 'http://localhost:5173';
+            }
+
+            $frontendUrl = rtrim($frontendUrl, '/');
             $email = urlencode((string) $notifiable->getEmailForPasswordReset());
-            return config('app.frontend_url')."/password-reset/$token?email={$email}";
+            return "{$frontendUrl}/password-reset/{$token}?email={$email}";
         });
     }
 }

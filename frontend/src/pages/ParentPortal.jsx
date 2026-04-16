@@ -13,6 +13,7 @@ import logo from '../assets/images/linkedu-logo.png';
 import Parametres from './Parametres';
 import './RolePortal.css'; 
 import '../components/DirectoryTimetable.css';
+import usePostLoginReady from '../hooks/usePostLoginReady';
 
 const tabs = [
   { key: 'dashboard', label: 'Vue d\'ensemble', icon: LayoutDashboard },
@@ -309,6 +310,9 @@ export default function ParentPortal() {
     };
     load();
   }, [activeTab, selectedChildId]);
+
+  const dashboardReadyForTransition = activeTab === 'dashboard' && !loading && (dashboard !== null || Boolean(error));
+  usePostLoginReady(dashboardReadyForTransition);
 
   const handleLogoutConfirm = async () => {
     if (isLoggingOut) return;

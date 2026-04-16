@@ -21,6 +21,8 @@ import {
   Inbox,
 } from 'lucide-react';
 import TableSkeletonRows from '../components/TableSkeletonRows';
+import LinkEduPopup from '../components/LinkEduPopup';
+import GlassModal from '../components/GlassModal';
 
 const emptyForm = { id_etudiant: '', date_abs: '', motif: 'Medical' };
 const allowedJustificationTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
@@ -57,8 +59,36 @@ export default function SecretaireAbsences() {
   const [filterStatut, setFilterStatut] = useState('all');
   const [selectedDate, setSelectedDate] = useState(() => toLocalISODate(new Date()));
   const [absenceInsightStudent, setAbsenceInsightStudent] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [popupNotice, setPopupNotice] = useState({
+    open: false,
+    title: '',
+    message: '',
+    tone: 'info',
+  });
 
   const searchContainerRef = useRef(null);
+  const csrfReadyRef = useRef(false);
+
+  const ensureCsrfCookie = async () => {
+    if (csrfReadyRef.current) return;
+    await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', {
+      withCredentials: true,
+      withXSRFToken: true,
+    });
+    csrfReadyRef.current = true;
+  };
+
+  const showNotice = (title, message, tone = 'info') => {
+    setPopupNotice({
+      open: true,
+      title,
+      message,
+      tone,
+    });
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -86,6 +116,12 @@ export default function SecretaireAbsences() {
 
   useEffect(() => {
     loadData();
+  }, []);
+
+  useEffect(() => {
+    ensureCsrfCookie().catch(() => {
+      // No-op: csrf bootstrap will retry before write actions.
+    });
   }, []);
 
   useEffect(() => {
@@ -158,9 +194,13 @@ export default function SecretaireAbsences() {
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', { withCredentials: true, withXSRFToken: true });
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
 
     try {
+      await ensureCsrfCookie();
+
       if (editingId) {
         await axios.put(`${apiBaseUrl}/api/secretaire/absences/${editingId}`, {
           date_abs: form.date_abs,
@@ -171,6 +211,7 @@ export default function SecretaireAbsences() {
         });
       } else {
         if (!form.id_etudiant) {
+          showNotice('Etudiant requis', 'Veuillez selectionner un etudiant depuis la liste.', 'info');
           return;
         }
 
@@ -185,19 +226,39 @@ export default function SecretaireAbsences() {
       }
       await loadData();
       resetForm();
+      showNotice(
+        editingId ? 'Absence mise a jour' : 'Absence enregistree',
+        editingId ? 'La justification a ete modifiee avec succes.' : 'La justification a ete enregistree avec succes.',
+        'success'
+      );
     } catch(err) {
       console.error(err);
+      showNotice('Echec de l action', 'Impossible d enregistrer cette absence.', 'danger');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const onDelete = async (id) => {
-    if (!window.confirm("Supprimer cette absence ?")) return;
-    await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', { withCredentials: true, withXSRFToken: true });
-    await axios.delete(`${apiBaseUrl}/api/secretaire/absences/${id}`, {
-      withCredentials: true,
-      withXSRFToken: true,
-    });
-    await loadData();
+  const onDelete = async () => {
+    if (!deleteTargetId) return;
+    setDeletingId(deleteTargetId);
+
+    try {
+      await ensureCsrfCookie();
+      await axios.delete(`${apiBaseUrl}/api/secretaire/absences/${deleteTargetId}`, {
+        withCredentials: true,
+        withXSRFToken: true,
+      });
+
+      setAbsences((prev) => prev.filter((item) => String(item.id_absence) !== String(deleteTargetId)));
+      showNotice('Absence supprimee', 'L absence a ete supprimee.', 'success');
+    } catch (error) {
+      console.error(error);
+      showNotice('Suppression impossible', 'Impossible de supprimer cette absence.', 'danger');
+    } finally {
+      setDeletingId(null);
+      setDeleteTargetId(null);
+    }
   };
 
   const stats = useMemo(() => {
@@ -248,7 +309,7 @@ export default function SecretaireAbsences() {
 
   const handleExportCsv = () => {
     if (filteredAbsences.length === 0) {
-      window.alert('Aucune absence a exporter pour les filtres actuels.');
+      showNotice('Export indisponible', 'Aucune absence a exporter pour les filtres actuels.', 'info');
       return;
     }
 
@@ -514,7 +575,8 @@ export default function SecretaireAbsences() {
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                              </button>
                              <button
-                               onClick={() => onDelete(a.id_absence)}
+                               onClick={() => setDeleteTargetId(a.id_absence)}
+                               disabled={deletingId === a.id_absence}
                                className="p-1.5 text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors"
                              >
                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
@@ -657,9 +719,10 @@ export default function SecretaireAbsences() {
                   <div className="flex gap-2">
                     <button
                       type="submit"
+                      disabled={isSubmitting}
                       className="flex-1 py-3 bg-brand-teal hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-sm transition-colors"
                     >
-                      {editingId ? 'Mettre Ã  jour' : 'Valider la Justification'}
+                      {isSubmitting ? 'Traitement...' : (editingId ? 'Mettre a jour' : 'Valider la justification')}
                     </button>
                     {editingId && (
                       <button
@@ -683,8 +746,8 @@ export default function SecretaireAbsences() {
       </div>
 
       {absenceInsightStudent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
-          <div className="w-full max-w-2xl overflow-hidden rounded-2xl border border-white/15 bg-white shadow-2xl">
+        <GlassModal open={Boolean(absenceInsightStudent)} onClose={() => setAbsenceInsightStudent(null)} panelClassName="max-w-2xl p-0">
+          <div className="linkedu-glass-form overflow-hidden">
             <div className="flex items-start justify-between border-b border-gray-100 bg-gray-50 px-6 py-4">
               <div>
                 <h2 className="text-lg font-bold text-gray-900">Bilan d'absence de l'étudiant</h2>
@@ -727,8 +790,31 @@ export default function SecretaireAbsences() {
               Regle de calcul appliquee: 0.25 point pour chaque 2 heures d'absence.
             </div>
           </div>
-        </div>
+        </GlassModal>
       )}
+
+      <LinkEduPopup
+        open={Boolean(deleteTargetId)}
+        title="Confirmer la suppression"
+        message="Voulez-vous supprimer cette absence ?"
+        tone="danger"
+        confirmText="Oui, supprimer"
+        cancelText="Annuler"
+        onConfirm={onDelete}
+        onClose={() => {
+          if (!deletingId) setDeleteTargetId(null);
+        }}
+        loading={Boolean(deletingId)}
+      />
+
+      <LinkEduPopup
+        open={popupNotice.open}
+        title={popupNotice.title}
+        message={popupNotice.message}
+        tone={popupNotice.tone}
+        confirmText="Fermer"
+        onClose={() => setPopupNotice((prev) => ({ ...prev, open: false }))}
+      />
     </div>
   );
 }

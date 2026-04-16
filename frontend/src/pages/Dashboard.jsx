@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { professorGet } from '../services/professorApi';
+import usePostLoginReady from '../hooks/usePostLoginReady';
 import { Users, BookOpen, FileText, Folder, Calendar, Clock, ChevronRight, GraduationCap } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -32,6 +33,8 @@ export default function Dashboard() {
 
     loadDashboard();
   }, []);
+
+  usePostLoginReady(!loading);
 
   // Framer Motion Variants
   const containerVariants = {

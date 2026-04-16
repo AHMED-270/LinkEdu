@@ -16,6 +16,8 @@ import {
 } from 'react-icons/fi';
 import { BiSolidUserDetail } from 'react-icons/bi';
 import TableSkeletonRows from './TableSkeletonRows';
+import LinkEduPopup from './LinkEduPopup';
+import GlassModal from './GlassModal';
 
 export default function AdminUsers({ onCreateUser, onEditUser }) {
   const [users, setUsers] = useState([]);
@@ -27,6 +29,12 @@ export default function AdminUsers({ onCreateUser, onEditUser }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [activatingUserId, setActivatingUserId] = useState(null);
   const [viewTarget, setViewTarget] = useState(null);
+  const [popupNotice, setPopupNotice] = useState({
+    open: false,
+    title: '',
+    message: '',
+    tone: 'info',
+  });
 
   const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
@@ -56,6 +64,15 @@ export default function AdminUsers({ onCreateUser, onEditUser }) {
     await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', {
       withCredentials: true,
       withXSRFToken: true,
+    });
+  };
+
+  const showNotice = (title, message, tone = 'info') => {
+    setPopupNotice({
+      open: true,
+      title,
+      message,
+      tone,
     });
   };
 
@@ -91,7 +108,7 @@ export default function AdminUsers({ onCreateUser, onEditUser }) {
       setDeleteTarget(null);
       fetchData();
     } catch {
-      alert('Erreur lors de la suppression');
+      showNotice('Suppression impossible', 'Erreur lors de la suppression.', 'danger');
     } finally {
       setIsDeleting(false);
     }
@@ -107,10 +124,10 @@ export default function AdminUsers({ onCreateUser, onEditUser }) {
         headers: { Accept: 'application/json' }
       });
 
-      alert(res.data?.message || 'Compte active avec succes.');
+      showNotice('Compte active', res.data?.message || 'Compte active avec succes.', 'success');
       await fetchData();
     } catch (error) {
-      alert(error?.response?.data?.message || 'Erreur lors de l activation du compte.');
+      showNotice('Activation impossible', error?.response?.data?.message || 'Erreur lors de l activation du compte.', 'danger');
     } finally {
       setActivatingUserId(null);
     }
@@ -351,9 +368,8 @@ export default function AdminUsers({ onCreateUser, onEditUser }) {
       </div>
 
       {viewTarget && (
-        <div className="premium-modal-overlay">
-          <div className="premium-modal-backdrop" onClick={() => setViewTarget(null)} />
-          <div className="premium-modal-card !max-w-2xl !text-left">
+        <GlassModal open={Boolean(viewTarget)} onClose={() => setViewTarget(null)} panelClassName="max-w-2xl p-0">
+          <div className="premium-modal-card !max-w-none !rounded-none !border-0 !bg-transparent !text-left !shadow-none">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-black text-brand-navy">Informations de l'utilisateur</h3>
               <button
@@ -391,41 +407,31 @@ export default function AdminUsers({ onCreateUser, onEditUser }) {
               </div>
             </div>
           </div>
-        </div>
+        </GlassModal>
       )}
 
-      {deleteTarget && (
-        <div className="premium-modal-overlay">
-          <div className="premium-modal-backdrop" onClick={() => setDeleteTarget(null)} />
-          <div className="premium-modal-card">
-            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-red-500 shadow-inner">
-              <Trash2 size={28} />
-            </div>
-            <h3 className="mb-2 text-xl font-black text-brand-navy tracking-tight">Confirmer la suppression</h3>
-            <p className="mb-8 text-sm font-medium text-slate-500 leading-relaxed">
-              Voulez-vous vraiment supprimer <strong className="text-brand-navy">{deleteTarget.name}</strong> ? Cette action est irréversible.
-            </p>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setDeleteTarget(null)}
-                disabled={isDeleting}
-                className="flex-1 rounded-2xl bg-slate-100 py-3 text-sm font-bold text-slate-600 transition-all hover:bg-slate-200 active:scale-95"
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="flex-1 rounded-2xl bg-gradient-to-r from-red-500 to-red-600 py-3 text-sm font-bold text-white shadow-lg shadow-red-200 transition-all hover:brightness-110 active:scale-95 disabled:opacity-50"
-              >
-                {isDeleting ? 'Suppression...' : 'Supprimer'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <LinkEduPopup
+        open={Boolean(deleteTarget)}
+        title="Confirmer la suppression"
+        message={deleteTarget ? `Voulez-vous vraiment supprimer ${deleteTarget.name} ? Cette action est irreversible.` : ''}
+        tone="danger"
+        confirmText="Oui, supprimer"
+        cancelText="Annuler"
+        onConfirm={handleDelete}
+        onClose={() => {
+          if (!isDeleting) setDeleteTarget(null);
+        }}
+        loading={isDeleting}
+      />
+
+      <LinkEduPopup
+        open={popupNotice.open}
+        title={popupNotice.title}
+        message={popupNotice.message}
+        tone={popupNotice.tone}
+        confirmText="Fermer"
+        onClose={() => setPopupNotice((prev) => ({ ...prev, open: false }))}
+      />
 
     </div>
   );

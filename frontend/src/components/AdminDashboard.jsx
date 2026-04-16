@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { FiBell as Bell, FiHelpCircle as HelpCircle, FiGrid as LayoutDashboard, FiUsers as Users, FiBookOpen as GraduationCap, FiSettings as Settings, FiLogOut as LogOut, FiUser as UserCircle, FiLogOut as DoorOpen, FiBookOpen as BookOpen, FiUserCheck as UserCheck, FiChevronRight } from 'react-icons/fi';
+import { FiHelpCircle as HelpCircle, FiGrid as LayoutDashboard, FiUsers as Users, FiBookOpen as GraduationCap, FiSettings as Settings, FiLogOut as LogOut, FiUser as UserCircle, FiLogOut as DoorOpen, FiBookOpen as BookOpen, FiUserCheck as UserCheck, FiChevronRight } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import './AdminDashboard.css';
@@ -275,14 +275,6 @@ export default function AdminDashboard({ onLogout, userRole = 'admin', user = nu
           className="premium-header h-[72px] flex items-center justify-end px-8 flex-shrink-0 z-40 relative"
         >
           <div className="flex items-center gap-4">
-            {/* Notifications */}
-            <button className="relative p-2.5 rounded-2xl text-slate-500 hover:bg-white/60 hover:text-brand-teal hover:shadow-glass-sm border border-transparent hover:border-white/60 transition-all group">
-              <Bell size={20} className="group-hover:rotate-12 transition-transform" />
-              <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
-            </button>
-
-            <div className="h-8 w-px bg-slate-200/60" />
-
             {/* Profile */}
             <button
               onClick={() => setCurrentView('profile')}

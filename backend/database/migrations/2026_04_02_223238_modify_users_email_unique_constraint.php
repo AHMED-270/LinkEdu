@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -33,10 +34,18 @@ return new class extends Migration
                 $hasEmailRoleUnique = true;
             }
         }
+
+        $driver = DB::getDriverName();
         
         if (!$hasEmailRoleUnique) {
-            Schema::table('users', function (Blueprint $table) {
-                $table->unique([\DB::raw('email(191)'), \DB::raw('role(50)')], 'users_email_role_unique');
+            Schema::table('users', function (Blueprint $table) use ($driver) {
+                // Prefix-length indexes are MySQL-specific and break sqlite tests.
+                if ($driver === 'mysql') {
+                    $table->unique([DB::raw('email(191)'), DB::raw('role(50)')], 'users_email_role_unique');
+                    return;
+                }
+
+                $table->unique(['email', 'role'], 'users_email_role_unique');
             });
         }
     }

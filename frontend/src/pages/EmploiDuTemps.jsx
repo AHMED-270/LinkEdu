@@ -181,7 +181,7 @@ export default function EmploiDuTemps() {
   const handlePrint = () => {
     const printWindow = window.open('', '_blank', 'width=1100,height=720');
     if (!printWindow) {
-      alert("S'il vous plaît, autorisez les pop-ups pour imprimer.");
+      setError('Veuillez autoriser les popups du navigateur pour imprimer.');
       return;
     }
 

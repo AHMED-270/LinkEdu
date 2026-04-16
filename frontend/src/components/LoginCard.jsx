@@ -20,13 +20,14 @@ export default function LoginCard({ onLoginSuccess }) {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const navigate = useNavigate();
-  const { setAuthenticatedUser } = useAuth();
+  const { setAuthenticatedUser, startPostLoginTransition, completePostLoginTransition } = useAuth();
 
   const handleLoginSubmit = async (event) => {
     event.preventDefault();
     setIsLoggingIn(true);
     setLoginFeedback('');
     setLoginFeedbackType('');
+    startPostLoginTransition(null);
 
     try {
       const performLogin = async () => {
@@ -82,8 +83,11 @@ export default function LoginCard({ onLoginSuccess }) {
       setLoginFeedbackType('success');
 
       const roleHome = getHomeRouteByRole(connectedUser?.role);
-      setTimeout(() => navigate(roleHome, { replace: true }), 400);
+      startPostLoginTransition(roleHome);
+      navigate(roleHome, { replace: true });
     } catch (error) {
+      completePostLoginTransition();
+
       const status = error?.response?.status;
       const backendMessage = error?.response?.data?.message;
       const backendEmailError = error?.response?.data?.errors?.email?.[0];
@@ -127,7 +131,10 @@ export default function LoginCard({ onLoginSuccess }) {
 
        await axios.post(
          apiBaseUrl + '/api/forgot-password',
-         { email: forgotEmail.trim().toLowerCase() },
+         {
+           email: forgotEmail.trim().toLowerCase(),
+           frontend_url: typeof window !== 'undefined' ? window.location.origin : undefined,
+         },
          {
            withCredentials: true,
            withXSRFToken: true,

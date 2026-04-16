@@ -10,6 +10,7 @@ import {
   FiShield as Shield,
 } from 'react-icons/fi';
 import TableSkeletonRows from './TableSkeletonRows';
+import LinkEduPopup from './LinkEduPopup';
 
 export default function AdminAccountActivations() {
   const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
@@ -23,6 +24,12 @@ export default function AdminAccountActivations() {
   const [activatingId, setActivatingId] = useState(null);
   const [deactivatingId, setDeactivatingId] = useState(null);
   const [loadError, setLoadError] = useState('');
+  const [popupNotice, setPopupNotice] = useState({
+    open: false,
+    title: '',
+    message: '',
+    tone: 'info',
+  });
 
   const fetchData = async () => {
     setLoading(true);
@@ -77,6 +84,15 @@ export default function AdminAccountActivations() {
     });
   };
 
+  const showNotice = (title, message, tone = 'info') => {
+    setPopupNotice({
+      open: true,
+      title,
+      message,
+      tone,
+    });
+  };
+
   const handleActivate = async (student) => {
     setActivatingId(student.id_etudiant);
     try {
@@ -89,14 +105,14 @@ export default function AdminAccountActivations() {
 
       const warnings = res.data?.warnings || [];
       if (warnings.length > 0) {
-        alert(`${res.data?.message || 'Compte active.'}\n${warnings.join('\n')}`);
+        showNotice('Compte active', `${res.data?.message || 'Compte active.'}\n${warnings.join('\n')}`, 'success');
       } else {
-        alert(res.data?.message || 'Compte active avec succes.');
+        showNotice('Compte active', res.data?.message || 'Compte active avec succes.', 'success');
       }
 
       await fetchData();
     } catch (error) {
-      alert(error?.response?.data?.message || 'Erreur lors de l activation du compte.');
+      showNotice('Activation impossible', error?.response?.data?.message || 'Erreur lors de l activation du compte.', 'danger');
     } finally {
       setActivatingId(null);
     }
@@ -112,10 +128,10 @@ export default function AdminAccountActivations() {
         headers: { Accept: 'application/json' },
       });
 
-      alert(res.data?.message || 'Compte desactive avec succes.');
+      showNotice('Compte desactive', res.data?.message || 'Compte desactive avec succes.', 'success');
       await fetchData();
     } catch (error) {
-      alert(error?.response?.data?.message || 'Erreur lors de la desactivation du compte.');
+      showNotice('Desactivation impossible', error?.response?.data?.message || 'Erreur lors de la desactivation du compte.', 'danger');
     } finally {
       setDeactivatingId(null);
     }
@@ -296,6 +312,15 @@ export default function AdminAccountActivations() {
           </table>
         </div>
       </motion.div>
+
+      <LinkEduPopup
+        open={popupNotice.open}
+        title={popupNotice.title}
+        message={popupNotice.message}
+        tone={popupNotice.tone}
+        confirmText="Fermer"
+        onClose={() => setPopupNotice((prev) => ({ ...prev, open: false }))}
+      />
     </div>
   );
 }

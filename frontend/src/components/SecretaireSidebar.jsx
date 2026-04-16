@@ -32,7 +32,7 @@ export default function SecretaireSidebar() {
   const fallbackName = isComptable ? 'Comptable' : 'Secrétaire';
   const visibleNavItems = role === 'comptable'
     ? navItems.filter((item) => item.path === '/secretaire/dashboard' || item.path === '/secretaire/paiements')
-    : navItems;
+    : navItems.filter((item) => item.path !== '/secretaire/paiements');
 
   const handleLogoutConfirm = async () => {
     if (isLoggingOut) return;

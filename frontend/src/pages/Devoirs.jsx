@@ -105,7 +105,7 @@ export default function Devoirs() {
       setDeleteModal({ open: false, id: null, type: null });
       loadData();
     } catch {
-      alert("Erreur lors de la suppression.");
+      setError('Erreur lors de la suppression.');
     }
   };
 
@@ -149,7 +149,7 @@ export default function Devoirs() {
         data: prev.data.map(s => s.id_soumission === id_soumission ? { ...s, statut: 'bien_recu' } : s)
       }));
     } catch {
-      alert("Erreur lors de la mise à jour");
+      setError('Erreur lors de la mise a jour.');
     }
   };
 

@@ -3,6 +3,8 @@ import axios from 'axios';
 import { FiPlus as Plus, FiEdit2 as Edit, FiTrash2 as Trash2, FiSearch as Search, FiEye as Eye } from 'react-icons/fi';
 import { BiSolidUserDetail } from 'react-icons/bi';
 import TableSkeletonRows from './TableSkeletonRows';
+import LinkEduPopup from './LinkEduPopup';
+import GlassModal from './GlassModal';
 import {
   LEVEL_LABELS,
   PROFESSOR_SUBJECTS_BY_LEVEL,
@@ -166,6 +168,12 @@ export default function AdminMatieres({ userRole = 'admin' }) {
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [popupNotice, setPopupNotice] = useState({
+    open: false,
+    title: '',
+    message: '',
+    tone: 'info',
+  });
   const [viewTarget, setViewTarget] = useState(null);
   const [classOptions, setClassOptions] = useState({
     filieres_by_niveau: {},
@@ -199,6 +207,15 @@ export default function AdminMatieres({ userRole = 'admin' }) {
     await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', {
       withCredentials: true,
       withXSRFToken: true,
+    });
+  };
+
+  const showNotice = (title, message, tone = 'info') => {
+    setPopupNotice({
+      open: true,
+      title,
+      message,
+      tone,
     });
   };
 
@@ -612,7 +629,7 @@ export default function AdminMatieres({ userRole = 'admin' }) {
       setDeleteTarget(null);
       fetchMatieres();
     } catch (error) {
-      alert(error.response?.data?.message || 'Erreur lors de la suppression de la matiere.');
+      showNotice('Suppression impossible', error.response?.data?.message || 'Erreur lors de la suppression de la matiere.', 'danger');
     } finally {
       setIsDeleting(false);
     }
@@ -834,8 +851,8 @@ export default function AdminMatieres({ userRole = 'admin' }) {
       </div>
 
       {viewTarget && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-          <div className="bg-white/30 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
+        <GlassModal open={Boolean(viewTarget)} onClose={() => setViewTarget(null)} panelClassName="max-w-lg p-0">
+          <div className="linkedu-glass-form overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h3 className="text-lg font-bold text-gray-900">Voir Matiere</h3>
               <button
@@ -877,12 +894,12 @@ export default function AdminMatieres({ userRole = 'admin' }) {
               </div>
             </div>
           </div>
-        </div>
+        </GlassModal>
       )}
 
       {deleteTarget && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-          <div className="bg-white/30 rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+        <GlassModal open={Boolean(deleteTarget)} onClose={() => setDeleteTarget(null)} disableClose={isDeleting} panelClassName="max-w-md p-0">
+          <div className="linkedu-glass-form overflow-hidden">
             <div className="p-6 text-center">
               <div className="w-16 h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
                 <Trash2 size={32} />
@@ -912,12 +929,12 @@ export default function AdminMatieres({ userRole = 'admin' }) {
               </div>
             </div>
           </div>
-        </div>
+        </GlassModal>
       )}
 
       {editTarget && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-          <div className="bg-white/30 rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden">
+        <GlassModal open={Boolean(editTarget)} onClose={() => setEditTarget(null)} disableClose={isSavingEdit} panelClassName="max-w-3xl p-0">
+          <div className="linkedu-glass-form overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h3 className="text-lg font-bold text-gray-900">Modifier Matiere</h3>
               <button
@@ -1087,12 +1104,12 @@ export default function AdminMatieres({ userRole = 'admin' }) {
               </form>
             </div>
           </div>
-        </div>
+        </GlassModal>
       )}
 
       {showForm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-          <div className="bg-white/30 rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden">
+        <GlassModal open={showForm} onClose={closeCreateForm} panelClassName="max-w-3xl p-0">
+          <div className="linkedu-glass-form overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h3 className="text-lg font-bold text-gray-900">Nouvelle Matiere</h3>
               <button
@@ -1260,8 +1277,17 @@ export default function AdminMatieres({ userRole = 'admin' }) {
               </form>
             </div>
           </div>
-        </div>
+        </GlassModal>
       )}
+
+      <LinkEduPopup
+        open={popupNotice.open}
+        title={popupNotice.title}
+        message={popupNotice.message}
+        tone={popupNotice.tone}
+        confirmText="Fermer"
+        onClose={() => setPopupNotice((prev) => ({ ...prev, open: false }))}
+      />
     </div>
   );
 }

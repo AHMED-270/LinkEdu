@@ -26,6 +26,7 @@ import DirectoryGrades from './DirectoryGrades';
 import DirectoryTimetable from './DirectoryTimetable';
 import DirectoryAnnonces from './DirectoryAnnonces';
 import Parametres from '../pages/Parametres';
+import usePostLoginReady from '../hooks/usePostLoginReady';
 
 const AUTH_TOKEN_KEY = 'linkedu_token';
 
@@ -187,6 +188,8 @@ function DirecteurDashboard({ user, onLogout }) {
 
     loadDashboard()
   }, [user?.id, user?.role, user?.token])
+
+  usePostLoginReady(!isLoading)
 
   const handleLogoutConfirm = async () => {
     if (isLoggingOut) return;

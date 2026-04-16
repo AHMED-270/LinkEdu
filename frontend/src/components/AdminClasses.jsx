@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FiSearch as Search, FiPlus as Plus, FiEdit2 as Edit, FiTrash2 as Trash2, FiEye as Eye } from 'react-icons/fi';
 import { BiSolidUserDetail } from 'react-icons/bi';
+import LinkEduPopup from './LinkEduPopup';
+import GlassModal from './GlassModal';
 
 export default function AdminClasses({ onCreateClass, onEditClass, userRole = 'admin' }) {
   const [classes, setClasses] = useState([]);
@@ -10,6 +12,12 @@ export default function AdminClasses({ onCreateClass, onEditClass, userRole = 'a
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [classDetailTarget, setClassDetailTarget] = useState(null);
+  const [popupNotice, setPopupNotice] = useState({
+    open: false,
+    title: '',
+    message: '',
+    tone: 'info',
+  });
 
   const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
@@ -36,6 +44,15 @@ export default function AdminClasses({ onCreateClass, onEditClass, userRole = 'a
     await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', {
       withCredentials: true,
       withXSRFToken: true,
+    });
+  };
+
+  const showNotice = (title, message, tone = 'info') => {
+    setPopupNotice({
+      open: true,
+      title,
+      message,
+      tone,
     });
   };
 
@@ -72,7 +89,7 @@ export default function AdminClasses({ onCreateClass, onEditClass, userRole = 'a
       setDeleteTarget(null);
       fetchClasses();
     } catch (error) {
-      alert(error.response?.data?.message || 'Erreur lors de la suppression.');
+      showNotice('Suppression impossible', error.response?.data?.message || 'Erreur lors de la suppression.', 'danger');
     } finally {
       setIsDeleting(false);
     }
@@ -212,31 +229,10 @@ export default function AdminClasses({ onCreateClass, onEditClass, userRole = 'a
         )}
       </div>
 
-      {/* Delete Confirmation Modal */}
-      {deleteTarget && userRole === 'admin' && (
-        <div className="premium-modal-overlay">
-          <div className="premium-modal-backdrop" onClick={() => setDeleteTarget(null)} />
-          <div className="premium-modal-card">
-            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-red-500 shadow-inner">
-              <Trash2 size={28} />
-            </div>
-            <h3 className="mb-2 text-xl font-black text-brand-navy tracking-tight">Confirmer la suppression</h3>
-            <p className="mb-8 text-sm font-medium text-slate-500 leading-relaxed">
-              Voulez-vous vraiment supprimer la classe <strong className="text-brand-navy">{deleteTarget.nom}</strong> ? Cette action est irréversible.
-            </p>
-            <div className="flex gap-3">
-              <button onClick={() => setDeleteTarget(null)} disabled={isDeleting} className="flex-1 rounded-2xl bg-slate-100 py-3 text-sm font-bold text-slate-600 transition-all hover:bg-slate-200 active:scale-95">Annuler</button>
-              <button onClick={handleDelete} disabled={isDeleting} className="flex-1 rounded-2xl bg-gradient-to-r from-red-500 to-red-600 py-3 text-sm font-bold text-white shadow-lg shadow-red-200 transition-all hover:brightness-110 active:scale-95 disabled:opacity-50">{isDeleting ? 'Suppression...' : 'Supprimer'}</button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Detail Modal */}
       {classDetailTarget && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setClassDetailTarget(null)}></div>
-          <div className="relative bg-white/30 rounded-[2rem] shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-in slide-in-from-bottom-8 duration-300">
+        <GlassModal open={Boolean(classDetailTarget)} onClose={() => setClassDetailTarget(null)} panelClassName="max-w-2xl p-0">
+          <div className="linkedu-glass-form max-h-[90vh] overflow-hidden flex flex-col">
             {/* Modal Header */}
             <div className="px-8 pt-8 pb-6 border-b border-slate-100 bg-gradient-to-br from-blue-50/50 to-white">
               <div className="flex items-center justify-between mb-2">
@@ -330,8 +326,31 @@ export default function AdminClasses({ onCreateClass, onEditClass, userRole = 'a
               </button>
             </div>
           </div>
-        </div>
+        </GlassModal>
       )}
+
+      <LinkEduPopup
+        open={Boolean(deleteTarget) && userRole === 'admin'}
+        title="Confirmer la suppression"
+        message={deleteTarget ? `Voulez-vous vraiment supprimer la classe ${deleteTarget.nom} ? Cette action est irreversible.` : ''}
+        tone="danger"
+        confirmText="Oui, supprimer"
+        cancelText="Annuler"
+        onConfirm={handleDelete}
+        onClose={() => {
+          if (!isDeleting) setDeleteTarget(null);
+        }}
+        loading={isDeleting}
+      />
+
+      <LinkEduPopup
+        open={popupNotice.open}
+        title={popupNotice.title}
+        message={popupNotice.message}
+        tone={popupNotice.tone}
+        confirmText="Fermer"
+        onClose={() => setPopupNotice((prev) => ({ ...prev, open: false }))}
+      />
 
     </div>
   );

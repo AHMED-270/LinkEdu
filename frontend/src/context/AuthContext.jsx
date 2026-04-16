@@ -1,4 +1,4 @@
-﻿import { createContext, useContext, useState, useEffect } from 'react';
+﻿import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const AuthContext = createContext(null);
 const STORAGE_KEY = 'linkedu_user';
@@ -150,6 +150,33 @@ const safeProfileCache = {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [postLoginTransition, setPostLoginTransition] = useState({
+    active: false,
+    targetRoute: null,
+    startedAt: 0,
+  });
+
+  const startPostLoginTransition = useCallback((targetRoute = null) => {
+    setPostLoginTransition({
+      active: true,
+      targetRoute,
+      startedAt: Date.now(),
+    });
+  }, []);
+
+  const completePostLoginTransition = useCallback(() => {
+    setPostLoginTransition((previous) => {
+      if (!previous.active) {
+        return previous;
+      }
+
+      return {
+        active: false,
+        targetRoute: null,
+        startedAt: 0,
+      };
+    });
+  }, []);
 
   useEffect(() => {
     const storedUser = safeStorage.get();
@@ -200,10 +227,20 @@ export function AuthProvider({ children }) {
     safeStorage.remove();
     safeTokenStorage.remove();
     document.body.className = '';
+    completePostLoginTransition();
   };
 
   return (
-    <AuthContext.Provider value={{ user, setAuthenticatedUser, updateAuthenticatedUser, logout, loading }}>
+    <AuthContext.Provider value={{
+      user,
+      setAuthenticatedUser,
+      updateAuthenticatedUser,
+      logout,
+      loading,
+      postLoginTransition,
+      startPostLoginTransition,
+      completePostLoginTransition,
+    }}>
       {children}
     </AuthContext.Provider>
   );

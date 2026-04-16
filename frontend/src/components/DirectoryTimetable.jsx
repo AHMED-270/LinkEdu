@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import "./DirectoryTimetable.css";
+import LinkEduPopup from "./LinkEduPopup";
 
 axios.defaults.withCredentials = true;
 
@@ -198,6 +199,14 @@ function DirectoryTimetable() {
   const [editingId, setEditingId] = useState(null);
   const [selectedNiveauFilter, setSelectedNiveauFilter] = useState('');
   const [selectedClassFilter, setSelectedClassFilter] = useState('');
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [popupNotice, setPopupNotice] = useState({
+    open: false,
+    title: '',
+    message: '',
+    tone: 'info',
+  });
   const [formData, setFormData] = useState({
     jour: 'Lundi',
     heure_debut: '08:30',
@@ -205,6 +214,15 @@ function DirectoryTimetable() {
     id_classe: '',
     id_matiere: ''
   });
+
+  const showNotice = (title, message, tone = 'info') => {
+    setPopupNotice({
+      open: true,
+      title,
+      message,
+      tone,
+    });
+  };
 
   const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
 
@@ -451,7 +469,7 @@ function DirectoryTimetable() {
 
   const handleOpenModal = () => {
     if (!selectedClassFilter) {
-      alert('Choisissez une classe pour afficher l\'emploi.');
+      showNotice('Classe requise', 'Choisissez une classe pour afficher l emploi.', 'info');
       return;
     }
 
@@ -484,15 +502,25 @@ function DirectoryTimetable() {
     setShowModal(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm("Êtes-vous sûr de vouloir supprimer cet emploi ?")) {
-      try {
-        const url = `http://${window.location.hostname}:8000/api/emplois/${id}`;
-        await axios.delete(url, authConfig);
-        fetchTimetable();
-      } catch (error) {
-        console.error("Erreur lors de la suppression:", error);
-      }
+  const handleDelete = (id) => {
+    setDeleteTargetId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTargetId) return;
+    setIsDeleting(true);
+
+    try {
+      const url = `http://${window.location.hostname}:8000/api/emplois/${deleteTargetId}`;
+      await axios.delete(url, authConfig);
+      await fetchTimetable();
+      showNotice('Emploi supprime', 'Le creneau a ete supprime avec succes.', 'success');
+    } catch (error) {
+      console.error("Erreur lors de la suppression:", error);
+      showNotice('Suppression impossible', 'Erreur lors de la suppression de cet emploi.', 'danger');
+    } finally {
+      setIsDeleting(false);
+      setDeleteTargetId(null);
     }
   };
 
@@ -516,12 +544,12 @@ function DirectoryTimetable() {
     e.preventDefault();
 
     if (selectedSlotUnavailable) {
-      alert('Ce créneau est déjà occupé pour ce jour.');
+      showNotice('Creneau indisponible', 'Ce creneau est deja occupe pour ce jour.', 'info');
       return;
     }
 
     if (!formData.id_classe) {
-      alert('Aucune classe sélectionnée. Choisissez une classe dans les filtres.');
+      showNotice('Classe requise', 'Aucune classe selectionnee. Choisissez une classe dans les filtres.', 'info');
       return;
     }
 
@@ -549,14 +577,14 @@ function DirectoryTimetable() {
           const customMessage = error.response?.data?.message;
           if (errors && typeof errors === 'object') {
             const messages = Object.values(errors).flat().join("\n");
-            alert("Erreur de validation :\n" + messages);
+            showNotice('Erreur de validation', messages, 'danger');
           } else if (customMessage) {
-            alert(customMessage);
+            showNotice('Erreur de validation', customMessage, 'danger');
           } else {
-            alert("Erreur de validation.");
+            showNotice('Erreur de validation', 'Erreur de validation.', 'danger');
           }
       } else {
-          alert("Erreur lors de l'enregistrement. Vérifiez votre connexion.");
+          showNotice('Erreur reseau', 'Erreur lors de l enregistrement. Verifiez votre connexion.', 'danger');
       }
     }
   };
@@ -734,6 +762,29 @@ function DirectoryTimetable() {
           </div>
         </div>
       )}
+
+      <LinkEduPopup
+        open={Boolean(deleteTargetId)}
+        title="Confirmer la suppression"
+        message="Etes-vous sur de vouloir supprimer cet emploi ?"
+        tone="danger"
+        confirmText="Oui, supprimer"
+        cancelText="Annuler"
+        onConfirm={confirmDelete}
+        onClose={() => {
+          if (!isDeleting) setDeleteTargetId(null);
+        }}
+        loading={isDeleting}
+      />
+
+      <LinkEduPopup
+        open={popupNotice.open}
+        title={popupNotice.title}
+        message={popupNotice.message}
+        tone={popupNotice.tone}
+        confirmText="Fermer"
+        onClose={() => setPopupNotice((prev) => ({ ...prev, open: false }))}
+      />
     </div>
   );
 }

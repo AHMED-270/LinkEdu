@@ -9,6 +9,7 @@ import logo from '../assets/images/linkedu-logo.png';
 import Parametres from './Parametres';
 import './RolePortal.css';
 import '../components/DirectoryTimetable.css';
+import usePostLoginReady from '../hooks/usePostLoginReady';
 
 const tabs = [
   { key: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
@@ -467,6 +468,9 @@ export default function StudentPortal() {
 
     load();
   }, [activeTab]);
+
+  const dashboardReadyForTransition = activeTab === 'dashboard' && !loading && (dashboard !== null || Boolean(error));
+  usePostLoginReady(dashboardReadyForTransition);
 
   const handleLogoutConfirm = async () => {
     if (isLoggingOut) return;

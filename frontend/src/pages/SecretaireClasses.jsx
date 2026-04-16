@@ -12,6 +12,8 @@ import {
   Download
 } from 'lucide-react';
 import TableSkeletonRows from '../components/TableSkeletonRows';
+import LinkEduPopup from '../components/LinkEduPopup';
+import GlassModal from '../components/GlassModal';
 
 export default function SecretaireClasses() {
   const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000';
@@ -21,6 +23,21 @@ export default function SecretaireClasses() {
   const [searchTerm, setSearchTerm] = useState('');
   const [levelFilter, setLevelFilter] = useState('all');
   const [selectedClass, setSelectedClass] = useState(null);
+  const [popupNotice, setPopupNotice] = useState({
+    open: false,
+    title: '',
+    message: '',
+    tone: 'info',
+  });
+
+  const showNotice = (title, message, tone = 'info') => {
+    setPopupNotice({
+      open: true,
+      title,
+      message,
+      tone,
+    });
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -72,7 +89,7 @@ export default function SecretaireClasses() {
   const exportClassStudents = (classItem) => {
     const classStudents = getClassStudents(classItem);
     if (classStudents.length === 0) {
-      window.alert('Aucun etudiant a telecharger pour cette classe.');
+      showNotice('Telechargement indisponible', 'Aucun etudiant a telecharger pour cette classe.', 'info');
       return;
     }
 
@@ -221,12 +238,9 @@ export default function SecretaireClasses() {
       }
     };
 
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
     window.addEventListener('keydown', onKeyDown);
 
     return () => {
-      document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', onKeyDown);
     };
   }, [selectedClass]);
@@ -376,14 +390,8 @@ export default function SecretaireClasses() {
       </div>
 
       {selectedClass && (
-        <div
-          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/55 p-4 backdrop-blur-[1px]"
-          onClick={() => setSelectedClass(null)}
-        >
-          <div
-            className="w-full max-w-3xl max-h-[90vh] bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <GlassModal open={Boolean(selectedClass)} onClose={() => setSelectedClass(null)} panelClassName="max-w-3xl p-0">
+          <div className="linkedu-glass-form max-h-[90vh] overflow-hidden">
             <div className="flex items-start justify-between px-6 py-4 border-b border-gray-100">
               <div>
                 <h2 className="text-lg font-bold text-gray-900">Etudiants de la classe {selectedClass.nom}</h2>
@@ -444,8 +452,17 @@ export default function SecretaireClasses() {
               )}
             </div>
           </div>
-        </div>
+        </GlassModal>
       )}
+
+      <LinkEduPopup
+        open={popupNotice.open}
+        title={popupNotice.title}
+        message={popupNotice.message}
+        tone={popupNotice.tone}
+        confirmText="Fermer"
+        onClose={() => setPopupNotice((prev) => ({ ...prev, open: false }))}
+      />
     </div>
   );
 }

@@ -25,6 +25,7 @@ import {
   TrendingUp,
   TrendingDown,
 } from 'lucide-react';
+import usePostLoginReady from '../hooks/usePostLoginReady';
 import './SecretaireDashboard.css';
 
 const AUTH_TOKEN_KEY = 'linkedu_token';
@@ -280,6 +281,8 @@ export default function SecretaireDashboard() {
 
     fetchStats();
   }, [role]);
+
+  usePostLoginReady(!loading);
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Bonjour' : hour < 18 ? 'Bon apres-midi' : 'Bonsoir';

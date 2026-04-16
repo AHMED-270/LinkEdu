@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FiLogOut, FiSearch, FiBell, FiCommand } from 'react-icons/fi';
+import { FiLogOut, FiSearch, FiCommand } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import './Header.css';
@@ -128,15 +128,6 @@ export default function Header({ variant = 'full', profileRouteOverride = '' }) 
 
         {/* RIGHT: ACTIONS & PROFILE */}
         <div className="flex items-center gap-3 shrink-0">
-          
-          {/* NOTIFICATIONS */}
-          <button className="relative p-2.5 rounded-2xl text-slate-500 hover:bg-white hover:text-brand-teal hover:shadow-glass-sm border border-transparent hover:border-white/60 transition-all group">
-            <FiBell size={20} className="group-hover:rotate-12 transition-transform" />
-            <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
-          </button>
-
-          <div className="h-8 w-px bg-slate-200 mx-2" />
-
           {/* PROFILE PILL */}
           <button 
             onClick={() => navigate(profileRoute)} 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
+import usePostLoginReady from '../hooks/usePostLoginReady';
 import { 
   FiUsers as Users, 
   FiBookOpen as GraduationCap, 
@@ -56,6 +57,8 @@ export default function AdminDashboardHome() {
     };
     fetchStats();
   }, []);
+
+  usePostLoginReady(!loading);
 
   const chartData = stats.classDistribution.map(cls => ({
     name: cls.nom,

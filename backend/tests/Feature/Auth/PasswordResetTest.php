@@ -3,7 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
-use Illuminate\Auth\Notifications\ResetPassword;
+use App\Notifications\LinkEduResetPasswordNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
@@ -28,7 +28,7 @@ class PasswordResetTest extends TestCase
 
         $this->post('/forgot-password', ['email' => $user->email]);
 
-        Notification::assertSentTo($user, ResetPassword::class);
+        Notification::assertSentTo($user, LinkEduResetPasswordNotification::class);
     }
 
     public function test_reset_password_notification_link_targets_frontend_route(): void
@@ -39,9 +39,9 @@ class PasswordResetTest extends TestCase
 
         $this->post('/forgot-password', ['email' => $user->email]);
 
-        Notification::assertSentTo($user, ResetPassword::class, function ($notification) use ($user) {
+        Notification::assertSentTo($user, LinkEduResetPasswordNotification::class, function ($notification) use ($user) {
             $mailMessage = $notification->toMail($user);
-            $url = (string) $mailMessage->actionUrl;
+            $url = (string) ($mailMessage->actionUrl ?? '');
 
             $this->assertStringStartsWith(config('app.frontend_url').'/password-reset/', $url);
             $this->assertStringContainsString('email='.urlencode($user->email), $url);
@@ -57,7 +57,7 @@ class PasswordResetTest extends TestCase
 
         $this->post('/forgot-password', ['email' => $user->email]);
 
-        Notification::assertSentTo($user, ResetPassword::class, function ($notification) use ($user) {
+        Notification::assertSentTo($user, LinkEduResetPasswordNotification::class, function ($notification) use ($user) {
             $response = $this->post('/reset-password', [
                 'token' => $notification->token,
                 'email' => $user->email,

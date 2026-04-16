@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { FiUser, FiCalendar, FiMail, FiPhone, FiMapPin, FiArrowLeft, FiCheckCircle, FiSearch, FiEdit2, FiTrash2, FiPlus, FiUsers, FiDownload, FiEye, FiX, FiUpload } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 import TableSkeletonRows from '../components/TableSkeletonRows';
+import LinkEduPopup from '../components/LinkEduPopup';
+import GlassModal from '../components/GlassModal';
 const NIVEAU_LABEL_TO_CODE = {
   'Petite Section': 'ms',
   'Moyenne Section': 'mm',
@@ -172,7 +174,34 @@ export default function SecretaireEtudiants() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [selectedStudentInsight, setSelectedStudentInsight] = useState(null);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [popupNotice, setPopupNotice] = useState({
+    open: false,
+    title: '',
+    message: '',
+    tone: 'info',
+  });
   const importFileRef = useRef(null);
+  const csrfReadyRef = useRef(false);
+
+  const ensureCsrfCookie = async () => {
+    if (csrfReadyRef.current) return;
+    await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', {
+      withCredentials: true,
+      withXSRFToken: true,
+    });
+    csrfReadyRef.current = true;
+  };
+
+  const showNotice = (title, message, tone = 'info') => {
+    setPopupNotice({
+      open: true,
+      title,
+      message,
+      tone,
+    });
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -225,6 +254,12 @@ export default function SecretaireEtudiants() {
     loadData();
   }, [logout, navigate]);
 
+  useEffect(() => {
+    ensureCsrfCookie().catch(() => {
+      // No-op: csrf setup will be retried before mutations.
+    });
+  }, []);
+
   const visibleStudents = useMemo(() => {
     const term = search.trim().toLowerCase();
     return students.filter((s) => {
@@ -268,7 +303,7 @@ export default function SecretaireEtudiants() {
     e.preventDefault();
     setErrorMessage('');
     try {
-      await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', { withCredentials: true, withXSRFToken: true });
+      await ensureCsrfCookie();
 
       const payload = {
         nom: form.nom,
@@ -319,7 +354,9 @@ export default function SecretaireEtudiants() {
           lines.push("Statut: compte en attente d activation par un admin.");
         }
 
-        window.alert(lines.join('\n'));
+        showNotice('Identifiants generes', lines.join('\n'), 'success');
+      } else {
+        showNotice('Etudiant mis a jour', 'Les informations ont ete enregistrees.', 'success');
       }
 
       resetForm();
@@ -369,13 +406,36 @@ export default function SecretaireEtudiants() {
   };
 
   const onDelete = async (id) => {
-    if (!window.confirm('Supprimer cet etudiant ?')) return;
-    await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', { withCredentials: true, withXSRFToken: true });
-    await axios.delete(`${apiBaseUrl}/api/secretaire/students/${id}`, {
-      withCredentials: true,
-      withXSRFToken: true,
-    });
-    await loadData();
+    const targetId = id ?? deleteTargetId;
+    if (!targetId) return;
+
+    setDeletingId(targetId);
+    try {
+      await ensureCsrfCookie();
+      await axios.delete(`${apiBaseUrl}/api/secretaire/students/${targetId}`, {
+        withCredentials: true,
+        withXSRFToken: true,
+      });
+
+      setStudents((prev) => prev.filter((student) => String(student.id_etudiant) !== String(targetId)));
+      setAbsences((prev) => prev.filter((absence) => String(absence.id_etudiant) !== String(targetId)));
+
+      if (String(selectedStudentInsight?.student?.id_etudiant) === String(targetId)) {
+        setSelectedStudentInsight(null);
+      }
+
+      if (String(editingId) === String(targetId)) {
+        resetForm();
+      }
+
+      showNotice('Etudiant supprime', 'Le dossier de l etudiant a ete supprime.', 'success');
+    } catch (error) {
+      const message = error?.response?.data?.message || 'Impossible de supprimer cet etudiant.';
+      showNotice('Suppression impossible', message, 'danger');
+    } finally {
+      setDeletingId(null);
+      setDeleteTargetId(null);
+    }
   };
 
   const buildFileName = (prefix, ext) => {
@@ -478,7 +538,7 @@ export default function SecretaireEtudiants() {
     if (!file) return;
 
     try {
-      await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', { withCredentials: true, withXSRFToken: true });
+      await ensureCsrfCookie();
       const text = await file.text();
       const parsedRows = parseStudentCsv(text).map(({ _line, ...payload }) => payload);
 
@@ -490,11 +550,11 @@ export default function SecretaireEtudiants() {
 
       const imported = response.data?.imported ?? 0;
       const failed = response.data?.failed ?? 0;
-      alert(`Import terminé: ${imported} élève(s) importé(s), ${failed} échec(s).`);
+      showNotice('Import termine', `${imported} eleve(s) importe(s), ${failed} echec(s).`, 'success');
       await loadData();
     } catch (error) {
       const msg = error?.response?.data?.message || error?.message || 'Erreur lors de l\'import des élèves.';
-      alert(msg);
+      showNotice('Import impossible', msg, 'danger');
     } finally {
       if (importFileRef.current) {
         importFileRef.current.value = '';
@@ -504,7 +564,7 @@ export default function SecretaireEtudiants() {
 
   const downloadStudentsPdf = () => {
     if (visibleStudents.length === 0) {
-      window.alert('Aucun étudiant à télécharger.');
+      showNotice('Telechargement indisponible', 'Aucun etudiant a telecharger.', 'info');
       return;
     }
 
@@ -859,7 +919,8 @@ export default function SecretaireEtudiants() {
                               </button>
                               <button
                                 className="text-red-600 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors cursor-pointer"
-                                onClick={() => onDelete(student.id_etudiant)}
+                                onClick={() => setDeleteTargetId(student.id_etudiant)}
+                                disabled={String(deletingId) === String(student.id_etudiant)}
                                 title="Supprimer"
                               >
                                 <FiTrash2 size={18} />
@@ -885,8 +946,8 @@ export default function SecretaireEtudiants() {
               </div>
 
               {selectedStudentInsight && (
-                <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/55 p-4 backdrop-blur-[1px]">
-                  <div className="w-full max-w-2xl overflow-hidden rounded-2xl border border-gray-300 bg-white shadow-2xl">
+                <GlassModal open={Boolean(selectedStudentInsight)} onClose={() => setSelectedStudentInsight(null)} panelClassName="max-w-2xl p-0">
+                  <div className="linkedu-glass-form overflow-hidden">
                     <div className="flex items-start justify-between border-b border-gray-200 bg-gray-50 px-6 py-4">
                       <div>
                         <h3 className="text-lg font-bold text-black">Bilan des absences</h3>
@@ -929,7 +990,7 @@ export default function SecretaireEtudiants() {
                       Initialisation: note = 20, heures = 0. Regle appliquee: -0.25 pour chaque 2h d'absence.
                     </div>
                   </div>
-                </div>
+                </GlassModal>
               )}
             </>
         )}
@@ -1247,6 +1308,29 @@ export default function SecretaireEtudiants() {
                 </form>
               </div>
             )}
+
+            <LinkEduPopup
+              open={Boolean(deleteTargetId)}
+              title="Confirmer la suppression"
+              message="Voulez-vous vraiment supprimer cet etudiant ?"
+              tone="danger"
+              confirmText="Oui, supprimer"
+              cancelText="Annuler"
+              onConfirm={() => onDelete()}
+              onClose={() => {
+                if (!deletingId) setDeleteTargetId(null);
+              }}
+              loading={Boolean(deletingId)}
+            />
+
+            <LinkEduPopup
+              open={popupNotice.open}
+              title={popupNotice.title}
+              message={popupNotice.message}
+              tone={popupNotice.tone}
+              confirmText="Fermer"
+              onClose={() => setPopupNotice((prev) => ({ ...prev, open: false }))}
+            />
           </div>
       </div>
       );

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { Pencil, Trash2 } from 'lucide-react';
 import { BiMessageSquareDetail, BiSearchAlt2 } from 'react-icons/bi';
+import LinkEduPopup from './LinkEduPopup';
 import './DirectoryReclamations.css';
 
 const defaultClaimForm = {
@@ -60,6 +61,8 @@ function DirectoryReclamations() {
   const [actionFeedback, setActionFeedback] = useState({ type: '', text: '' });
   const [formData, setFormData] = useState(defaultClaimForm);
   const [searchSujet, setSearchSujet] = useState('');
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   const axiosAuthConfig = useMemo(() => ({
     withCredentials: true,
@@ -245,16 +248,16 @@ function DirectoryReclamations() {
     setActionFeedback({ type: '', text: '' });
   };
 
-  const handleDelete = async (claimId) => {
-    const confirmed = window.confirm('Voulez-vous vraiment supprimer cette reclamation ?');
-    if (!confirmed) return;
+  const handleDelete = async () => {
+    if (!deleteTargetId) return;
+    setDeletingId(deleteTargetId);
 
     try {
-      await axios.delete(`${apiBaseUrl}/api/directeur/reclamations/${claimId}`, axiosAuthConfig);
+      await axios.delete(`${apiBaseUrl}/api/directeur/reclamations/${deleteTargetId}`, axiosAuthConfig);
       await fetchReclamations();
       setActionFeedback({ type: 'success', text: 'Reclamation supprimee avec succes.' });
 
-      if (editingId === claimId) {
+      if (String(editingId) === String(deleteTargetId)) {
         resetForm();
       }
     } catch (error) {
@@ -262,6 +265,9 @@ function DirectoryReclamations() {
         type: 'error',
         text: error?.response?.data?.message || 'Erreur lors de la suppression de la reclamation.',
       });
+    } finally {
+      setDeletingId(null);
+      setDeleteTargetId(null);
     }
   };
 
@@ -350,7 +356,8 @@ function DirectoryReclamations() {
                           </button>
                           <button
                             className="btn-delete-claim"
-                            onClick={() => handleDelete(claim.id_reclamation)}
+                            onClick={() => setDeleteTargetId(claim.id_reclamation)}
+                            disabled={String(deletingId) === String(claim.id_reclamation)}
                             title="Supprimer"
                             aria-label="Supprimer"
                           >
@@ -464,6 +471,20 @@ function DirectoryReclamations() {
           </form>
         </aside>
       </div>
+
+      <LinkEduPopup
+        open={Boolean(deleteTargetId)}
+        title="Confirmer la suppression"
+        message="Voulez-vous vraiment supprimer cette reclamation ?"
+        tone="danger"
+        confirmText="Oui, supprimer"
+        cancelText="Annuler"
+        onConfirm={handleDelete}
+        onClose={() => {
+          if (!deletingId) setDeleteTargetId(null);
+        }}
+        loading={Boolean(deletingId)}
+      />
     </div>
   );
 }

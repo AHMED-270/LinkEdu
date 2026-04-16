@@ -11,6 +11,7 @@ import {
   Info,
   Paperclip,
 } from 'lucide-react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { professorGet } from '../services/professorApi';
 
@@ -188,16 +189,17 @@ export default function Annonces() {
       </div>
 
       <AnimatePresence>
-        {selectedAnnonce && (
+        {selectedAnnonce && typeof document !== 'undefined' && createPortal(
           <motion.div
-            className="fixed inset-0 z-[110] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4"
+            className="linkedu-modal-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setSelectedAnnonce(null)}
           >
+            <div className="linkedu-modal-backdrop" />
             <motion.div
-              className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl border border-slate-100 overflow-hidden"
+              className="linkedu-modal-shell w-full max-w-2xl !overflow-hidden !p-0"
               initial={{ opacity: 0, y: 20, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.98 }}
@@ -244,7 +246,8 @@ export default function Annonces() {
                 </button>
               </div>
             </motion.div>
-          </motion.div>
+          </motion.div>,
+          document.body
         )}
       </AnimatePresence>
     </div>
