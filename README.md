@@ -42,7 +42,9 @@ If Render gives different generated URLs than the defaults in [render.yaml](rend
 This repository now includes Docker support for both services:
 
 - [backend/Dockerfile](backend/Dockerfile)
+- [backend/railway.toml](backend/railway.toml)
 - [frontend/Dockerfile](frontend/Dockerfile)
+- [frontend/railway.toml](frontend/railway.toml)
 
 ### 1) Create two Railway services from same repository
 
@@ -100,6 +102,8 @@ Use these exact settings per service:
 	- Build command in Railway UI: leave empty
 
 Then click `Redeploy` for both services.
+
+The repository now includes per-service `railway.toml` files to force Docker builds when each service root directory is set correctly.
 
 If you keep root directory as repository root instead, set Dockerfile path explicitly:
 
