@@ -203,6 +203,7 @@ const addHoursTime = (startTime, durationHours = 1) => {
   return `${String(nextHours).padStart(2, '0')}:${String(minutesRaw).padStart(2, '0')}`;
 };
 const addOneHourTime = (startTime) => addHoursTime(startTime, 1);
+const DASHBOARD_SWITCH_TO_TOMORROW_MINUTES = (18 * 60) + 30;
 const buildCoveredTimeSlots = (startTime, endTime) => {
   const normalizedStart = normalizeTime(startTime);
   const normalizedEnd = normalizeTime(endTime);
@@ -254,6 +255,7 @@ export default function StudentPortal() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [dashboardNow, setDashboardNow] = useState(() => new Date());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showLogoutAlert, setShowLogoutAlert] = useState(false);
@@ -421,13 +423,28 @@ export default function StudentPortal() {
   };
 
   useEffect(() => {
+    const timer = window.setInterval(() => {
+      setDashboardNow(new Date());
+    }, 30000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, []);
+
+  useEffect(() => {
     const load = async () => {
       setLoading(true);
       setError('');
       try {
         if (activeTab === 'dashboard') {
-          const res = await fetchWithAuth('/api/etudiant/dashboard');
-          setDashboard(res.data);
+          const [dashboardRes, scheduleRes] = await Promise.all([
+            fetchWithAuth('/api/etudiant/dashboard'),
+            fetchWithAuth('/api/etudiant/emploi-du-temps'),
+          ]);
+
+          setDashboard(dashboardRes.data);
+          setEmploi(scheduleRes.data.emploi_du_temps ?? []);
         }
 
         if (activeTab === 'notes') {
@@ -562,11 +579,64 @@ export default function StudentPortal() {
   };
 
   const todayEmploi = useMemo(() => {
-    const currentDayKey = resolveWeekdayKey(new Date().toLocaleDateString('fr-FR', { weekday: 'long' }));
+    const currentDayKey = resolveWeekdayKey(dashboardNow.toLocaleDateString('fr-FR', { weekday: 'long' }));
     return emploi
       .filter((item) => resolveWeekdayKey(item?.jour) === currentDayKey)
       .sort((a, b) => (a.heure_debut || '').localeCompare(b.heure_debut || ''));
-  }, [emploi]);
+  }, [emploi, dashboardNow]);
+
+  const dashboardCurrentMinutes = useMemo(
+    () => (dashboardNow.getHours() * 60) + dashboardNow.getMinutes(),
+    [dashboardNow],
+  );
+
+  const shouldShowTomorrowSessions = dashboardCurrentMinutes >= DASHBOARD_SWITCH_TO_TOMORROW_MINUTES;
+
+  const dashboardTargetDate = useMemo(() => {
+    const baseDate = new Date(dashboardNow);
+    if (shouldShowTomorrowSessions) {
+      baseDate.setDate(baseDate.getDate() + 1);
+    }
+    return baseDate;
+  }, [dashboardNow, shouldShowTomorrowSessions]);
+
+  const dashboardTargetDayKey = useMemo(
+    () => resolveWeekdayKey(dashboardTargetDate.toLocaleDateString('fr-FR', { weekday: 'long' })),
+    [dashboardTargetDate],
+  );
+
+  const dashboardSessions = useMemo(() => {
+    const sessionsForTargetDay = emploi
+      .filter((item) => resolveWeekdayKey(item?.jour) === dashboardTargetDayKey)
+      .sort((a, b) => (a.heure_debut || '').localeCompare(b.heure_debut || ''));
+
+    if (shouldShowTomorrowSessions) {
+      return sessionsForTargetDay;
+    }
+
+    return sessionsForTargetDay.filter((item) => {
+      const startMinutes = timeToMinutes(item?.heure_debut);
+      const endMinutes = timeToMinutes(item?.heure_fin)
+        ?? (startMinutes === null ? null : startMinutes + 60);
+
+      if (startMinutes === null && endMinutes === null) return true;
+      if (endMinutes !== null) return endMinutes > dashboardCurrentMinutes;
+      return startMinutes >= dashboardCurrentMinutes;
+    });
+  }, [emploi, dashboardCurrentMinutes, dashboardTargetDayKey, shouldShowTomorrowSessions]);
+
+  const dashboardScheduleTitle = shouldShowTomorrowSessions
+    ? 'Seances de demain'
+    : 'Seances a venir aujourd\'hui';
+
+  const dashboardScheduleEmptyMessage = shouldShowTomorrowSessions
+    ? 'Aucune seance prevue pour demain.'
+    : 'Aucune seance restante aujourd\'hui. Profites-en !';
+
+  const dashboardScheduleDateLabel = useMemo(
+    () => dashboardTargetDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }),
+    [dashboardTargetDate],
+  );
 
   const emploiByDay = useMemo(() => {
     const acc = {};
@@ -763,17 +833,17 @@ export default function StudentPortal() {
             <div className="dashboard-col-main">
               <motion.section variants={cardVariants} className="dashboard-section-card">
                 <div className="section-card-header premium-section-header">
-                  <h3><Calendar size={18} /> Emploi du temps d'aujourd'hui</h3>
-                  <span className="current-date-tag">{new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+                  <h3><Calendar size={18} /> {dashboardScheduleTitle}</h3>
+                  <span className="current-date-tag">{dashboardScheduleDateLabel}</span>
                 </div>
                 <div className="timeline-container">
-                  {todayEmploi.length === 0 ? (
+                  {dashboardSessions.length === 0 ? (
                     <div className="empty-timeline">
                       <Clock size={32} />
-                      <p>Aucun cours prévu pour aujourd'hui. Profites-en !</p>
+                      <p>{dashboardScheduleEmptyMessage}</p>
                     </div>
                   ) : (
-                    todayEmploi.map((item, idx) => (
+                    dashboardSessions.map((item, idx) => (
                       <div key={item.id_edt} className="timeline-item">
                         <div className="timeline-time">
                           <span className="time-start">{item.heure_debut?.substring(0, 5)}</span>
@@ -781,7 +851,7 @@ export default function StudentPortal() {
                         </div>
                         <div className="timeline-marker">
                           <div className="timeline-dot"></div>
-                          {idx < todayEmploi.length - 1 && <div className="timeline-line"></div>}
+                          {idx < dashboardSessions.length - 1 && <div className="timeline-line"></div>}
                         </div>
                         <div className="timeline-content">
                           <div className="subject-box">

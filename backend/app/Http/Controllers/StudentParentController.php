@@ -296,10 +296,21 @@ class StudentParentController extends Controller
             return response()->json(['ressources' => []]);
         }
 
-        $professorIds = DB::table('enseigner')
+        $teachingRows = DB::table('enseigner')
             ->where('id_classe', $student->id_classe)
+            ->get(['id_professeur', 'id_matiere']);
+
+        $professorIds = $teachingRows
             ->pluck('id_professeur')
-            ->unique();
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        $matiereIds = $teachingRows
+            ->pluck('id_matiere')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
 
         $hasResourceTitleColumn = Schema::hasColumn('ressources', 'titre');
         $hasResourceDescriptionColumn = Schema::hasColumn('ressources', 'description');
@@ -316,17 +327,19 @@ class StudentParentController extends Controller
         }
 
         if ($hasResourceClassColumn) {
-            $resourceQuery->where(function ($query) use ($student, $professorIds) {
-                $query
-                    ->whereNull('ressources.id_classe')
-                    ->orWhere('ressources.id_classe', $student->id_classe);
+            // Strict visibility: a resource is visible only to students of its target class.
+            $resourceQuery->where('ressources.id_classe', (int) $student->id_classe);
+        } elseif ($hasResourceMatiereColumn && $matiereIds->isNotEmpty()) {
+            // Legacy fallback when class column is missing.
+            $resourceQuery->whereIn('ressources.id_matiere', $matiereIds);
 
-                if ($professorIds->isNotEmpty()) {
-                    $query->orWhereIn('ressources.id_professeur', $professorIds);
-                }
-            });
+            if ($professorIds->isNotEmpty()) {
+                $resourceQuery->whereIn('ressources.id_professeur', $professorIds);
+            }
         } elseif ($professorIds->isNotEmpty()) {
             $resourceQuery->whereIn('ressources.id_professeur', $professorIds);
+        } else {
+            return response()->json(['ressources' => []]);
         }
 
         $resourceSelect = [
@@ -677,10 +690,21 @@ class StudentParentController extends Controller
             return $error;
         }
 
-        $professorIds = DB::table('enseigner')
+        $teachingRows = DB::table('enseigner')
             ->where('id_classe', $child->id_classe)
+            ->get(['id_professeur', 'id_matiere']);
+
+        $professorIds = $teachingRows
             ->pluck('id_professeur')
-            ->unique();
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        $matiereIds = $teachingRows
+            ->pluck('id_matiere')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
 
         $hasResourceTitleColumn = Schema::hasColumn('ressources', 'titre');
         $hasResourceDescriptionColumn = Schema::hasColumn('ressources', 'description');
@@ -697,17 +721,22 @@ class StudentParentController extends Controller
         }
 
         if ($hasResourceClassColumn) {
-            $resourceQuery->where(function ($query) use ($child, $professorIds) {
-                $query
-                    ->whereNull('ressources.id_classe')
-                    ->orWhere('ressources.id_classe', $child->id_classe);
+            // Strict visibility: a resource is visible only to parents of students in the target class.
+            $resourceQuery->where('ressources.id_classe', (int) $child->id_classe);
+        } elseif ($hasResourceMatiereColumn && $matiereIds->isNotEmpty()) {
+            // Legacy fallback when class column is missing.
+            $resourceQuery->whereIn('ressources.id_matiere', $matiereIds);
 
-                if ($professorIds->isNotEmpty()) {
-                    $query->orWhereIn('ressources.id_professeur', $professorIds);
-                }
-            });
+            if ($professorIds->isNotEmpty()) {
+                $resourceQuery->whereIn('ressources.id_professeur', $professorIds);
+            }
         } elseif ($professorIds->isNotEmpty()) {
             $resourceQuery->whereIn('ressources.id_professeur', $professorIds);
+        } else {
+            return response()->json([
+                'id_etudiant' => $child->id_etudiant,
+                'ressources' => [],
+            ]);
         }
 
         $resourceSelect = [

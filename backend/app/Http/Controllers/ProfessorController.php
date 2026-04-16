@@ -6,7 +6,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 
@@ -826,7 +825,7 @@ class ProfessorController extends Controller
             ->get($columns)
             ->map(function ($row) use ($hasTargetColumn, $hasPhotoColumn) {
                 $photoUrl = $hasPhotoColumn && !empty($row->photo_path)
-                    ? Storage::disk('public')->url($row->photo_path)
+                    ? asset('storage/' . ltrim((string) $row->photo_path, '/'))
                     : null;
 
                 return [
@@ -901,16 +900,11 @@ class ProfessorController extends Controller
             })
             ->values();
 
-        $query = DB::table('emploi_du_temps')
+        $schedule = DB::table('emploi_du_temps')
             ->join('classes', 'emploi_du_temps.id_classe', '=', 'classes.id_classe')
             ->join('matieres', 'emploi_du_temps.id_matiere', '=', 'matieres.id_matiere')
-            ->where('emploi_du_temps.id_professeur', $user->id);
-
-        if (! $showAllClasses && $selectedClassId > 0) {
-            $query->where('emploi_du_temps.id_classe', $selectedClassId);
-        }
-
-        $schedule = $query
+            ->where('emploi_du_temps.id_professeur', $user->id)
+            ->where('emploi_du_temps.id_classe', $selectedClassId)
             ->whereExists(function ($query) use ($user) {
                 $query->select(DB::raw(1))
                     ->from('enseigner')
@@ -919,8 +913,13 @@ class ProfessorController extends Controller
                     ->where('enseigner.id_professeur', $user->id);
             })
             ->orderBy('emploi_du_temps.jour')
-            ->orderBy('emploi_du_temps.heure_debut')
-            ->get([
+            ->orderBy('emploi_du_temps.heure_debut');
+
+        if ($selectedClassId > 0) {
+            $scheduleQuery->where('emploi_du_temps.id_classe', $selectedClassId);
+        }
+
+        $schedule = $scheduleQuery->get([
                 'emploi_du_temps.id_edt',
                 'emploi_du_temps.jour',
                 'emploi_du_temps.heure_debut',
