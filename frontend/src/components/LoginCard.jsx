@@ -8,7 +8,12 @@ import logo from '../assets/images/linkedu-logo.png';
 
 const AUTH_TOKEN_KEY = 'linkedu_token';
 const browserHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
-const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://' + browserHost + ':8000';
+// In production (not localhost), use the API URL from env. Otherwise use localhost:8000
+const apiBaseUrl = import.meta.env.VITE_API_URL ?? (
+  browserHost === 'localhost' || browserHost === '127.0.0.1'
+    ? 'http://' + browserHost + ':8000'
+    : 'https://backendlinkededu-main-oied8k.free.laravel.cloud'
+);
 
 export default function LoginCard({ onLoginSuccess }) {
   const [isForgotMode, setIsForgotMode] = useState(false);

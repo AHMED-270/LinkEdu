@@ -1,5 +1,14 @@
 # LinkEdu
 
+## 🚀 Current Production Setup
+
+- **Frontend:** Deployed on [Vercel](https://link-edu.vercel.app)
+- **Backend:** Deployed on [Laravel Cloud](https://backendlinkededu-main-oied8k.free.laravel.cloud)
+
+See [DEPLOYMENT_SETUP.md](./DEPLOYMENT_SETUP.md) for configuration and troubleshooting.
+
+---
+
 ## Deploy On Render (Ready)
 
 This repository now includes [render.yaml](render.yaml) for one-click Blueprint deploy:

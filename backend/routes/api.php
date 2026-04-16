@@ -54,6 +54,34 @@ Route::post('/logout', [AdminLoginController::class, 'logout'])->middleware('aut
 Route::post('/admin/login', [AdminLoginController::class, 'login']);
 Route::post('/admin/logout', [AdminLoginController::class, 'logout'])->middleware('auth:sanctum');
 
+// Setup endpoint for seeding database (dev only, or with token)
+Route::post('/setup/seed', function (Request $request) {
+    // Only allow in development or with correct token
+    if (app()->environment('production')) {
+        $token = $request->header('X-Setup-Token');
+        if ($token !== env('SETUP_TOKEN')) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+    }
+    
+    try {
+        \Artisan::call('migrate:fresh', ['--seed' => true, '--force' => true]);
+        return response()->json([
+            'message' => 'Database seeded successfully',
+            'credentials' => [
+                'parents' => 'parent1-5@linkedu.com / Parent@2026',
+                'comptables' => 'comptable1-5@linkedu.com / Comptable@2026',
+                'professors' => 'professeur@linkedu.com / Professeur@2026',
+            ]
+        ], 200);
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'Seeding failed',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+});
+
 // Password Reset Routes
 Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
 Route::post('/reset-password', [NewPasswordController::class, 'store'])->name('password.store');
