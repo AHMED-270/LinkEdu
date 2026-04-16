@@ -20,7 +20,7 @@ export default function AdminClasses({ onCreateClass, onEditClass, userRole = 'a
         withCredentials: true,
         headers: { Accept: 'application/json' }
       });
-      setClasses(res.data);
+      setClasses(Array.isArray(res.data) ? res.data : res.data?.classes || []);
     } catch (error) {
       console.error('Erreur classes:', error);
     } finally {
@@ -234,100 +234,97 @@ export default function AdminClasses({ onCreateClass, onEditClass, userRole = 'a
 
       {/* Detail Modal */}
       {classDetailTarget && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setClassDetailTarget(null)}></div>
-          <div className="relative bg-white/30 rounded-[2rem] shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-in slide-in-from-bottom-8 duration-300">
+        <div className="premium-modal-overlay">
+          <div className="premium-modal-backdrop" onClick={() => setClassDetailTarget(null)} />
+          <div className="premium-modal-card !max-w-2xl !text-left">
             {/* Modal Header */}
-            <div className="px-8 pt-8 pb-6 border-b border-slate-100 bg-gradient-to-br from-blue-50/50 to-white">
-              <div className="flex items-center justify-between mb-2">
-                <span className="px-3 py-1 bg-blue-600 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full">Détails Classe</span>
-                <button onClick={() => setClassDetailTarget(null)} className="p-2 hover:bg-white/20 rounded-full transition-colors">
-                  <Plus size={24} className="rotate-45 text-slate-400" />
-                </button>
-              </div>
-              <h2 className="text-4xl font-black text-slate-900 mt-2">{classDetailTarget.nom}</h2>
-              <p className="text-slate-500 font-semibold italic flex items-center gap-2 mt-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                Niveau Scolaire: {classDetailTarget.niveau}
-              </p>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-8 overflow-y-auto custom-scrollbar">
-              <div className="grid grid-cols-2 gap-4 mb-8">
-                <div className="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100">
-                  <div className="text-[10px] font-black uppercase tracking-wider text-indigo-400 mb-1">Corps Enseignant</div>
-                  <div className="text-2xl font-black text-indigo-600">{classDetailTarget.professeurs_count || 0}</div>
-                </div>
-                <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100">
-                  <div className="text-[10px] font-black uppercase tracking-wider text-emerald-400 mb-1">Nombre d'élèves</div>
-                  <div className="text-2xl font-black text-emerald-600">{classDetailTarget.students_count || 0}</div>
-                </div>
-              </div>
-
-              <div className="space-y-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <span className="px-3 py-1 bg-blue-500 text-white text-[10px] font-black uppercase tracking-[0.15em] rounded-full">Détails Classe</span>
                 <div>
-                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-indigo-400"></span>
-                    Professeurs Affectés
-                  </h4>
-                  {(classDetailTarget.professeurs_details || []).length === 0 ? (
-                    <div className="p-4 rounded-xl border border-dashed border-slate-200 text-center text-slate-400 text-sm">
-                      Aucun professeur affecté à cette classe.
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {(classDetailTarget.professeurs_details || []).map((prof) => (
-                        <div key={prof.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/20 transition-colors border border-transparent hover:border-slate-100 group">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs uppercase">
-                              {prof.name.charAt(0)}
-                            </div>
-                            <span className="font-bold text-slate-700">{prof.name}</span>
-                          </div>
-                          {prof.telephone && <span className="text-xs font-bold text-slate-400 group-hover:text-indigo-500">{prof.telephone}</span>}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                    Liste des Étudiants
-                  </h4>
-                  {(classDetailTarget.effectif_details || []).length === 0 ? (
-                    <div className="p-4 rounded-xl border border-dashed border-slate-200 text-center text-slate-400 text-sm">
-                      Aucun élève inscrit dans cette classe.
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {(classDetailTarget.effectif_details || []).map((student) => (
-                        <div key={student.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/20 border border-slate-100">
-                          <div className="w-8 h-8 rounded-lg bg-white/30 shadow-sm flex items-center justify-center font-bold text-xs text-slate-400 uppercase">
-                            {student.name.charAt(0)}
-                          </div>
-                          <div className="overflow-hidden">
-                            <div className="font-bold text-slate-700 text-sm truncate">{student.name}</div>
-                            {student.matricule && <div className="text-[10px] font-black text-slate-300 uppercase tracking-tighter">MAT-#{student.matricule}</div>}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <h2 className="text-3xl font-black text-brand-navy">{classDetailTarget.nom}</h2>
+                  <p className="text-sm text-slate-500 font-semibold mt-1 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                    Niveau Scolaire: {classDetailTarget.niveau}
+                  </p>
                 </div>
               </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="p-6 bg-white/20 border-t border-slate-100">
               <button
+                type="button"
                 onClick={() => setClassDetailTarget(null)}
-                className="w-full px-6 py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-black text-sm transition-all shadow-lg active:scale-[0.98]"
+                className="premium-btn-secondary premium-btn-sm"
               >
-                FERMER
+                Fermer
               </button>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 gap-4 mb-8">
+              <div className="p-4 rounded-2xl bg-blue-50 border border-blue-100">
+                <div className="text-[10px] font-black uppercase tracking-wider text-blue-400 mb-2">Corps Enseignant</div>
+                <div className="text-3xl font-black text-blue-600">{classDetailTarget.professeurs_count || 0}</div>
+              </div>
+              <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100">
+                <div className="text-[10px] font-black uppercase tracking-wider text-emerald-400 mb-2">Nombre d'élèves</div>
+                <div className="text-3xl font-black text-emerald-600">{classDetailTarget.students_count || 0}</div>
+              </div>
+            </div>
+
+            {/* Sections */}
+            <div className="space-y-6">
+              {/* Professeurs */}
+              <div>
+                <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-4 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                  Professeurs Affectés
+                </h4>
+                {(classDetailTarget.professeurs_details || []).length === 0 ? (
+                  <div className="p-4 rounded-xl border border-dashed border-slate-200 text-center text-slate-400 text-sm">
+                    Aucun professeur affecté à cette classe.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {(classDetailTarget.professeurs_details || []).map((prof) => (
+                      <div key={prof.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-200 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs uppercase">
+                            {prof.name.charAt(0)}
+                          </div>
+                          <span className="font-bold text-slate-700">{prof.name}</span>
+                        </div>
+                        {prof.telephone && <span className="text-xs font-bold text-slate-400">{prof.telephone}</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Étudiants */}
+              <div>
+                <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-4 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  Liste des Étudiants
+                </h4>
+                {(classDetailTarget.effectif_details || []).length === 0 ? (
+                  <div className="p-4 rounded-xl border border-dashed border-slate-200 text-center text-slate-400 text-sm">
+                    Aucun élève inscrit dans cette classe.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {(classDetailTarget.effectif_details || []).map((student) => (
+                      <div key={student.id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:border-emerald-200 hover:bg-emerald-50/30 transition-all">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-xs uppercase">
+                          {student.name.charAt(0)}
+                        </div>
+                        <div className="overflow-hidden flex-1">
+                          <div className="font-bold text-slate-700 text-sm truncate">{student.name}</div>
+                          {student.matricule && <div className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">MAT-#{student.matricule}</div>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

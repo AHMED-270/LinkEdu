@@ -12,8 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('account_status')->default('active');
-            $table->timestamp('activated_at')->nullable();
+            if (!Schema::hasColumn('users', 'account_status')) {
+                $table->string('account_status')->default('active');
+            }
+            if (!Schema::hasColumn('users', 'activated_at')) {
+                $table->timestamp('activated_at')->nullable();
+            }
         });
     }
 

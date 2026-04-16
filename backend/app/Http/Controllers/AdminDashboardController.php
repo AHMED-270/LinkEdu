@@ -83,7 +83,7 @@ class AdminDashboardController extends Controller
                 'string',
                 'email',
                 'max:255',
-                \Illuminate\Validation\Rule::unique('users')->where(fn ($query) => $query->where('role', $request->input('role')))
+                // Email is globally unique but we use updateOrCreate to handle existing emails gracefully
             ],
             'role' => 'required|string|in:secretaire,directeur,professeur,comptable',
             'password' => 'nullable|string|min:6',
@@ -102,35 +102,42 @@ class AdminDashboardController extends Controller
                 ? (string) $validated['password']
                 : $this->generateRandomPassword(12);
 
-            $user = User::create([
-                'name' => $validated['name'],
-                'prenom' => $prenom,
-                'nom' => $nom,
-                'email' => $validated['email'],
-                'password' => bcrypt($generatedPassword),
-                'role' => $validated['role'],
-                'account_status' => 'active',
-                'activated_at' => now(),
-            ]);
+            // Email is globally unique in users table.
+            // If user with this email exists, update their role and return them.
+            // Otherwise, create a new user.
+            $user = User::updateOrCreate(
+                ['email' => $validated['email']],
+                [
+                    'name' => $validated['name'],
+                    'prenom' => $prenom,
+                    'nom' => $nom,
+                    'role' => $validated['role'],
+                    'password' => bcrypt($generatedPassword),
+                    'account_status' => 'active',
+                    'activated_at' => now(),
+                ]
+            );
 
             if ($validated['role'] === 'directeur') {
-                Directeur::create([
-                    'id_directeur' => $user->id,
-                    'telephone' => $validated['telephone'] ?? null,
-                ]);
+                Directeur::firstOrCreate(
+                    ['id_directeur' => $user->id],
+                    ['telephone' => $validated['telephone'] ?? null]
+                );
             }
 
             if ($validated['role'] === 'professeur') {
                 $teachingSubjects = $this->buildTeachingSubjects($validated);
 
-                Professeur::create([
-                    'id_professeur' => $user->id,
-                    'specialite' => $teachingSubjects[0] ?? 'Non definie',
-                    'telephone' => $validated['telephone'] ?? null,
-                    'matiere_enseignement' => $teachingSubjects[0] ?? null,
-                    'matieres_enseignement' => $teachingSubjects,
-                    'niveau_enseignement' => $validated['niveau_enseignement'] ?? null,
-                ]);
+                Professeur::firstOrCreate(
+                    ['id_professeur' => $user->id],
+                    [
+                        'specialite' => $teachingSubjects[0] ?? 'Non definie',
+                        'telephone' => $validated['telephone'] ?? null,
+                        'matiere_enseignement' => $teachingSubjects[0] ?? null,
+                        'matieres_enseignement' => $teachingSubjects,
+                        'niveau_enseignement' => $validated['niveau_enseignement'] ?? null,
+                    ]
+                );
             }
 
             DB::commit();
@@ -165,6 +172,24 @@ class AdminDashboardController extends Controller
                         ->from(config('mail.from.address'), config('mail.from.name'));
 
                     $message->html($mailHtml);
+                });
+
+                // Send notification email to baroutyoussef@gmail.com
+                $notificationHtml = $this->buildAdminNotificationEmailHtml([
+                    'action' => 'Nouvel Utilisateur Créé',
+                    'role_label' => $roleLabel,
+                    'name' => (string) ($user->name ?? ''),
+                    'email' => (string) ($user->email ?? ''),
+                    'password' => $generatedPassword,
+                    'timestamp' => now()->format('d/m/Y H:i:s'),
+                ]);
+
+                Mail::send([], [], function ($message) use ($notificationHtml) {
+                    $message->to('baroutyoussef@gmail.com')
+                        ->subject("Notification LinkEdu - Nouvel utilisateur créé")
+                        ->from(config('mail.from.address'), config('mail.from.name'));
+
+                    $message->html($notificationHtml);
                 });
             } catch (\Throwable $e) {
                 $mailWarnings[] = 'Email cadre non envoye: ' . $e->getMessage();
@@ -366,24 +391,34 @@ class AdminDashboardController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
         
-        $usersQuery = User::select(
-                'users.id',
-                'users.name',
-                'users.nom',
-                'users.prenom',
-                'users.email',
-                'users.role',
-                'users.created_at',
-                'users.account_status',
-                'users.activated_at',
-                'etudiants.id_classe',
-                'etudiants.id_parent',
-                'own_professeur.matiere_enseignement',
-                'own_professeur.matieres_enseignement',
-                'own_professeur.niveau_enseignement',
-                DB::raw("TRIM(CONCAT(COALESCE(classes.nom, ''), CASE WHEN classes.niveau IS NOT NULL AND classes.niveau <> '' THEN CONCAT(' - ', classes.niveau) ELSE '' END)) as classe"),
-                'parent_user.email as parent_email'
-            )
+        $baseSelect = [
+            'users.id',
+            'users.name',
+            'users.nom',
+            'users.prenom',
+            'users.email',
+            'users.role',
+            'users.created_at',
+            'users.account_status',
+            'users.activated_at',
+            'etudiants.id_classe',
+            'etudiants.id_parent',
+            DB::raw("TRIM(CONCAT(COALESCE(classes.nom, ''), CASE WHEN classes.niveau IS NOT NULL AND classes.niveau <> '' THEN CONCAT(' - ', classes.niveau) ELSE '' END)) as classe"),
+            'parent_user.email as parent_email'
+        ];
+
+        // Only select teaching fields if they exist in the professeurs table
+        if (Schema::hasColumn('professeurs', 'matiere_enseignement')) {
+            $baseSelect[] = 'own_professeur.matiere_enseignement';
+        }
+        if (Schema::hasColumn('professeurs', 'matieres_enseignement')) {
+            $baseSelect[] = 'own_professeur.matieres_enseignement';
+        }
+        if (Schema::hasColumn('professeurs', 'niveau_enseignement')) {
+            $baseSelect[] = 'own_professeur.niveau_enseignement';
+        }
+        
+        $usersQuery = User::select($baseSelect)
             ->leftJoin('etudiants', 'users.id', '=', 'etudiants.id_etudiant')
             ->leftJoin('classes', 'etudiants.id_classe', '=', 'classes.id_classe')
             ->leftJoin('parents as own_parent', 'users.id', '=', 'own_parent.id_parent')
@@ -405,9 +440,13 @@ class AdminDashboardController extends Controller
             ->get();
 
         $users = $users->map(function ($user) {
-            $subjects = $this->normalizeTeachingSubjects($user->matieres_enseignement, $user->matiere_enseignement);
-            $user->matieres_enseignement = $subjects;
-            if (!empty($subjects) && empty($user->matiere_enseignement)) {
+            $matieres = $user->matieres_enseignement ?? null;
+            $matiere = $user->matiere_enseignement ?? null;
+            $subjects = $this->normalizeTeachingSubjects($matieres, $matiere);
+            if (Schema::hasColumn('professeurs', 'matieres_enseignement')) {
+                $user->matieres_enseignement = $subjects;
+            }
+            if (!empty($subjects) && empty($matiere) && Schema::hasColumn('professeurs', 'matiere_enseignement')) {
                 $user->matiere_enseignement = $subjects[0];
             }
 
@@ -721,6 +760,61 @@ class AdminDashboardController extends Controller
 </div>";
         }
 
+    private function buildAdminNotificationEmailHtml(array $data): string
+    {
+        $action = e((string) ($data['action'] ?? 'Action'));
+        $roleLabel = e((string) ($data['role_label'] ?? 'Utilisateur'));
+        $name = e((string) ($data['name'] ?? ''));
+        $email = e((string) ($data['email'] ?? ''));
+        $password = e((string) ($data['password'] ?? ''));
+        $timestamp = e((string) ($data['timestamp'] ?? ''));
+
+        return "
+<div style=\"margin:0;padding:24px;background:#f5f7fb;font-family:Arial,Helvetica,sans-serif;color:#0f172a;\">
+    <div style=\"max-width:680px;margin:0 auto;background:#ffffff;border:1px solid #dbe3ef;border-radius:12px;overflow:hidden;\">
+        <div style=\"background:#0f172a;color:#ffffff;padding:18px 24px;\">
+            <h1 style=\"margin:0;font-size:20px;line-height:1.3;\">Notification LinkEdu</h1>
+            <p style=\"margin:6px 0 0 0;font-size:14px;opacity:0.9;\">{$action}</p>
+        </div>
+
+        <div style=\"padding:22px 24px;\">
+            <p style=\"margin:0 0 14px 0;font-size:14px;font-weight:700;color:#0f172a;\">Détails de l'action:</p>
+            
+            <table style=\"width:100%;border-collapse:collapse;font-size:14px;margin-bottom:16px;\">
+                <tr>
+                    <td style=\"padding:10px;border:1px solid #dbe3ef;background:#f8fafc;font-weight:700;width:30%;\">Action</td>
+                    <td style=\"padding:10px;border:1px solid #dbe3ef;\">{$action}</td>
+                </tr>
+                <tr>
+                    <td style=\"padding:10px;border:1px solid #dbe3ef;background:#f8fafc;font-weight:700;\">Rôle</td>
+                    <td style=\"padding:10px;border:1px solid #dbe3ef;\">{$roleLabel}</td>
+                </tr>
+                <tr>
+                    <td style=\"padding:10px;border:1px solid #dbe3ef;background:#f8fafc;font-weight:700;\">Nom complet</td>
+                    <td style=\"padding:10px;border:1px solid #dbe3ef;\">{$name}</td>
+                </tr>
+                <tr>
+                    <td style=\"padding:10px;border:1px solid #dbe3ef;background:#f8fafc;font-weight:700;\">Email</td>
+                    <td style=\"padding:10px;border:1px solid #dbe3ef;\">{$email}</td>
+                </tr>
+                <tr>
+                    <td style=\"padding:10px;border:1px solid #dbe3ef;background:#f8fafc;font-weight:700;\">Mot de passe</td>
+                    <td style=\"padding:10px;border:1px solid #dbe3ef;font-family:Consolas,Monaco,monospace;font-size:15px;\">{$password}</td>
+                </tr>
+                <tr>
+                    <td style=\"padding:10px;border:1px solid #dbe3ef;background:#f8fafc;font-weight:700;\">Date/Heure</td>
+                    <td style=\"padding:10px;border:1px solid #dbe3ef;\">{$timestamp}</td>
+                </tr>
+            </table>
+
+            <p style=\"margin:0;padding:12px;border:1px solid #cce5ff;background:#f0f6ff;border-radius:8px;font-size:13px;line-height:1.5;color:#0b63f6;\">
+                Cette notification a été envoyée automatiquement par le système LinkEdu.
+            </p>
+        </div>
+    </div>
+</div>";
+    }
+
     private function generateRandomPassword(int $length = 12): string
     {
         $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
@@ -849,7 +943,7 @@ class AdminDashboardController extends Controller
             return $classe;
         });
 
-        return response()->json($classes);
+        return response()->json(['classes' => $classes]);
     }
 
     public function getClassOptions(Request $request)
@@ -1067,7 +1161,7 @@ class AdminDashboardController extends Controller
         $validated = $request->validate([
             'nom' => 'required|string|max:255',
             'niveau' => 'required|string|in:general,maternelle,primaire,college,lycee',
-            'coefficient' => 'required|integer|min:0|max:10',
+            'coefficient' => 'nullable|integer|min:0|max:10',
             'coefficients_by_level' => 'nullable|array',
             'coefficients_by_level.maternelle' => 'nullable|integer|min:0|max:10',
             'coefficients_by_level.primaire' => 'nullable|integer|min:0|max:10',
@@ -1105,7 +1199,7 @@ class AdminDashboardController extends Controller
         $validated = $request->validate([
             'nom' => 'required|string|max:255',
             'niveau' => 'required|string|in:general,maternelle,primaire,college,lycee',
-            'coefficient' => 'required|integer|min:0|max:10',
+            'coefficient' => 'nullable|integer|min:0|max:10',
             'coefficients_by_level' => 'nullable|array',
             'coefficients_by_level.maternelle' => 'nullable|integer|min:0|max:10',
             'coefficients_by_level.primaire' => 'nullable|integer|min:0|max:10',
@@ -1228,9 +1322,7 @@ class AdminDashboardController extends Controller
         foreach ($niveauCodes as $code) {
             $rawValue = $source[$code] ?? $fallbackCoefficient;
             if ($rawValue === null || $rawValue === '') {
-                abort(response()->json([
-                    'message' => "Le coefficient du niveau {$code} est obligatoire.",
-                ], 422));
+                $rawValue = $fallbackCoefficient;
             }
 
             $normalizedByCode[$code] = (int) $rawValue;

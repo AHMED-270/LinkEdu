@@ -834,19 +834,20 @@ export default function AdminMatieres({ userRole = 'admin' }) {
       </div>
 
       {viewTarget && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-          <div className="bg-white/30 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-gray-900">Voir Matiere</h3>
+        <div className="premium-modal-overlay">
+          <div className="premium-modal-backdrop" onClick={() => setViewTarget(null)} />
+          <div className="premium-modal-card !max-w-lg !text-left">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-black text-brand-navy">Voir Matiere</h3>
               <button
                 type="button"
                 onClick={() => setViewTarget(null)}
-                className="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium"
+                className="premium-btn-secondary premium-btn-sm"
               >
                 Fermer
               </button>
             </div>
-            <div className="p-6 space-y-5">
+            <div className="space-y-4">
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Nom de la matiere</p>
                 <p className="mt-1 text-base font-bold text-gray-900">{viewTarget.nom}</p>
@@ -881,49 +882,49 @@ export default function AdminMatieres({ userRole = 'admin' }) {
       )}
 
       {deleteTarget && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-          <div className="bg-white/30 rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-            <div className="p-6 text-center">
-              <div className="w-16 h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
-                <Trash2 size={32} />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Confirmer la suppression</h3>
-              <p className="text-gray-500 mb-6">
-                Voulez-vous vraiment supprimer la matiere <strong className="text-gray-900">{deleteTarget.nom}</strong> ? Cette action est irréversible.
-              </p>
+        <div className="premium-modal-overlay">
+          <div className="premium-modal-backdrop" onClick={() => setDeleteTarget(null)} />
+          <div className="premium-modal-card">
+            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-red-500 shadow-inner">
+              <Trash2 size={28} />
+            </div>
+            <h3 className="mb-2 text-xl font-black text-brand-navy tracking-tight">Confirmer la suppression</h3>
+            <p className="mb-8 text-sm font-medium text-slate-500 leading-relaxed">
+              Voulez-vous vraiment supprimer la matiere <strong className="text-brand-navy">{deleteTarget.nom}</strong> ? Cette action est irréversible.
+            </p>
 
-              <div className="flex gap-3 justify-center">
-                <button
-                  type="button"
-                  onClick={() => setDeleteTarget(null)}
-                  disabled={isDeleting}
-                  className="px-5 py-2.5 rounded-xl font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  className="px-5 py-2.5 rounded-xl font-medium text-white bg-red-600 hover:bg-red-700 transition-colors disabled:opacity-50"
-                >
-                  {isDeleting ? 'Suppression...' : 'Supprimer'}
-                </button>
-              </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                disabled={isDeleting}
+                className="flex-1 rounded-2xl bg-slate-100 py-3 text-sm font-bold text-slate-600 transition-all hover:bg-slate-200 active:scale-95"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="flex-1 rounded-2xl bg-gradient-to-r from-red-500 to-red-600 py-3 text-sm font-bold text-white shadow-lg shadow-red-200 transition-all hover:brightness-110 active:scale-95 disabled:opacity-50"
+              >
+                {isDeleting ? 'Suppression...' : 'Supprimer'}
+              </button>
             </div>
           </div>
         </div>
       )}
 
       {editTarget && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-          <div className="bg-white/30 rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-gray-900">Modifier Matiere</h3>
+        <div className="premium-modal-overlay">
+          <div className="premium-modal-backdrop" onClick={() => setEditTarget(null)} />
+          <div className="premium-modal-card !max-w-3xl">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-black text-brand-navy">Modifier Matiere</h3>
               <button
                 type="button"
                 onClick={() => setEditTarget(null)}
-                className="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium"
+                className="premium-btn-secondary premium-btn-sm"
               >
                 Fermer
               </button>
@@ -1091,14 +1092,15 @@ export default function AdminMatieres({ userRole = 'admin' }) {
       )}
 
       {showForm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-          <div className="bg-white/30 rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-gray-900">Nouvelle Matiere</h3>
+        <div className="premium-modal-overlay">
+          <div className="premium-modal-backdrop" onClick={closeCreateForm} />
+          <div className="premium-modal-card !max-w-3xl">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-black text-brand-navy">Nouvelle Matiere</h3>
               <button
                 type="button"
                 onClick={closeCreateForm}
-                className="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium"
+                className="premium-btn-secondary premium-btn-sm"
               >
                 Fermer
               </button>

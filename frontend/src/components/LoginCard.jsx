@@ -167,13 +167,15 @@ export default function LoginCard({ onLoginSuccess }) {
          </div>
 
          {!isForgotMode && (
-           <form className="relative z-10 flex flex-col gap-4 animate-fade-in" onSubmit={handleLoginSubmit}>
+           <form className="relative z-10 flex flex-col gap-4 animate-fade-in" onSubmit={handleLoginSubmit} autoComplete="off">
              <div className="flex flex-col gap-1.5">
-               <label htmlFor="email" className="text-sm font-semibold text-slate-700 ml-1">E-mail</label>
+               <label htmlFor="login-email" className="text-sm font-semibold text-slate-700 ml-1">E-mail</label>
                <input
-                 id="email"
+                 id="login-email"
+                 name="login-email"
                  className="glass-input"
                  type="email"
+                 autoComplete="off"
                  placeholder="nom@ecole.com"
                  value={loginEmail}
                  onChange={(event) => {
@@ -186,11 +188,13 @@ export default function LoginCard({ onLoginSuccess }) {
              </div>
 
              <div className="flex flex-col gap-1.5">
-               <label htmlFor="password" className="text-sm font-semibold text-slate-700 ml-1">Mot de passe</label>
+               <label htmlFor="login-password" className="text-sm font-semibold text-slate-700 ml-1">Mot de passe</label>
                <input
-                 id="password"
+                 id="login-password"
+                 name="login-password"
                  className="glass-input"
                  type="password"
+                 autoComplete="new-password"
                  placeholder="********"
                  value={loginPassword}
                  onChange={(event) => {

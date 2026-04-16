@@ -185,7 +185,8 @@ class SecretaireController extends Controller
             'prenom' => ['required', 'string', 'max:255'],
             'date_naissance' => ['required', 'date'],
             'genre' => ['required', 'in:M,F,A'],
-            'email' => ['nullable', 'email', 'max:255', \Illuminate\Validation\Rule::unique('users')->where(function ($query) { return $query->where('role', 'etudiant'); })],
+            // If the email is already used, we auto-generate a unique student email.
+            'email' => ['nullable', 'email', 'max:255'],
             'adresse' => ['required', 'string', 'max:500'],
             'id_classe' => ['nullable', 'integer', 'exists:classes,id_classe'],
             'parent_nom' => ['required', 'string', 'max:255'],
@@ -228,7 +229,8 @@ class SecretaireController extends Controller
             'prenom' => ['required', 'string', 'max:255'],
             'date_naissance' => ['required', 'date'],
             'genre' => ['required', 'in:M,F,A'],
-            'email' => ['nullable', 'email', 'max:255', \Illuminate\Validation\Rule::unique('users')->where(function ($query) { return $query->where('role', 'etudiant'); })],
+            // If the email is already used, we auto-generate a unique student email.
+            'email' => ['nullable', 'email', 'max:255'],
             'adresse' => ['required', 'string', 'max:500'],
             'id_classe' => ['nullable', 'integer', 'exists:classes,id_classe'],
             'parent_nom' => ['required', 'string', 'max:255'],
@@ -281,10 +283,16 @@ class SecretaireController extends Controller
     {
         return DB::transaction(function () use ($validated) {
             $fallbackParentEmail = 'parent_' . preg_replace('/\D+/', '', (string) $validated['parent_phone']) . '@linkedu.local';
-            $parentEmail = $validated['parent_email'] ?? $fallbackParentEmail;
-            
-            $studentEmail = $validated['email'];
-            if (!$studentEmail) {
+            $parentEmail = trim(Str::lower((string) ($validated['parent_email'] ?? '')));
+            if ($parentEmail === '') {
+                $parentEmail = $fallbackParentEmail;
+            }
+
+            $studentEmail = trim(Str::lower((string) ($validated['email'] ?? '')));
+            $studentEmailAlreadyUsed = $studentEmail !== ''
+                && User::query()->whereRaw('LOWER(email) = ?', [Str::lower($studentEmail)])->exists();
+
+            if ($studentEmail === '' || $studentEmailAlreadyUsed) {
                 $studentEmail = $this->buildStudentEmailFromParent(
                     $parentEmail,
                     $validated['nom'],
@@ -319,25 +327,31 @@ class SecretaireController extends Controller
                 ]
             );
 
-            $user = User::create([
-                'name' => trim($validated['prenom'] . ' ' . $validated['nom']),
-                'nom' => $validated['nom'],
-                'prenom' => $validated['prenom'],
-                'email' => $studentEmail,
-                'password' => Hash::make('Etudiant@2026'),
-                'role' => 'etudiant',
-                'account_status' => 'pending_activation',
-            ]);
+            $user = User::updateOrCreate(
+                ['email' => $studentEmail],
+                [
+                    'name' => trim($validated['prenom'] . ' ' . $validated['nom']),
+                    'nom' => $validated['nom'],
+                    'prenom' => $validated['prenom'],
+                    'role' => 'etudiant',
+                    'password' => Hash::make('Etudiant@2026'),
+                    'account_status' => 'pending_activation',
+                ]
+            );
 
-            Etudiant::create([
-                'id_etudiant' => $user->id,
-                'matricule' => 'STU-' . now()->format('YmdHis') . Str::random(3),
-                'id_classe' => $validated['id_classe'] ?? null,
-                'id_parent' => $parentEleve->id_parent,
-                'date_naissance' => $validated['date_naissance'],
-                'genre' => $validated['genre'],
-                'adresse' => $validated['adresse'],
-            ]);
+            Etudiant::firstOrCreate(
+                [
+                    'id_etudiant' => $user->id,
+                ],
+                [
+                    'matricule' => 'STU-' . now()->format('YmdHis') . Str::random(3),
+                    'id_classe' => $validated['id_classe'] ?? null,
+                    'id_parent' => $parentEleve->id_parent,
+                    'date_naissance' => $validated['date_naissance'],
+                    'genre' => $validated['genre'],
+                    'adresse' => $validated['adresse'],
+                ]
+            );
 
             return $user;
         });

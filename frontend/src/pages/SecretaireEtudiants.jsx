@@ -324,7 +324,19 @@ export default function SecretaireEtudiants() {
 
       resetForm();
     } catch (error) {
-      setErrorMessage(error?.response?.data?.message || "Impossible d'enregistrer l'etudiant.");
+      const validationErrors = error?.response?.data?.errors;
+      const firstValidationError = validationErrors
+        ? Object.values(validationErrors).flat()[0]
+        : '';
+
+      const rawMessage = firstValidationError || error?.response?.data?.message || "Impossible d'enregistrer l'etudiant.";
+      const normalizedMessage = String(rawMessage || '').trim().toLowerCase();
+
+      if (normalizedMessage === 'the email has already been taken.') {
+        setErrorMessage("Cet e-mail est deja utilise. Utilisez-en un autre ou laissez le champ Email vide pour generation automatique.");
+      } else {
+        setErrorMessage(rawMessage);
+      }
     }
   };
 
