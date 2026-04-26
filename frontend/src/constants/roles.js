@@ -5,6 +5,7 @@ export const ROLE = {
   ETUDIANT: 'etudiant',
   PARENT: 'parent_eleve',
   SECRETAIRE: 'secretaire',
+  COMPTABLE: 'comptable',
 };
 
 export const ROLE_META = {
