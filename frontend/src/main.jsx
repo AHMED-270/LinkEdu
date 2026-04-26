@@ -21,18 +21,24 @@ const rewriteLocalApiHost = (value) => {
   }
 
   const browserHost = window.location.hostname;
-  if (LOCAL_API_HOSTS.has(browserHost)) {
-    return value;
-  }
-
+  
   try {
     const parsed = new URL(value);
+    // Only rewrite localhost-like URLs that are on the same machine
     if (!LOCAL_API_HOSTS.has(parsed.hostname)) {
+      // If it's a remote API URL (not localhost), return it as-is
+      // Don't try to replace it with the browser's hostname
       return value;
     }
 
-    parsed.hostname = browserHost;
-    return parsed.toString();
+    // Only rewrite if we're in a local dev environment
+    if (LOCAL_API_HOSTS.has(browserHost)) {
+      parsed.hostname = browserHost;
+      return parsed.toString();
+    }
+    
+    // If browser is not on localhost, don't rewrite localhost URLs
+    return value;
   } catch {
     return value;
   }
