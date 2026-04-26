@@ -47,6 +47,7 @@ export default function LoginCard({ onLoginSuccess }) {
         try {
           await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', {
             withCredentials: true,
+            timeout: 15000,
           });
         } catch (e) {
           console.warn('CSRF cookie fetch failed, continuing anyway:', e.message);
@@ -58,6 +59,7 @@ export default function LoginCard({ onLoginSuccess }) {
           { email: loginEmail.trim().toLowerCase(), password: loginPassword },
           {
             withCredentials: true,
+            timeout: 15000,
             headers: { 
               'Accept': 'application/json',
               'Content-Type': 'application/json',
@@ -148,6 +150,7 @@ export default function LoginCard({ onLoginSuccess }) {
        await axios.get(apiBaseUrl + '/sanctum/csrf-cookie', {
          withCredentials: true,
          withXSRFToken: true,
+         timeout: 15000,
        });
 
        await axios.post(
@@ -159,6 +162,7 @@ export default function LoginCard({ onLoginSuccess }) {
          {
            withCredentials: true,
            withXSRFToken: true,
+           timeout: 15000,
            headers: { Accept: 'application/json' },
          }
        );

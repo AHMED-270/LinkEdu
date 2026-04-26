@@ -40,6 +40,7 @@ const rewriteLocalApiHost = (value) => {
 
 const resolveApiBaseUrl = () => {
   const envBaseUrl = import.meta.env.VITE_API_URL?.trim();
+  console.log('Environment VITE_API_URL:', envBaseUrl);
 
   if (envBaseUrl) {
     const normalized = rewriteLocalApiHost(envBaseUrl);
@@ -48,6 +49,8 @@ const resolveApiBaseUrl = () => {
 
   // Detect environment and protocol
   const isProduction = window.location.protocol === 'https:';
+  console.log('Is production:', isProduction, 'Protocol:', window.location.protocol);
+  
   if (isProduction) {
     // Production: use Laravel Cloud backend
     return 'https://backendlinkededu-main-oied8k.free.laravel.cloud';
@@ -78,7 +81,19 @@ axios.interceptors.request.use(config => {
 axios.defaults.withCredentials = true;
 axios.defaults.withXSRFToken = true;
 axios.defaults.baseURL = resolveApiBaseUrl();
+axios.defaults.timeout = 15000; // 15 second timeout
 axios.defaults.headers.common['Accept'] = 'application/json';
+
+// Add response interceptor for better error handling
+axios.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.code === 'ECONNABORTED') {
+      console.error('Request timeout:', error.config?.url);
+    }
+    return Promise.reject(error);
+  }
+);
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
