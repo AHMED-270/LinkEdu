@@ -1,7 +1,17 @@
 import axios from 'axios';
 
-const browserHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
-const apiBaseUrl = import.meta.env.VITE_API_URL ?? `http://${browserHost}:8000`;
+const getApiBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL?.trim();
+  if (envUrl) return envUrl;
+  
+  const isProduction = typeof window !== 'undefined' && window.location.protocol === 'https:';
+  if (isProduction) return 'https://backendlinkededu-main-oied8k.free.laravel.cloud';
+  
+  const host = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
+  return `http://${host}:8000`;
+};
+
+const apiBaseUrl = getApiBaseUrl();
 const AUTH_TOKEN_KEY = 'linkedu_token';
 
 function getStoredToken() {

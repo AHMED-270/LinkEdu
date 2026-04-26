@@ -41,12 +41,20 @@ const rewriteLocalApiHost = (value) => {
 const resolveApiBaseUrl = () => {
   const envBaseUrl = import.meta.env.VITE_API_URL?.trim();
 
-  if (!envBaseUrl) {
-    return `http://${window.location.hostname}:8000`;
+  if (envBaseUrl) {
+    const normalized = rewriteLocalApiHost(envBaseUrl);
+    return normalized.replace(/\/$/, '');
   }
 
-  const normalized = rewriteLocalApiHost(envBaseUrl);
-  return normalized.replace(/\/$/, '');
+  // Detect environment and protocol
+  const isProduction = window.location.protocol === 'https:';
+  if (isProduction) {
+    // Production: use Laravel Cloud backend
+    return 'https://backendlinkededu-main-oied8k.free.laravel.cloud';
+  }
+
+  // Development: use localhost
+  return `http://${window.location.hostname}:8000`;
 };
 
 axios.interceptors.request.use(config => {

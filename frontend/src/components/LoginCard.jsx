@@ -7,6 +7,7 @@ import { getHomeRouteByRole } from '../constants/roles';
 import logo from '../assets/images/linkedu-logo.png';
 
 const AUTH_TOKEN_KEY = 'linkedu_token';
+<<<<<<< HEAD
 const browserHost = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
 // In production (not localhost), use the API URL from env. Otherwise use localhost:8000
 const apiBaseUrl = import.meta.env.VITE_API_URL ?? (
@@ -14,6 +15,22 @@ const apiBaseUrl = import.meta.env.VITE_API_URL ?? (
     ? 'http://' + browserHost + ':8000'
     : 'https://backendlinkededu-main-oied8k.free.laravel.cloud'
 );
+=======
+
+// Get API base URL with intelligent fallback
+const getApiBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL?.trim();
+  if (envUrl) return envUrl;
+  
+  const isProduction = typeof window !== 'undefined' && window.location.protocol === 'https:';
+  if (isProduction) return 'https://backendlinkededu-main-oied8k.free.laravel.cloud';
+  
+  const host = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
+  return `http://${host}:8000`;
+};
+
+const apiBaseUrl = getApiBaseUrl();
+>>>>>>> acd9e46ebf41760083f853f78cd6f1039926f983
 
 export default function LoginCard({ onLoginSuccess }) {
   const [isForgotMode, setIsForgotMode] = useState(false);
