@@ -18,11 +18,28 @@ class AuthController extends Controller
             "password" => ["required", "string"],
         ]);
 
-        $user = User::where("email", $validated["email"])->first();
+        $normalizedEmail = mb_strtolower(trim((string) $validated["email"]));
 
-        if (! $user || ! Hash::check($validated["password"], $user->password)) {
+        // Rechercher l'utilisateur avec email insensible à la casse
+        // Un même email peut exister sur plusieurs roles, on vérifie le mot de passe
+        $user = User::query()
+            ->whereRaw('LOWER(email) = ?', [$normalizedEmail])
+            ->orderByDesc('id')
+            ->get()
+            ->first(function (User $candidate) use ($validated) {
+                return Hash::check($validated["password"], (string) $candidate->password);
+            });
+
+        if (! $user) {
             throw ValidationException::withMessages([
                 "email" => ["Les identifiants ne correspondent pas à nos enregistrements."],
+            ]);
+        }
+
+        // Vérifier que le compte est actif
+        if (($user->account_status ?? 'active') !== 'active') {
+            throw ValidationException::withMessages([
+                'email' => ['Compte en attente d activation par l administration.'],
             ]);
         }
 
